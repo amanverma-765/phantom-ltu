@@ -1,4 +1,4 @@
-package com.riva.mods.ui.theme
+package com.riva.mods.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,4 +1,4 @@
-package com.riva.mods.ui.theme
+package com.riva.mods.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
