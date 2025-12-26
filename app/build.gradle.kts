@@ -11,9 +11,13 @@ android {
     namespace = "com.riva.mods"
     compileSdk = 36
 
+    compileSdk {
+        version = release(36)
+    }
+
     defaultConfig {
         applicationId = "com.riva.mods"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -37,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
