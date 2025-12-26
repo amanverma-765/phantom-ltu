@@ -38,7 +38,15 @@ class Navigator(private val startDestination: Screen) {
     }
 
     fun switchTab(tabRoot: Screen) {
-        if (_currentTab.value == tabRoot) return
+        if (_currentTab.value == tabRoot) {
+            // Clear the tab's backstack when clicking the same tab again
+            val stack = tabBackStacks[tabRoot]
+            if (stack != null && stack.size > 1) {
+                stack.clear()
+                stack.add(tabRoot)
+            }
+            return
+        }
 
         // Switch to the new tab - its back stack is preserved
         _currentTab.value = tabRoot
