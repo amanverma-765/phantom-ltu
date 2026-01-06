@@ -1,4 +1,4 @@
-package com.riva.mods.koin
+package com.riva.mods.di
 
 import com.riva.mods.presentation.features.auth.LoginScreen
 import com.riva.mods.presentation.features.home.HomeScreen
