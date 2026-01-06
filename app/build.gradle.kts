@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.konan.properties.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,28 +10,40 @@ plugins {
 
 android {
     namespace = "com.riva.mods"
-    compileSdk = 36
-
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.riva.mods"
+        applicationId = "org.lsposed.lspatch"
         minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        buildConfigField(
+            type = "String",
+            name = "GOOGLE_WEB_CLIENT_ID",
+            value = properties.getProperty("GOOGLE_WEB_CLIENT_ID")
+        )
+        buildConfigField(
+            type = "String",
+            name = "BASE_URL",
+            value = properties.getProperty("BASE_URL")
+        )
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -82,8 +95,30 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.koin.navigation3)
+    // Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    // Google ID helper library
+    implementation(libs.googleid)
+    // Ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.json)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.auth)
+    // DataStore
+    implementation(libs.datastore.preferences)
+    // SplashScreen
+    implementation(libs.androidx.splashscreen)
+    // Coil
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network)
     // Other
     implementation(libs.kotlinx.serialization.json)
+    // Shared modules
+    implementation(project(":shared"))
+    implementation(project(":xposed-api"))
 }
 
 // Validate LSPatch assets before build

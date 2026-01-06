@@ -1,7 +1,10 @@
 package com.riva.mods
 
 import android.app.Application
-import com.riva.mods.koin.navModule
+import com.riva.mods.di.authModule
+import com.riva.mods.di.coreModule
+import com.riva.mods.di.dataModule
+import com.riva.mods.di.navModule
 import com.riva.mods.utils.AssetUtils
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -18,7 +21,7 @@ class RivaModsApp : Application() {
         startKoin {
             androidLogger()
             androidContext(this@RivaModsApp)
-            modules(navModule)
+            modules(coreModule, dataModule, navModule, authModule)
         }
     }
 }

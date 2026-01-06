@@ -1,4 +1,7 @@
 package com.riva.mods.presentation.features.auth
 
-class AuthUiEvent {
+sealed class AuthUiEvent {
+    data object SignInWithGoogle : AuthUiEvent()
+    data object SignOut : AuthUiEvent()
+    data object ClearError : AuthUiEvent()
 }

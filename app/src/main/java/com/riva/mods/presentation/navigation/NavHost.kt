@@ -7,6 +7,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -22,7 +23,14 @@ fun RootNavDisplay(modifier: Modifier = Modifier) {
     val entryProvider = koinEntryProvider()
     val navigator = koinInject<Navigator>()
 
+    val currentScreen = navigator.currentScreen()
+
     NavigationSuiteScaffold(
+        layoutType = if (currentScreen?.showNavbar == true) {
+            NavigationSuiteType.NavigationBar
+        } else {
+            NavigationSuiteType.None
+        },
         navigationSuiteItems = {
             tabItems.forEach { tab ->
                 val isSelected = navigator.currentTab() == tab.screen

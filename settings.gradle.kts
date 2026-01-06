@@ -21,3 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Riva Mods Manager"
 include(":app")
+
+include(":shared")
+include(":xposed-api")

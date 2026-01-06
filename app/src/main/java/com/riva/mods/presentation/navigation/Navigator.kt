@@ -7,7 +7,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 class Navigator(private val startDestination: Screen) {
 
     private val tabBackStacks = mutableMapOf<Screen, SnapshotStateList<Screen>>()
-
     private val _currentTab = mutableStateOf(startDestination)
 
 

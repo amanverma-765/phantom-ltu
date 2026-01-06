@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.RivaModsManager" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.RivaModsManager.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+        <item name="postSplashScreenTheme">@style/Theme.RivaModsManager</item>
+    </style>
 </resources>
