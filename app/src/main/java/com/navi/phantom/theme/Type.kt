@@ -1,4 +1,4 @@
-package com.navi.phantom.ui.theme
+package com.navi.phantom.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

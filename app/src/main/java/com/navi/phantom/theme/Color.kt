@@ -1,4 +1,4 @@
-package com.navi.phantom.ui.theme
+package com.navi.phantom.theme
 
 import androidx.compose.ui.graphics.Color
 

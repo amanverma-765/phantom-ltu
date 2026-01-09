@@ -1,6 +1,5 @@
-package com.navi.phantom.ui.theme
+package com.navi.phantom.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
