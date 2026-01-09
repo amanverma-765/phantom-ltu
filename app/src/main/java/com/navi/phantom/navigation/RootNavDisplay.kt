@@ -6,10 +6,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
@@ -23,7 +23,6 @@ import org.koin.core.annotation.KoinExperimentalAPI
 fun RootNavDisplay(modifier: Modifier = Modifier) {
     val entryProvider = koinEntryProvider()
     val navigator = koinInject<Navigator>()
-
     val currentScreen = navigator.currentScreen()
 
     NavigationSuiteScaffold(
@@ -38,11 +37,13 @@ fun RootNavDisplay(modifier: Modifier = Modifier) {
                 item(
                     icon = {
                         Icon(
-                            if (isSelected) tab.selectedIcon else tab.icon,
+                            imageVector = if (isSelected) tab.selectedIcon else tab.icon,
                             contentDescription = tab.label,
                             tint = if (isSelected) {
                                 MaterialTheme.colorScheme.primary
-                            } else LocalContentColor.current
+                            } else {
+                                LocalContentColor.current
+                            }
                         )
                     },
                     label = { Text(tab.label) },
@@ -60,6 +61,9 @@ fun RootNavDisplay(modifier: Modifier = Modifier) {
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator()
             ),
+            transitionSpec = { NavAnimations.forwardTransition },
+            popTransitionSpec = { NavAnimations.backwardTransition },
+            predictivePopTransitionSpec = { NavAnimations.predictiveBackTransition },
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)

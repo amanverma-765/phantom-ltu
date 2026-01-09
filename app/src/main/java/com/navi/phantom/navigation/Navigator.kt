@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlin.collections.removeLastOrNull
 
-class Navigator(private val startDestination: Destination) {
+class Navigator(startDestination: Destination) {
 
     private val tabBackStacks = mutableMapOf<Destination, SnapshotStateList<Destination>>()
     private val _currentTab = mutableStateOf(startDestination)

@@ -3,13 +3,16 @@ package com.navi.phantom.navigation
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class Destination(val showNavbar: Boolean = false) {
+sealed class Destination(val showNavbar: Boolean = true) {
     @Serializable
-    data object Apps : Destination(true)
+    data object Apps : Destination()
 
     @Serializable
-    data object Location : Destination(true)
+    data object Location : Destination()
 
     @Serializable
-    data object Setting : Destination(true)
+    data object Setting : Destination()
+
+    @Serializable
+    data object AppPicker : Destination()
 }
