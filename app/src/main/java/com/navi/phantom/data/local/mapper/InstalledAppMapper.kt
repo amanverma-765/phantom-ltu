@@ -10,6 +10,7 @@ object InstalledAppMapper {
             appName = appName,
             versionName = versionName,
             icon = icon,
-            apkPath = apkPath
+            apkPath = apkPath,
+            usesLocation = usesLocation
         )
 }

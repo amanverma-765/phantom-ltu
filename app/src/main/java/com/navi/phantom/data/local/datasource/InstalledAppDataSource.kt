@@ -1,5 +1,6 @@
 package com.navi.phantom.data.local.datasource
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -65,8 +66,29 @@ class InstalledAppDataSource(
                 appName = appInfo.loadLabel(packageManager).toString(),
                 versionName = getVersionName(appInfo.packageName),
                 icon = appInfo.loadIcon(packageManager),
-                apkPath = appInfo.sourceDir
+                apkPath = appInfo.sourceDir,
+                usesLocation = hasLocationPermission(appInfo.packageName)
             )
         }
+    }
+
+    private fun hasLocationPermission(packageName: String): Boolean {
+        return runCatching {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+            }
+            val permissions = packageInfo.requestedPermissions ?: return@runCatching false
+            permissions.any {
+                it == Manifest.permission.ACCESS_FINE_LOCATION ||
+                it == Manifest.permission.ACCESS_COARSE_LOCATION ||
+                it == Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            }
+        }.getOrDefault(false)
     }
 }

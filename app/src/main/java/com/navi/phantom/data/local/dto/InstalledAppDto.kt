@@ -8,5 +8,6 @@ data class InstalledAppDto(
     val appName: String,
     val versionName: String,
     val icon: Drawable?,
-    val apkPath: String
+    val apkPath: String,
+    val usesLocation: Boolean
 )
