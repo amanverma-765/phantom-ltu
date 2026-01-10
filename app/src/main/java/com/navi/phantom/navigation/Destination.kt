@@ -8,7 +8,7 @@ sealed class Destination(val showNavbar: Boolean = true) {
     data object Apps : Destination()
 
     @Serializable
-    data object Location : Destination()
+    data object Places : Destination()
 
     @Serializable
     data object Setting : Destination()

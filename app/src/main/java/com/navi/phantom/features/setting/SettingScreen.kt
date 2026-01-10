@@ -25,7 +25,7 @@ fun SettingScreen(modifier: Modifier = Modifier) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Setting") }
+                title = { Text("Settings") }
             )
         }
     ) { innerPadding ->

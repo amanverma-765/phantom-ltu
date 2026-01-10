@@ -1,0 +1,72 @@
+package com.navi.phantom.data.local.datasource
+
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.os.Build
+import com.navi.phantom.data.local.dto.InstalledAppDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+class InstalledAppDataSource(
+    private val context: Context
+) {
+
+    private val packageManager: PackageManager
+        get() = context.packageManager
+
+    suspend fun getAllInstalledApps(): Result<List<InstalledAppDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            getInstalledApplications()
+                .asSequence()
+                .filter { appInfo ->
+                    isUserInstalledApp(appInfo)
+                }
+                .mapNotNull { toInstalledApp(it).getOrNull() }
+                .sortedBy { it.appName.lowercase() }
+                .toList()
+        }
+    }
+
+    private fun getInstalledApplications(): List<ApplicationInfo> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getInstalledApplications(
+                PackageManager.ApplicationInfoFlags.of(0L)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getInstalledApplications(0)
+        }
+    }
+
+    private fun getVersionName(packageName: String): String {
+        return runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(0L)
+                ).versionName
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0).versionName
+            }
+        }.getOrNull().orEmpty()
+    }
+
+    private fun isUserInstalledApp(appInfo: ApplicationInfo): Boolean {
+        return (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 &&
+                (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
+    }
+
+    private fun toInstalledApp(appInfo: ApplicationInfo): Result<InstalledAppDto> {
+        return runCatching {
+            InstalledAppDto(
+                packageName = appInfo.packageName,
+                appName = appInfo.loadLabel(packageManager).toString(),
+                versionName = getVersionName(appInfo.packageName),
+                icon = appInfo.loadIcon(packageManager),
+                apkPath = appInfo.sourceDir
+            )
+        }
+    }
+}

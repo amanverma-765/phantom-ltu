@@ -1,10 +1,10 @@
 package com.navi.phantom.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.GetApp
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.twotone.GetApp
+import androidx.compose.material.icons.twotone.Apps
 import androidx.compose.material.icons.twotone.LocationOn
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -19,15 +19,15 @@ data class BottomTab(
 val tabItems = listOf(
     BottomTab(
         label = "Apps",
-        icon = Icons.Outlined.GetApp,
-        selectedIcon = Icons.TwoTone.GetApp,
+        icon = Icons.Outlined.Apps,
+        selectedIcon = Icons.TwoTone.Apps,
         destination = Destination.Apps
     ),
     BottomTab(
-        label = "Location",
+        label = "Places",
         icon = Icons.Outlined.LocationOn,
         selectedIcon = Icons.TwoTone.LocationOn,
-        destination = Destination.Location
+        destination = Destination.Places
     ),
     BottomTab(
         label = "Setting",
