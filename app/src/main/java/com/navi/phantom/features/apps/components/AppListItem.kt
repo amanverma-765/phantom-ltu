@@ -1,9 +1,6 @@
 package com.navi.phantom.features.apps.components
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.navi.phantom.domain.models.InstalledApp
 
 @Composable
@@ -64,27 +57,12 @@ internal fun AppListItem(
             }
         },
         leadingContent = {
-            app.icon?.let { drawable ->
-                Image(
-                    bitmap = drawable.toBitmap(48, 48).asImageBitmap(),
-                    contentDescription = "${app.appName} icon",
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
-            } ?: Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = app.appName.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+            AppIcon(
+                icon = app.icon,
+                appName = app.appName,
+                size = 48.dp,
+                cornerRadius = 12.dp
+            )
         },
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surface
