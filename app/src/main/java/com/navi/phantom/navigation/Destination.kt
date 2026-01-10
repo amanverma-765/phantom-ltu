@@ -15,4 +15,7 @@ sealed class Destination(val showNavbar: Boolean = true) {
 
     @Serializable
     data object AppPicker : Destination(showNavbar = false)
+
+    @Serializable
+    data object AppPatching : Destination(showNavbar = false)
 }

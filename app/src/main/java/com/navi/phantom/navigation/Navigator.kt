@@ -27,12 +27,38 @@ class Navigator(startDestination: Destination) {
 
     fun goBack(): Boolean {
         _isTabSwitch.value = false
-        // Don't pop if we're at the tab root (only 1 item in stack)
         if (backStack.size > 1) {
             backStack.removeLastOrNull()
             return true
         }
         return false
+    }
+
+    fun goBack(count: Int): Int {
+        _isTabSwitch.value = false
+        var popped = 0
+        repeat(count) {
+            if (backStack.size > 1) {
+                backStack.removeLastOrNull()
+                popped++
+            }
+        }
+        return popped
+    }
+
+    fun popTo(destination: Destination): Boolean {
+        _isTabSwitch.value = false
+        while (backStack.size > 1 && backStack.lastOrNull() != destination) {
+            backStack.removeLastOrNull()
+        }
+        return backStack.lastOrNull() == destination
+    }
+
+    fun popToRoot() {
+        _isTabSwitch.value = false
+        while (backStack.size > 1) {
+            backStack.removeLastOrNull()
+        }
     }
 
     fun currentScreen(): Destination? {
