@@ -98,7 +98,7 @@ fun AddAppScreen(
                         viewModel.onEvent(AppUiEvent.SelectApp(app))
                         onNavigateBack()
                     },
-                    modifier = Modifier.fillMaxSize().padding(bottom = 8.dp)
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
