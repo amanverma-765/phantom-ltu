@@ -2,6 +2,7 @@ package com.navi.phantom.features.places
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,10 +32,10 @@ fun LocationScreen(
     modifier: Modifier = Modifier,
     onAddPlaceClick: () -> Unit
 ) {
-
     val isScreenEmpty by remember { mutableStateOf(true) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("Saved Places") }

@@ -2,6 +2,7 @@ package com.navi.phantom.features.apps.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,10 +32,10 @@ fun AppScreen(
     modifier: Modifier = Modifier,
     onAddAppClick: () -> Unit
 ) {
-
-    val isScreenEmpty by remember { mutableStateOf(true) }
+    val isScreenEmpty by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("Phantom GPS") }
