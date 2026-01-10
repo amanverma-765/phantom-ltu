@@ -12,17 +12,13 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 
-// Material 3 Easing Curves
+// Material 3 Official Easing Curves
 private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
-private val StandardDecelerate = CubicBezierEasing(0.0f, 0.0f, 0.0f, 1.0f)
-private val StandardAccelerate = CubicBezierEasing(0.3f, 0.0f, 1.0f, 1.0f)
 
-// Durations
-private const val ENTER_DURATION = 400
-private const val EXIT_DURATION = 200
-private const val FADE_IN_DURATION = 250
-private const val FADE_OUT_DURATION = 100
+// Material 3 Duration Tokens
+private const val DURATION_MEDIUM3 = 350  // Primary navigation duration
+private const val DURATION_SHORT4 = 200   // Fade duration
 
 object NavAnimations {
 
@@ -35,69 +31,78 @@ object NavAnimations {
     val predictiveBackTransition
         get() = predictiveEnter() togetherWith predictiveExit()
 
-    // Forward Navigation
+    // Tab switching - scale only (no slide)
+    val tabTransition
+        get() = tabEnter() togetherWith tabExit()
+
+    // Forward Navigation (push) - new screen slides in from right edge
     private fun forwardEnter(): EnterTransition =
         slideInHorizontally(
-            animationSpec = tween(ENTER_DURATION, easing = EmphasizedDecelerate),
-            initialOffsetX = { (it * 0.15f).toInt() }
-        ) + scaleIn(
-            animationSpec = tween(ENTER_DURATION, easing = EmphasizedDecelerate),
-            initialScale = 0.95f
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
+            initialOffsetX = { it }  // Full width slide from right
         ) + fadeIn(
-            animationSpec = tween(FADE_IN_DURATION, delayMillis = 60, easing = StandardDecelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
 
     private fun forwardExit(): ExitTransition =
         slideOutHorizontally(
-            animationSpec = tween(EXIT_DURATION, easing = EmphasizedAccelerate),
-            targetOffsetX = { -(it * 0.05f).toInt() }
-        ) + scaleOut(
-            animationSpec = tween(EXIT_DURATION, easing = EmphasizedAccelerate),
-            targetScale = 0.95f
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
+            targetOffsetX = { -it / 4 }  // Parallax: slides left 25%
         ) + fadeOut(
-            animationSpec = tween(FADE_OUT_DURATION, easing = StandardAccelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
 
-    // Backward Navigation
+    // Backward Navigation (pop) - previous screen slides back from left
     private fun backwardEnter(): EnterTransition =
         slideInHorizontally(
-            animationSpec = tween(ENTER_DURATION, easing = EmphasizedDecelerate),
-            initialOffsetX = { -(it * 0.05f).toInt() }
-        ) + scaleIn(
-            animationSpec = tween(ENTER_DURATION, easing = EmphasizedDecelerate),
-            initialScale = 0.95f
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
+            initialOffsetX = { -it / 4 }  // Parallax: slides in from 25% left
         ) + fadeIn(
-            animationSpec = tween(FADE_IN_DURATION, easing = StandardDecelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
 
     private fun backwardExit(): ExitTransition =
         slideOutHorizontally(
-            animationSpec = tween(EXIT_DURATION, easing = EmphasizedAccelerate),
-            targetOffsetX = { (it * 0.15f).toInt() }
-        ) + scaleOut(
-            animationSpec = tween(EXIT_DURATION, easing = EmphasizedAccelerate),
-            targetScale = 0.95f
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
+            targetOffsetX = { it }  // Full width slide to right
         ) + fadeOut(
-            animationSpec = tween(FADE_OUT_DURATION, easing = StandardAccelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
 
-    // Predictive Back (Gesture)
+    // Predictive Back (Android 14+ gesture) - scale + slide for tactile feedback
     private fun predictiveEnter(): EnterTransition =
         scaleIn(
-            animationSpec = tween(350, easing = EmphasizedDecelerate),
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
             initialScale = 0.9f
         ) + fadeIn(
-            animationSpec = tween(200, easing = StandardDecelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
 
     private fun predictiveExit(): ExitTransition =
         slideOutHorizontally(
-            animationSpec = tween(350, easing = EmphasizedAccelerate),
-            targetOffsetX = { (it * 0.25f).toInt() }
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
+            targetOffsetX = { it }  // Full width slide to right
         ) + scaleOut(
-            animationSpec = tween(350, easing = EmphasizedAccelerate),
-            targetScale = 0.85f
+            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
+            targetScale = 0.9f
         ) + fadeOut(
-            animationSpec = tween(150, easing = StandardAccelerate)
+            animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
+        )
+
+    // Tab switching - subtle scale + crossfade (slower for smoothness)
+    private fun tabEnter(): EnterTransition =
+        scaleIn(
+            animationSpec = tween(400, easing = EmphasizedDecelerate),
+            initialScale = 0.96f
+        ) + fadeIn(
+            animationSpec = tween(300, easing = EmphasizedDecelerate)
+        )
+
+    private fun tabExit(): ExitTransition =
+        scaleOut(
+            animationSpec = tween(400, easing = EmphasizedAccelerate),
+            targetScale = 0.96f
+        ) + fadeOut(
+            animationSpec = tween(300, easing = EmphasizedAccelerate)
         )
 }
