@@ -1,6 +1,7 @@
 package com.navi.phantom.features.apps.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -19,13 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.navi.phantom.components.EmptyState
+import com.navi.phantom.components.ErrorState
+import com.navi.phantom.components.LoadingState
+import com.navi.phantom.features.apps.components.AppList
+import com.navi.phantom.features.apps.components.AppSearchBar
 import com.navi.phantom.features.apps.logic.AppUiEvent
 import com.navi.phantom.features.apps.logic.AppViewModel
-import com.navi.phantom.features.apps.components.AppList
-import com.navi.phantom.features.apps.components.EmptyState
-import com.navi.phantom.features.apps.components.ErrorState
-import com.navi.phantom.features.apps.components.LoadingState
-import com.navi.phantom.features.apps.components.AppSearchBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,7 @@ fun AddAppScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("Installed Apps") },
@@ -71,7 +73,10 @@ fun AddAppScreen(
             )
 
             when {
-                uiState.isLoading -> LoadingState(modifier = Modifier.fillMaxSize())
+                uiState.isLoading -> LoadingState(
+                    message = "Loading installed apps...",
+                    modifier = Modifier.fillMaxSize()
+                )
                 uiState.errorMsg != null -> ErrorState(
                     message = uiState.errorMsg!!,
                     onRetry = { viewModel.onEvent(AppUiEvent.GetAllInstalledApps) },
@@ -93,7 +98,7 @@ fun AddAppScreen(
                         viewModel.onEvent(AppUiEvent.SelectApp(app))
                         onNavigateBack()
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().padding(bottom = 8.dp)
                 )
             }
         }
