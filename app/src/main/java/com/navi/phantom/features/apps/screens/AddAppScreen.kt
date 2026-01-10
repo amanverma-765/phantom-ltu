@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.components.EmptyState
 import com.navi.phantom.components.ErrorState
 import com.navi.phantom.components.LoadingState
+import com.navi.phantom.domain.models.InstalledApp
 import com.navi.phantom.features.apps.components.AppList
 import com.navi.phantom.features.apps.components.AppSearchBar
 import com.navi.phantom.features.apps.logic.AppUiEvent
@@ -33,6 +34,7 @@ import com.navi.phantom.features.apps.logic.AppViewModel
 fun AddAppScreen(
     viewModel: AppViewModel,
     onNavigateBack: () -> Unit,
+    onAppSelected: (InstalledApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -96,7 +98,7 @@ fun AddAppScreen(
                     apps = uiState.filteredApps,
                     onAppClick = { app ->
                         viewModel.onEvent(AppUiEvent.SelectApp(app))
-                        onNavigateBack()
+                        onAppSelected(app)
                     },
                     modifier = Modifier.fillMaxSize()
                 )

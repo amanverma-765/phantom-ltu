@@ -32,7 +32,7 @@ fun AppScreen(
     modifier: Modifier = Modifier,
     onAddAppClick: () -> Unit
 ) {
-    val isScreenEmpty by remember { mutableStateOf(false) }
+    val isScreenEmpty by remember { mutableStateOf(true) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),

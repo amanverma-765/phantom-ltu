@@ -4,6 +4,7 @@ import com.navi.phantom.data.local.datasource.InstalledAppDataSource
 import com.navi.phantom.data.local.repository.InstalledAppRepoImpl
 import com.navi.phantom.domain.repository.InstalledAppRepository
 import com.navi.phantom.features.apps.logic.AppViewModel
+import com.navi.phantom.features.apps.logic.PatchingViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -15,4 +16,5 @@ val appModule = module {
         bind<InstalledAppRepository>()
     }
     viewModelOf(::AppViewModel)
+    viewModelOf(::PatchingViewModel)
 }
