@@ -1,7 +1,9 @@
 package com.navi.phantom.data.local.repository
 
 import com.navi.phantom.data.local.datasource.InstalledAppDataSource
+import com.navi.phantom.data.local.mapper.InstalledAppMapper.toDetailedAppInfo
 import com.navi.phantom.data.local.mapper.InstalledAppMapper.toInstalledApp
+import com.navi.phantom.domain.models.DetailedAppInfo
 import com.navi.phantom.domain.models.InstalledApp
 import com.navi.phantom.domain.repository.InstalledAppRepository
 
@@ -11,4 +13,8 @@ class InstalledAppRepoImpl(
     override suspend fun getAllInstalledApps(): Result<List<InstalledApp>> =
         installedAppDataSource.getAllInstalledApps()
             .map { apps -> apps.map { it.toInstalledApp() } }
+
+    override suspend fun getAppDetails(packageName: String): Result<DetailedAppInfo> =
+        installedAppDataSource.getAppDetails(packageName)
+            .map { it.toDetailedAppInfo() }
 }
