@@ -1,5 +1,4 @@
 [versions]
-agp = "8.13.2"
 kotlin = "2.3.0"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -21,11 +20,12 @@ googleid = "1.1.1"
 coil = "3.3.0"
 room = "2.8.4"
 ksp = "2.3.4"
+commons-io = "2.21.0"
+beust-jcommander = "1.82"
 
 
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -87,3 +87,6 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+# Additionl deps
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+beust-jcommander = { module = "com.beust:jcommander", version.ref = "beust-jcommander" }
