@@ -17,3 +17,9 @@ local.properties
 /.kotlin/
 .sisyphus/
 /libxposed/
+.project
+.cache
+.settings
+libxposed
+/out
+/.idea
