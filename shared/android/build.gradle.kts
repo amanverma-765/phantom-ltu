@@ -13,4 +13,5 @@ android {
 
 dependencies {
     implementation(projects.services.daemonService)
+    implementation(phantom.kermit)
 }

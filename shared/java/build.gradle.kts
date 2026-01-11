@@ -8,7 +8,7 @@ val androidTargetCompatibility: JavaVersion by rootProject.extra
 
 plugins {
     id("java-library")
-    alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(phantom.plugins.kotlin.jvm)
 }
 
 java {

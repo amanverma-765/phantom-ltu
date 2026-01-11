@@ -1,6 +1,5 @@
 package com.navi.phantom.features.apps.logic
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.navi.phantom.domain.repository.InstalledAppRepository
@@ -10,13 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import co.touchlab.kermit.Logger
 
 class PatchingViewModel(
     private val repository: InstalledAppRepository
 ) : ViewModel() {
-    companion object {
-        const val TAG = "PatchingViewModel"
-    }
+    private val log = Logger.withTag("PatchingViewModel")
 
     private val _uiState = MutableStateFlow(PatchingUiState())
     val uiState: StateFlow<PatchingUiState> = _uiState.asStateFlow()
@@ -55,7 +53,7 @@ class PatchingViewModel(
                     }
                 }
                 .onFailure { e ->
-                    Log.e(TAG, "Failed to load app details", e)
+                    log.e(e) { "Failed to load app details" }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -84,7 +82,7 @@ class PatchingViewModel(
                 // TODO: Replace with actual patching logic
                 simulatePatching()
             } catch (e: Exception) {
-                Log.e(TAG, "Patching failed", e)
+                log.e(e) { "Patching failed" }
                 _uiState.update {
                     it.copy(
                         isPatching = false,
@@ -124,7 +122,7 @@ class PatchingViewModel(
 
     private fun installPatchedApp() {
         val patchedPath = _uiState.value.patchedApkPath ?: return
-        Log.d(TAG, "Installing patched APK from: $patchedPath")
+        log.d { "Installing patched APK from: $patchedPath" }
         // TODO: Implement APK installation via PackageInstaller
     }
 

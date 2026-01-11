@@ -110,5 +110,7 @@ dependencies {
     implementation(phantom.androidx.room.runtime)
     implementation(phantom.androidx.room.ktx)
     ksp(phantom.androidx.room.compiler)
+    // Logging
+    implementation(phantom.kermit)
     // Shared modules
 }

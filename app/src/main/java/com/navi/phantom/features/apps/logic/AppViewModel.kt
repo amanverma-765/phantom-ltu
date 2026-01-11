@@ -1,6 +1,5 @@
 package com.navi.phantom.features.apps.logic
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.navi.phantom.domain.errors.AppError
@@ -11,11 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import co.touchlab.kermit.Logger
 
 class AppViewModel(private val installedAppRepository: InstalledAppRepository) : ViewModel() {
-    companion object {
-        const val TAG = "AppViewModel"
-    }
+    private val log = Logger.withTag("AppViewModel")
 
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
@@ -46,7 +44,7 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
     }
 
     private fun selectApp(app: InstalledApp) {
-        Log.d(TAG, "App selected: ${app.appName} (${app.packageName})")
+        log.d { "App selected: ${app.appName} (${app.packageName})" }
     }
 
     private fun getAllInstalledApps() {
@@ -63,7 +61,7 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
                     }
                 }
                 .onFailure { throwable ->
-                    Log.e(TAG, "getAllInstalledApps failed", throwable)
+                    log.e(throwable) { "getAllInstalledApps failed" }
                     val errorMessage = when (throwable) {
                         is SecurityException ->
                             AppError.PermissionDenied.message

@@ -3,7 +3,7 @@ package com.navi.phantom.shared
 import android.os.SharedMemory
 import android.system.ErrnoException
 import android.system.OsConstants
-import android.util.Log
+import co.touchlab.kermit.Logger
 import org.lsposed.lspd.models.PreLoadedApk
 import java.io.BufferedReader
 import java.io.IOException
@@ -14,7 +14,7 @@ import java.util.zip.ZipFile
 
 object ModuleLoader {
 
-    private const val TAG = "LSPatch"
+    private val log = Logger.withTag("ModuleLoader")
 
     private fun readDexes(apkFile: ZipFile, preLoadedDexes: MutableList<SharedMemory>) {
         var secondary = 2
@@ -30,9 +30,9 @@ object ModuleLoader {
                     preLoadedDexes.add(memory)
                 }
             } catch (e: IOException) {
-                Log.w(TAG, "Can not load $dexFile in $apkFile", e)
+                log.w(e) { "Can not load $dexFile in $apkFile" }
             } catch (e: ErrnoException) {
-                Log.w(TAG, "Can not load $dexFile in $apkFile", e)
+                log.w(e) { "Can not load $dexFile in $apkFile" }
             }
             dexFile = apkFile.getEntry("classes${secondary++}.dex")
         }
@@ -50,7 +50,7 @@ object ModuleLoader {
                 }
             }
         } catch (e: IOException) {
-            Log.e(TAG, "Can not open $initEntry", e)
+            log.e(e) { "Can not open $initEntry" }
         }
     }
 
@@ -68,7 +68,7 @@ object ModuleLoader {
                 readName(apkFile, "assets/native_init", moduleLibraryNames)
             }
         } catch (e: IOException) {
-            Log.e(TAG, "Can not open $path", e)
+            log.e(e) { "Can not open $path" }
             return null
         }
 
