@@ -58,3 +58,4 @@ project(":services:manager-service").projectDir = file("core/services/manager-se
 include(":shared:java")
 include(":shared:android")
 include(":apkzlib")
+include(":meta-loader")
