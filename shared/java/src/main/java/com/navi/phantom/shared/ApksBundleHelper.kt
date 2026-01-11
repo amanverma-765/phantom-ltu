@@ -17,7 +17,7 @@ object ApksBundleHelper {
 
     fun isApksBundle(path: String?): Boolean {
         return path != null && path.lowercase(Locale.ROOT).endsWith(
-            Constants.PATCH_BUNDLE_SUFFIX.replace("-lspatched", "")
+            Constants.PATCH_BUNDLE_SUFFIX.replace("-phantom", "")
         )
     }
 

@@ -2,16 +2,16 @@ package com.navi.phantom.shared
 
 object Constants {
     // Asset Paths
-    const val CONFIG_ASSET_PATH = "assets/lspatch/config.json"
-    const val LOADER_DEX_ASSET_PATH = "assets/lspatch/loader.dex"
-    const val META_LOADER_DEX_ASSET_PATH = "assets/lspatch/metaloader.dex"
-    const val ORIGINAL_APK_ASSET_PATH = "assets/lspatch/origin.apk"
-    const val EMBEDDED_MODULES_ASSET_PATH = "assets/lspatch/modules/"
+    const val CONFIG_ASSET_PATH = "assets/phantom/config.json"
+    const val LOADER_DEX_ASSET_PATH = "assets/phantom/loader.dex"
+    const val META_LOADER_DEX_ASSET_PATH = "assets/phantom/metaloader.dex"
+    const val ORIGINAL_APK_ASSET_PATH = "assets/phantom/origin.apk"
+    const val EMBEDDED_MODULES_ASSET_PATH = "assets/phantom/modules/"
 
     // File Naming
-    const val PATCH_FILE_SUFFIX = "-lspatched.apk"
-    const val PATCH_BUNDLE_SUFFIX = "-lspatched.apks"
-    const val PROXY_APP_COMPONENT_FACTORY = "org.lsposed.lspatch.metaloader.LSPAppComponentFactoryStub"
+    const val PATCH_FILE_SUFFIX = "-phantom.apk"
+    const val PATCH_BUNDLE_SUFFIX = "-phantom.apks"
+    const val PROXY_APP_COMPONENT_FACTORY = "com.navi.phantom.metaloader.LSPAppComponentFactoryStub"
     const val MANAGER_PACKAGE_NAME = "com.navi.phantom"
     const val MIN_ROLLING_VERSION_CODE = 348
 
