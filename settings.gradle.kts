@@ -57,3 +57,4 @@ project(":services:daemon-service").projectDir = file("core/services/daemon-serv
 project(":services:manager-service").projectDir = file("core/services/manager-service")
 include(":shared:java")
 include(":shared:android")
+include(":apkzlib")
