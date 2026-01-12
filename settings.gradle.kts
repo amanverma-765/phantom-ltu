@@ -34,7 +34,8 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PhantomGPS"
+rootProject.name = "PhantomLTU"
+
 include(":app")
 include(":apache")
 include(":axml")
@@ -45,6 +46,12 @@ include(":services:daemon-service")
 include(":services:manager-service")
 include(":shared:java")
 include(":shared:android")
+include(":shared:java")
+include(":shared:android")
+include(":apkzlib")
+include(":meta-loader")
+include(":patch-loader")
+
 
 project(":apache").projectDir = file("core/apache")
 project(":axml").projectDir = file("core/axml")
@@ -55,7 +62,3 @@ project(":hiddenapi:stubs").projectDir = file("core/hiddenapi/stubs")
 project(":services").projectDir = file("core/services")
 project(":services:daemon-service").projectDir = file("core/services/daemon-service")
 project(":services:manager-service").projectDir = file("core/services/manager-service")
-include(":shared:java")
-include(":shared:android")
-include(":apkzlib")
-include(":meta-loader")
