@@ -9,6 +9,11 @@ val androidTargetCompatibility: JavaVersion by rootProject.extra
 plugins {
     id("java-library")
     alias(phantom.plugins.kotlin.jvm)
+    alias(phantom.plugins.serialization)
+}
+
+dependencies {
+    implementation(phantom.kotlinx.serialization.json)
 }
 
 java {
