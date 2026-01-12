@@ -5,14 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.navi.phantom.navigation.RootNavDisplay
-import com.navi.phantom.theme.PhantomGPSTheme
+import com.navi.phantom.theme.PhantomTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PhantomGPSTheme {
+            PhantomTheme {
                 RootNavDisplay()
             }
         }
