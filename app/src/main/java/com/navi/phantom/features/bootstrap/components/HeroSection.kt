@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.components
+package com.navi.phantom.features.bootstrap.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -21,19 +21,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.domain.models.DetailedAppInfo
+import com.navi.phantom.features.apps.components.AppIcon
 
 @Composable
 fun HeroSection(
     app: DetailedAppInfo,
-    isPatching: Boolean,
-    isPatchComplete: Boolean,
-    hasPatchFailed: Boolean,
+    isBootstrapping: Boolean,
+    isBootstrapped: Boolean,
+    hasFailed: Boolean,
     accentColor: Color,
-    statusColors: PatchingStatusColors,
+    statusColors: BootstrapStatusColors,
     modifier: Modifier = Modifier
 ) {
     val successScale by animateFloatAsState(
-        targetValue = if (isPatchComplete) 1.03f else 1f,
+        targetValue = if (isBootstrapped) 1.03f else 1f,
         animationSpec = tween(300),
         label = "successScale"
     )
@@ -44,8 +45,8 @@ fun HeroSection(
             .size(200.dp)
             .scale(successScale)
     ) {
-        // Animated rings during patching
-        if (isPatching) {
+        // Animated rings during bootstrapping
+        if (isBootstrapping) {
             AnimatedRings(
                 accentColor = accentColor,
                 modifier = Modifier.size(200.dp)
@@ -53,7 +54,7 @@ fun HeroSection(
         }
 
         // Complete state ring
-        if (isPatchComplete) {
+        if (isBootstrapped) {
             Canvas(modifier = Modifier.size(180.dp)) {
                 drawCircle(
                     color = accentColor.copy(alpha = 0.2f),
@@ -64,7 +65,7 @@ fun HeroSection(
         }
 
         // Ready state - subtle ring
-        if (!isPatching && !isPatchComplete && !hasPatchFailed) {
+        if (!isBootstrapping && !isBootstrapped && !hasFailed) {
             Canvas(modifier = Modifier.size(160.dp)) {
                 drawCircle(
                     color = accentColor.copy(alpha = 0.08f),
@@ -83,7 +84,7 @@ fun HeroSection(
         )
 
         // Success badge
-        if (isPatchComplete) {
+        if (isBootstrapped) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -105,7 +106,7 @@ fun HeroSection(
         }
 
         // Failure badge
-        if (hasPatchFailed) {
+        if (hasFailed) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)

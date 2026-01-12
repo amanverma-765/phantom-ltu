@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.components
+package com.navi.phantom.features.bootstrap.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -34,11 +34,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun StatusBar(
     message: String,
-    isPatching: Boolean,
-    isPatchComplete: Boolean,
-    hasPatchFailed: Boolean,
+    isBootstrapping: Boolean,
+    isBootstrapped: Boolean,
+    hasFailed: Boolean,
     accentColor: Color,
-    statusColors: PatchingStatusColors,
+    statusColors: BootstrapStatusColors,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
@@ -54,8 +54,8 @@ fun StatusBar(
 
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            isPatchComplete -> statusColors.successContainer
-            hasPatchFailed -> statusColors.errorContainer
+            isBootstrapped -> statusColors.successContainer
+            hasFailed -> statusColors.errorContainer
             else -> MaterialTheme.colorScheme.surfaceContainerHigh
         },
         animationSpec = tween(400),
@@ -85,10 +85,10 @@ fun StatusBar(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
-                fontWeight = if (isPatchComplete || hasPatchFailed) FontWeight.Medium else FontWeight.Normal,
+                fontWeight = if (isBootstrapped || hasFailed) FontWeight.Medium else FontWeight.Normal,
                 color = when {
-                    isPatchComplete -> statusColors.success
-                    hasPatchFailed -> statusColors.error
+                    isBootstrapped -> statusColors.success
+                    hasFailed -> statusColors.error
                     else -> MaterialTheme.colorScheme.onSurface
                 },
                 maxLines = 2,
@@ -96,8 +96,8 @@ fun StatusBar(
                 modifier = Modifier.weight(1f)
             )
 
-            // Blinking cursor during patching
-            if (isPatching) {
+            // Blinking cursor during bootstrapping
+            if (isBootstrapping) {
                 Text(
                     text = "_",
                     fontFamily = FontFamily.Monospace,

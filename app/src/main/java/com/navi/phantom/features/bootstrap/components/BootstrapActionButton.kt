@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.components
+package com.navi.phantom.features.bootstrap.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,11 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PatchingActionButton(
+fun BootstrapActionButton(
     isReady: Boolean,
-    isPatching: Boolean,
-    isPatchComplete: Boolean,
-    onStartPatching: () -> Unit,
+    isBootstrapping: Boolean,
+    isBootstrapped: Boolean,
+    onStartBootstrap: () -> Unit,
     onInstallClick: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -23,18 +23,18 @@ fun PatchingActionButton(
     when {
         isReady -> {
             Button(
-                onClick = onStartPatching,
+                onClick = onStartBootstrap,
                 modifier = modifier
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
                 Text(
-                    text = "Start Patching",
+                    text = "Bootstrap",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
-        isPatchComplete -> {
+        isBootstrapped -> {
             Button(
                 onClick = onInstallClick,
                 modifier = modifier
@@ -42,12 +42,12 @@ fun PatchingActionButton(
                     .height(56.dp)
             ) {
                 Text(
-                    text = "Install Patched App",
+                    text = "Install Bootstrapped App",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
-        isPatching -> {
+        isBootstrapping -> {
             FilledTonalButton(
                 onClick = onCancel,
                 modifier = modifier

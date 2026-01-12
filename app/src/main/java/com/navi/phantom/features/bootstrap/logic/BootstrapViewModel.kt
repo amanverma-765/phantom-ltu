@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.logic
+package com.navi.phantom.features.bootstrap.logic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,20 +11,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import co.touchlab.kermit.Logger
 
-class PatchingViewModel(
+class BootstrapViewModel(
     private val repository: InstalledAppRepository
 ) : ViewModel() {
-    private val log = Logger.withTag("PatchingViewModel")
+    private val log = Logger.withTag("BootstrapViewModel")
 
-    private val _uiState = MutableStateFlow(PatchingUiState())
-    val uiState: StateFlow<PatchingUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(BootstrapUiState())
+    val uiState: StateFlow<BootstrapUiState> = _uiState.asStateFlow()
 
-    fun onEvent(event: PatchingUiEvent) {
+    fun onEvent(event: BootstrapUiEvent) {
         when (event) {
-            is PatchingUiEvent.LoadApp -> loadApp(event.packageName)
-            is PatchingUiEvent.StartPatching -> startPatching()
-            is PatchingUiEvent.InstallPatchedApp -> installPatchedApp()
-            is PatchingUiEvent.CancelPatching -> cancelPatching()
+            is BootstrapUiEvent.LoadApp -> loadApp(event.packageName)
+            is BootstrapUiEvent.StartBootstrap -> startBootstrap()
+            is BootstrapUiEvent.InstallBootstrappedApp -> installBootstrappedApp()
+            is BootstrapUiEvent.CancelBootstrap -> cancelBootstrap()
         }
     }
 
@@ -43,11 +43,11 @@ class PatchingViewModel(
                         it.copy(
                             app = appInfo,
                             isLoading = false,
-                            isPatching = false,
-                            isPatchComplete = false,
-                            hasPatchingAttempted = false,
-                            statusMessage = "Ready to patch",
-                            patchedApkPath = null,
+                            isBootstrapping = false,
+                            isBootstrapped = false,
+                            hasBootstrapAttempted = false,
+                            statusMessage = "Ready to bootstrap",
+                            bootstrappedApkPath = null,
                             errorMessage = null
                         )
                     }
@@ -64,36 +64,36 @@ class PatchingViewModel(
         }
     }
 
-    private fun startPatching() {
+    private fun startBootstrap() {
         val app = _uiState.value.app ?: return
 
         _uiState.update {
             it.copy(
-                isPatching = true,
-                isPatchComplete = false,
-                hasPatchingAttempted = true,
-                statusMessage = "Initializing patcher...",
+                isBootstrapping = true,
+                isBootstrapped = false,
+                hasBootstrapAttempted = true,
+                statusMessage = "Initializing...",
                 errorMessage = null
             )
         }
 
         viewModelScope.launch {
             try {
-                // TODO: Replace with actual patching logic
-                simulatePatching()
+                // TODO: Replace with actual bootstrap logic
+                simulateBootstrap()
             } catch (e: Exception) {
-                log.e(e) { "Patching failed" }
+                log.e(e) { "Bootstrap failed" }
                 _uiState.update {
                     it.copy(
-                        isPatching = false,
-                        errorMessage = "Patching failed: ${e.message}"
+                        isBootstrapping = false,
+                        errorMessage = "Bootstrap failed: ${e.message}"
                     )
                 }
             }
         }
     }
 
-    private suspend fun simulatePatching() {
+    private suspend fun simulateBootstrap() {
         val steps = listOf(
             "Reading APK structure...",
             "Extracting classes.dex...",
@@ -101,7 +101,7 @@ class PatchingViewModel(
             "Modifying manifest...",
             "Rebuilding APK...",
             "Signing APK...",
-            "Patch complete!"
+            "Bootstrapped!"
         )
 
         steps.forEachIndexed { index, message ->
@@ -111,27 +111,27 @@ class PatchingViewModel(
             if (index == steps.lastIndex) {
                 _uiState.update {
                     it.copy(
-                        isPatching = false,
-                        isPatchComplete = true,
-                        patchedApkPath = "/path/to/patched.apk" // TODO: actual path
+                        isBootstrapping = false,
+                        isBootstrapped = true,
+                        bootstrappedApkPath = "/path/to/bootstrapped.apk" // TODO: actual path
                     )
                 }
             }
         }
     }
 
-    private fun installPatchedApp() {
-        val patchedPath = _uiState.value.patchedApkPath ?: return
-        log.d { "Installing patched APK from: $patchedPath" }
+    private fun installBootstrappedApp() {
+        val bootstrappedPath = _uiState.value.bootstrappedApkPath ?: return
+        log.d { "Installing bootstrapped APK from: $bootstrappedPath" }
         // TODO: Implement APK installation via PackageInstaller
     }
 
-    private fun cancelPatching() {
-        // TODO: Cancel ongoing patching operation
+    private fun cancelBootstrap() {
+        // TODO: Cancel ongoing bootstrap operation
         _uiState.update {
             it.copy(
-                isPatching = false,
-                statusMessage = "Patching cancelled"
+                isBootstrapping = false,
+                statusMessage = "Cancelled"
             )
         }
     }

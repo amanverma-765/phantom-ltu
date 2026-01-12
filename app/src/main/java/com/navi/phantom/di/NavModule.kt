@@ -4,10 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.features.apps.screens.AddAppScreen
 import com.navi.phantom.features.apps.screens.AppScreen
-import com.navi.phantom.features.apps.screens.PatchingScreen
 import com.navi.phantom.features.apps.logic.AppViewModel
-import com.navi.phantom.features.apps.logic.PatchingUiEvent
-import com.navi.phantom.features.apps.logic.PatchingViewModel
+import com.navi.phantom.features.bootstrap.screens.BootstrapScreen
+import com.navi.phantom.features.bootstrap.logic.BootstrapUiEvent
+import com.navi.phantom.features.bootstrap.logic.BootstrapViewModel
 import com.navi.phantom.features.places.LocationScreen
 import com.navi.phantom.features.setting.SettingScreen
 import com.navi.phantom.navigation.Navigator
@@ -22,7 +22,7 @@ val navModule = module {
     single { Navigator(startDestination = Destination.Apps) }
 
     navigation<Destination.Apps> {
-        AppScreen(onAddAppClick = { get<Navigator>().navigateTo(Destination.AppPicker) })
+        AppScreen(onAddAppClick = { get<Navigator>().navigateTo(Destination.AddApp) })
     }
     navigation<Destination.Places> {
         LocationScreen(onAddPlaceClick = {})
@@ -30,42 +30,42 @@ val navModule = module {
     navigation<Destination.Setting> {
         SettingScreen()
     }
-    navigation<Destination.AppPicker> {
+    navigation<Destination.AddApp> {
         val appViewModel = get<AppViewModel>()
-        val patchingViewModel = koinActivityViewModel<PatchingViewModel>()
+        val bootstrapViewModel = koinActivityViewModel<BootstrapViewModel>()
         val navigator = get<Navigator>()
 
         AddAppScreen(
             viewModel = appViewModel,
             onNavigateBack = { navigator.goBack() },
             onAppSelected = { app ->
-                patchingViewModel.onEvent(PatchingUiEvent.LoadApp(app.packageName))
-                navigator.navigateTo(Destination.AppPatching)
+                bootstrapViewModel.onEvent(BootstrapUiEvent.LoadApp(app.packageName))
+                navigator.navigateTo(Destination.Bootstrap)
             }
         )
     }
-    navigation<Destination.AppPatching> {
-        val viewModel = koinActivityViewModel<PatchingViewModel>()
+    navigation<Destination.Bootstrap> {
+        val viewModel = koinActivityViewModel<BootstrapViewModel>()
         val navigator = get<Navigator>()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        PatchingScreen(
+        BootstrapScreen(
             app = uiState.app,
             isLoading = uiState.isLoading,
             statusMessage = uiState.errorMessage ?: uiState.statusMessage,
-            isPatching = uiState.isPatching,
-            isPatchComplete = uiState.isPatchComplete,
-            hasPatchFailed = uiState.errorMessage != null,
-            hasPatchingAttempted = uiState.hasPatchingAttempted,
+            isBootstrapping = uiState.isBootstrapping,
+            isBootstrapped = uiState.isBootstrapped,
+            hasFailed = uiState.errorMessage != null,
+            hasBootstrapAttempted = uiState.hasBootstrapAttempted,
             onNavigateBack = {
-                if (uiState.hasPatchingAttempted) {
+                if (uiState.hasBootstrapAttempted) {
                     navigator.popTo(Destination.Apps)
                 } else {
                     navigator.goBack()
                 }
             },
-            onStartPatching = { viewModel.onEvent(PatchingUiEvent.StartPatching) },
-            onInstallClick = { viewModel.onEvent(PatchingUiEvent.InstallPatchedApp) }
+            onStartBootstrap = { viewModel.onEvent(BootstrapUiEvent.StartBootstrap) },
+            onInstallClick = { viewModel.onEvent(BootstrapUiEvent.InstallBootstrappedApp) }
         )
     }
 }

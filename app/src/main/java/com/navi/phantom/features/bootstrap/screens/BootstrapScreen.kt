@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.screens
+package com.navi.phantom.features.bootstrap.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
@@ -29,36 +29,36 @@ import androidx.compose.ui.unit.dp
 import com.navi.phantom.components.LoadingState
 import com.navi.phantom.domain.models.DetailedAppInfo
 import com.navi.phantom.features.apps.components.AppInfoCard
-import com.navi.phantom.features.apps.components.HeroSection
-import com.navi.phantom.features.apps.components.PatchingActionButton
-import com.navi.phantom.features.apps.components.StatusBar
-import com.navi.phantom.features.apps.components.rememberPatchingStatusColors
+import com.navi.phantom.features.bootstrap.components.BootstrapActionButton
+import com.navi.phantom.features.bootstrap.components.HeroSection
+import com.navi.phantom.features.bootstrap.components.StatusBar
+import com.navi.phantom.features.bootstrap.components.rememberBootstrapStatusColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PatchingScreen(
+fun BootstrapScreen(
     app: DetailedAppInfo?,
     isLoading: Boolean,
     statusMessage: String,
-    isPatching: Boolean,
-    isPatchComplete: Boolean,
-    hasPatchFailed: Boolean,
-    hasPatchingAttempted: Boolean,
+    isBootstrapping: Boolean,
+    isBootstrapped: Boolean,
+    hasFailed: Boolean,
+    hasBootstrapAttempted: Boolean,
     onNavigateBack: () -> Unit,
-    onStartPatching: () -> Unit,
+    onStartBootstrap: () -> Unit,
     onInstallClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isReady = !isPatching && !isPatchComplete && !hasPatchFailed && !hasPatchingAttempted
-    val statusColors = rememberPatchingStatusColors()
+    val isReady = !isBootstrapping && !isBootstrapped && !hasFailed && !hasBootstrapAttempted
+    val statusColors = rememberBootstrapStatusColors()
 
     BackHandler { onNavigateBack() }
 
     val accentColor by animateColorAsState(
         targetValue = when {
-            isPatchComplete -> statusColors.success
-            hasPatchFailed -> statusColors.error
-            isPatching -> MaterialTheme.colorScheme.tertiary
+            isBootstrapped -> statusColors.success
+            hasFailed -> statusColors.error
+            isBootstrapping -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.primary
         },
         animationSpec = tween(400),
@@ -69,7 +69,7 @@ fun PatchingScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = { Text("Patching") },
+                title = { Text("Bootstrap") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -115,9 +115,9 @@ fun PatchingScreen(
 
                     HeroSection(
                         app = app,
-                        isPatching = isPatching,
-                        isPatchComplete = isPatchComplete,
-                        hasPatchFailed = hasPatchFailed,
+                        isBootstrapping = isBootstrapping,
+                        isBootstrapped = isBootstrapped,
+                        hasFailed = hasFailed,
                         accentColor = accentColor,
                         statusColors = statusColors
                     )
@@ -137,9 +137,9 @@ fun PatchingScreen(
 
                     StatusBar(
                         message = statusMessage,
-                        isPatching = isPatching,
-                        isPatchComplete = isPatchComplete,
-                        hasPatchFailed = hasPatchFailed,
+                        isBootstrapping = isBootstrapping,
+                        isBootstrapped = isBootstrapped,
+                        hasFailed = hasFailed,
                         accentColor = accentColor,
                         statusColors = statusColors
                     )
@@ -150,11 +150,11 @@ fun PatchingScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    PatchingActionButton(
+                    BootstrapActionButton(
                         isReady = isReady,
-                        isPatching = isPatching,
-                        isPatchComplete = isPatchComplete,
-                        onStartPatching = onStartPatching,
+                        isBootstrapping = isBootstrapping,
+                        isBootstrapped = isBootstrapped,
+                        onStartBootstrap = onStartBootstrap,
                         onInstallClick = onInstallClick,
                         onCancel = onNavigateBack
                     )

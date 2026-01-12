@@ -67,7 +67,7 @@ fun AppScreen(
                     EmptyStateScreen(
                         icon = Icons.Rounded.AppsOutage,
                         title = "No Apps Yet",
-                        description = "Add apps to start spoofing their location.\nEach app can have its own fake location.",
+                        description = "Get started by adding an app.\nEach app gets its own virtual location.",
                         buttonIcon = Icons.Outlined.AddCircleOutline,
                         buttonText = "Add Your First App",
                         onButtonClick = onAddAppClick,

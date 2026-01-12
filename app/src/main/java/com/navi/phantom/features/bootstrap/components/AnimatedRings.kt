@@ -1,4 +1,4 @@
-package com.navi.phantom.features.apps.components
+package com.navi.phantom.features.bootstrap.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
