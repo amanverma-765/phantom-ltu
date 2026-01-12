@@ -64,6 +64,8 @@ echo -e "${GREEN}✓ Submodules initialized${NC}"
 # libxposed setup
 # -------------------------------
 LIBXPOSED_DIR="libxposed"
+# Pin to commit with annotations (before they were removed in 7b67273)
+LIBXPOSED_API_COMMIT="54582730315ba4a3d7cfaf9baf9d23c419e07006"
 
 mkdir -p "$LIBXPOSED_DIR"
 
@@ -73,6 +75,15 @@ if [ ! -d "$LIBXPOSED_DIR/api/.git" ]; then
 else
   echo -e "${GREEN}✓ libxposed/api already exists${NC}"
 fi
+
+# Checkout pinned commit for api (required for annotations support)
+echo -e "${YELLOW}Checking out libxposed/api at pinned commit...${NC}"
+(
+  cd "$LIBXPOSED_DIR/api"
+  git fetch origin
+  git checkout "$LIBXPOSED_API_COMMIT"
+)
+echo -e "${GREEN}✓ libxposed/api checked out at $LIBXPOSED_API_COMMIT${NC}"
 
 if [ ! -d "$LIBXPOSED_DIR/service/.git" ]; then
   echo -e "${YELLOW}Cloning libxposed/service...${NC}"

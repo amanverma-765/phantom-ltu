@@ -69,6 +69,8 @@ REM ------------------------------------------
 REM libxposed setup
 REM ------------------------------------------
 set "LIBXPOSED_DIR=libxposed"
+REM Pin to commit with annotations (before they were removed in 7b67273)
+set "LIBXPOSED_API_COMMIT=54582730315ba4a3d7cfaf9baf9d23c419e07006"
 
 if not exist "%LIBXPOSED_DIR%" (
     mkdir "%LIBXPOSED_DIR%"
@@ -81,6 +83,18 @@ if not exist "%LIBXPOSED_DIR%\api\.git" (
 ) else (
     echo [OK] libxposed/api already exists
 )
+
+REM Checkout pinned commit for api (required for annotations support)
+echo Checking out libxposed/api at pinned commit...
+pushd "%LIBXPOSED_DIR%\api"
+git fetch origin
+git checkout %LIBXPOSED_API_COMMIT%
+if errorlevel 1 (
+    popd
+    goto :error
+)
+popd
+echo [OK] libxposed/api checked out at %LIBXPOSED_API_COMMIT%
 
 if not exist "%LIBXPOSED_DIR%\service\.git" (
     echo Cloning libxposed/service...
