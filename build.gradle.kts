@@ -202,14 +202,16 @@ fun Project.configureBaseExtension() {
     }
 
     extensions.findByType(ApplicationAndroidComponentsExtension::class)?.let { androidComponents ->
+        val sdkDir = androidComponents.sdkComponents.sdkDirectory
         val optimizeReleaseRes = tasks.register("optimizeReleaseRes") {
+            val buildDir = layout.buildDirectory
             doLast {
                 val aapt2 = File(
-                    androidComponents.sdkComponents.sdkDirectory.get().asFile,
+                    sdkDir.get().asFile,
                     "build-tools/${androidBuildToolsVersion}/aapt2"
                 )
                 val zip = java.nio.file.Paths.get(
-                    project.layout.buildDirectory.get().asFile.path,
+                    buildDir.get().asFile.path,
                     "intermediates",
                     "optimized_processed_res",
                     "release",
@@ -217,17 +219,16 @@ fun Project.configureBaseExtension() {
                     "resources-release-optimize.ap_"
                 )
                 val optimized = File("${zip}.opt")
-                val result = providers.exec {
-                    commandLine(
-                        aapt2, "optimize",
-                        "--collapse-resource-names",
-                        "--enable-sparse-encoding",
-                        "-o", optimized,
-                        zip
-                    )
-                    isIgnoreExitValue = false
-                }
-                if (result.result.get().exitValue == 0) {
+                val cmd = listOf(
+                    aapt2.absolutePath, "optimize",
+                    "--collapse-resource-names",
+                    "--enable-sparse-encoding",
+                    "-o", optimized.absolutePath,
+                    zip.toString()
+                )
+                val process = ProcessBuilder(cmd).start()
+                val exitCode = process.waitFor()
+                if (exitCode == 0) {
                     delete(zip)
                     optimized.renameTo(zip.toFile())
                 }
