@@ -6,7 +6,6 @@ object Constants {
     const val LOADER_DEX_ASSET_PATH = "assets/phantom/loader.dex"
     const val META_LOADER_DEX_ASSET_PATH = "assets/phantom/metaloader.dex"
     const val ORIGINAL_APK_ASSET_PATH = "assets/phantom/origin.apk"
-    const val EMBEDDED_MODULES_ASSET_PATH = "assets/phantom/modules/"
 
     // File Naming
     const val PATCH_FILE_SUFFIX = "-phantom.apk"

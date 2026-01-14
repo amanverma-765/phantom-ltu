@@ -12,7 +12,6 @@ import android.os.RemoteException
 import android.system.Os
 import co.touchlab.kermit.Logger
 import com.navi.phantom.loader.util.FileUtils
-import com.navi.phantom.service.LocalApplicationService
 import com.navi.phantom.service.RemoteApplicationService
 import com.navi.phantom.shared.Constants.CONFIG_ASSET_PATH
 import com.navi.phantom.shared.Constants.ORIGINAL_APK_ASSET_PATH
@@ -66,11 +65,7 @@ object LSPApplication {
         }
 
         log.d { "Initialize service client" }
-        val service: ILSPApplicationService = if (config.optBoolean("useManager")) {
-            RemoteApplicationService(context)
-        } else {
-            LocalApplicationService(context)
-        }
+        val service: ILSPApplicationService = RemoteApplicationService(context)
 
         disableProfile(context)
         Startup.initXposed(false, ActivityThread.currentProcessName(), context.applicationInfo.dataDir, service)
@@ -102,7 +97,6 @@ object LSPApplication {
                 config = JSONObject(streamReader.lines().collect(Collectors.joining()))
             }
 
-            log.i { "Use manager: ${config.optBoolean("useManager")}" }
             log.i { "Signature bypass level: ${config.optInt("sigBypassLevel")}" }
 
             val originPath = Paths.get(appInfo.dataDir, "cache/phantom/origin/")

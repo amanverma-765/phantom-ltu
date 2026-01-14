@@ -14,8 +14,6 @@ import com.navi.phantom.patcher.util.ManifestParser
 import com.navi.phantom.shared.ApksBundleHelper
 import com.navi.phantom.shared.Constants
 import com.navi.phantom.shared.Constants.CONFIG_ASSET_PATH
-import com.navi.phantom.shared.Constants.EMBEDDED_MODULES_ASSET_PATH
-import com.navi.phantom.shared.Constants.LOADER_DEX_ASSET_PATH
 import com.navi.phantom.shared.Constants.ORIGINAL_APK_ASSET_PATH
 import com.navi.phantom.shared.Constants.PROXY_APP_COMPONENT_FACTORY
 import com.navi.phantom.shared.LSPConfig
@@ -73,17 +71,11 @@ class PhantomPatcher(args: Array<String>) {
     @Parameter(names = ["-k", "--keystore"], arity = 4, description = "Set custom signature keystore. Followed by 4 arguments: keystore path, keystore password, keystore alias, keystore alias password")
     private var keystoreArgs: MutableList<String?> = mutableListOf(null, "123456", "key0", "123456")
 
-    @Parameter(names = ["--manager"], description = "Use manager (Cannot work with embedding modules)")
-    private var useManager = false
-
     @Parameter(names = ["-r", "--allowdown"], description = "Allow downgrade installation by overriding versionCode to 1 (In most cases, the app can still get the correct versionCode)")
     private var overrideVersionCode = false
 
     @Parameter(names = ["-v", "--verbose"], description = "Verbose output")
     private var verbose = false
-
-    @Parameter(names = ["-m", "--embed"], description = "Embed provided modules to apk")
-    private var modules: MutableList<String> = mutableListOf()
 
     private val jCommander: JCommander
 
@@ -97,10 +89,6 @@ class PhantomPatcher(args: Array<String>) {
         }
         if (apkPaths.isEmpty()) {
             log.e { "No apk or .apks bundle specified" }
-            help = true
-        }
-        if (modules.isNotEmpty() && useManager) {
-            log.e { "Should not use --embed and --manager at the same time" }
             help = true
         }
     }
@@ -301,7 +289,6 @@ class PhantomPatcher(args: Array<String>) {
             log.i { "Patching apk..." }
 
             val config = PatchConfig(
-                useManager,
                 debuggableFlag,
                 overrideVersionCode,
                 sigbypassLevel,
@@ -347,35 +334,6 @@ class PhantomPatcher(args: Array<String>) {
                 throw PatchError("Error when adding dex", e)
             }
 
-            if (!useManager) {
-                log.i { "Adding loader dex..." }
-                try {
-                    val loaderDexStream = javaClass.classLoader?.getResourceAsStream(LOADER_DEX_ASSET_PATH)
-                        ?: throw PatchError("Loader dex resource not found")
-                    loaderDexStream.use { inputStream ->
-                        dstZFile.add(LOADER_DEX_ASSET_PATH, inputStream)
-                    }
-                } catch (e: Throwable) {
-                    throw PatchError("Error when adding assets", e)
-                }
-
-                log.i { "Adding native lib..." }
-                for (arch in ARCHES) {
-                    val entryName = "assets/phantom/so/$arch/libphantom.so"
-                    try {
-                        javaClass.classLoader?.getResourceAsStream(entryName)?.use { inputStream ->
-                            dstZFile.add(entryName, inputStream, false)
-                        }
-                    } catch (e: Throwable) {
-                        throw PatchError("Error when adding native lib", e)
-                    }
-                    log.d { "added $entryName" }
-                }
-
-                log.i { "Embedding modules..." }
-                embedModules(dstZFile)
-            }
-
             log.d { "Creating nested apk link..." }
 
             for (entry in srcZFile.entries()) {
@@ -394,30 +352,6 @@ class PhantomPatcher(args: Array<String>) {
         log.i { "Done. Output APK: ${outputFile.absolutePath}" }
     }
 
-    private fun embedModules(zFile: ZFile) {
-        for (module in modules) {
-            val file = File(module)
-            try {
-                ZFile.openReadOnly(File(module)).use { apk ->
-                    FileInputStream(file).use { fileIs ->
-                        apk.get(ANDROID_MANIFEST_XML)?.open()?.use { xmlIs ->
-                            val manifest = ManifestParser.parseManifestFile(xmlIs).getOrNull()
-                            val packageName = manifest?.packageName
-                            if (packageName != null) {
-                                log.i { "  - $packageName" }
-                                zFile.add("$EMBEDDED_MODULES_ASSET_PATH$packageName.apk", fileIs)
-                            } else {
-                                log.e { "$module: could not extract package name" }
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                log.e { "$module does not exist or is not a valid apk file." }
-            }
-        }
-    }
-
     @Throws(IOException::class)
     private fun modifyManifestFile(inputStream: InputStream, metadata: String, minSdkVersion: Int): ByteArray {
         val property = ModificationProperty()
@@ -431,9 +365,7 @@ class PhantomPatcher(args: Array<String>) {
         property.addApplicationAttribute(AttributeItem(NodeValue.Application.DEBUGGABLE, debuggableFlag))
         property.addApplicationAttribute(AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY))
         property.addMetaData(ModificationProperty.MetaData("phantom", metadata))
-        if (useManager) {
-            property.addUsesPermission("android.permission.QUERY_ALL_PACKAGES")
-        }
+        property.addUsesPermission("android.permission.QUERY_ALL_PACKAGES")
 
         return inputStream.use { input ->
             ByteArrayOutputStream().use { os ->
@@ -445,13 +377,6 @@ class PhantomPatcher(args: Array<String>) {
 
     companion object {
         private const val ANDROID_MANIFEST_XML = "AndroidManifest.xml"
-
-        private val ARCHES = setOf(
-            "armeabi-v7a",
-            "arm64-v8a",
-            "x86",
-            "x86_64"
-        )
 
         private val Z_FILE_OPTIONS = ZFileOptions().setAlignmentRule(
             AlignmentRules.compose(

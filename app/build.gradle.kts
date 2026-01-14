@@ -82,8 +82,9 @@ afterEvaluate {
 
 dependencies {
     // Shared modules
-    implementation(projects.shared.android)
     implementation(projects.shared.java)
+    implementation(projects.patcher)
+    implementation(projects.services.daemonService)
 
     // Test
     testImplementation(phantom.junit)

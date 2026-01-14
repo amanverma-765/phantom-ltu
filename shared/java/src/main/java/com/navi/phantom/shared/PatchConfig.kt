@@ -5,7 +5,6 @@ import kotlinx.serialization.Transient
 
 @Serializable
 data class PatchConfig(
-    val useManager: Boolean,
     val debuggable: Boolean,
     val overrideVersionCode: Boolean,
     val sigBypassLevel: Int,

@@ -40,26 +40,11 @@ androidComponents.onVariants { variant ->
         into(rootProject.layout.projectDirectory.dir("out/assets/${variant.name}/phantom"))
     }
 
-    val copySoTask = tasks.register<Copy>("copySo$variantCapped") {
-        dependsOn("assemble$variantCapped")
-        dependsOn("strip${variantCapped}DebugSymbols")
-        val libDir = variantLowered + "/strip${variantCapped}DebugSymbols"
-        from(
-            fileTree(
-                layout.buildDirectory.dir("intermediates/stripped_native_libs/$libDir/out/lib")
-            ) {
-                include("**/libphantom.so")
-            }
-        )
-        into(rootProject.layout.projectDirectory.dir("out/assets/${variant.name}/phantom/so"))
-    }
-
     tasks.register("copy$variantCapped") {
-        dependsOn(copySoTask)
         dependsOn(copyDexTask)
 
         doLast {
-            println("Dex and so files has been copied to ${rootProject.layout.projectDirectory.dir("out")}")
+            println("Dex file has been copied to ${rootProject.layout.projectDirectory.dir("out")}")
         }
     }
 }
@@ -69,7 +54,6 @@ dependencies {
     implementation(projects.core)
     implementation(projects.hiddenapi.bridge)
     implementation(projects.services.daemonService)
-    implementation(projects.shared.android)
     implementation(projects.shared.java)
     implementation(phantom.kermit)
 }
