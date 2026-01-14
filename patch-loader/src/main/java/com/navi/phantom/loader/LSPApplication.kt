@@ -180,8 +180,8 @@ object LSPApplication {
             }
 
             context
-        } catch (e: Throwable) {
-            log.e(e) { "createLoadedApk" }
+        } catch (e: Exception) {
+            log.e(e) { "createLoadedApk failed" }
             null
         }
     }

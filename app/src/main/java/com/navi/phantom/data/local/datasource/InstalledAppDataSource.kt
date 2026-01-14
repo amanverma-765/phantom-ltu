@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import co.touchlab.kermit.Logger
 import com.navi.phantom.data.local.dto.DetailedAppInfoDto
 import com.navi.phantom.data.local.dto.InstalledAppDto
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,8 @@ import java.io.File
 class InstalledAppDataSource(
     private val context: Context
 ) {
+
+    private val log = Logger.withTag("InstalledAppDataSource")
 
     private val packageManager: PackageManager
         get() = context.packageManager
@@ -25,7 +28,11 @@ class InstalledAppDataSource(
                 .filter { appInfo ->
                     isUserInstalledApp(appInfo)
                 }
-                .mapNotNull { toInstalledApp(it).getOrNull() }
+                .mapNotNull { appInfo ->
+                    toInstalledApp(appInfo)
+                        .onFailure { log.w(it) { "Failed to load app: ${appInfo.packageName}" } }
+                        .getOrNull()
+                }
                 .sortedBy { it.appName.lowercase() }
                 .toList()
         }
@@ -108,7 +115,8 @@ class InstalledAppDataSource(
                 @Suppress("DEPRECATION")
                 packageManager.getPackageInfo(packageName, 0).versionName
             }
-        }.getOrNull().orEmpty()
+        }.onFailure { log.d(it) { "Failed to get version for $packageName" } }
+         .getOrNull().orEmpty()
     }
 
     private fun isUserInstalledApp(appInfo: ApplicationInfo): Boolean {

@@ -166,7 +166,7 @@ class PhantomPatcher(args: Array<String>) {
                         val manifestEntry = zf.get(ANDROID_MANIFEST_XML)
                         if (manifestEntry != null) {
                             manifestEntry.open().use { inputStream ->
-                                val parsed = ManifestParser.parseManifestFile(inputStream)
+                                val parsed = ManifestParser.parseManifestFile(inputStream).getOrNull()
                                 if (parsed?.packageName != null) {
                                     basePackageName = parsed.packageName
                                 }
@@ -265,7 +265,7 @@ class PhantomPatcher(args: Array<String>) {
             val minSdkVersion: Int
             manifestEntry.open().use { inputStream ->
                 val pair = ManifestParser.parseManifestFile(inputStream)
-                    ?: throw PatchError("Failed to parse AndroidManifest.xml")
+                    .getOrElse { throw PatchError("Failed to parse AndroidManifest.xml", it) }
                 appComponentFactory = pair.appComponentFactory
                 minSdkVersion = pair.minSdkVersion
                 log.d { "original appComponentFactory class: $appComponentFactory" }
@@ -401,7 +401,7 @@ class PhantomPatcher(args: Array<String>) {
                 ZFile.openReadOnly(File(module)).use { apk ->
                     FileInputStream(file).use { fileIs ->
                         apk.get(ANDROID_MANIFEST_XML)?.open()?.use { xmlIs ->
-                            val manifest = ManifestParser.parseManifestFile(xmlIs)
+                            val manifest = ManifestParser.parseManifestFile(xmlIs).getOrNull()
                             val packageName = manifest?.packageName
                             if (packageName != null) {
                                 log.i { "  - $packageName" }

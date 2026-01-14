@@ -20,15 +20,15 @@ object ManifestParser {
 
     @JvmStatic
     @Throws(IOException::class)
-    fun parseManifestFile(inputStream: InputStream): ManifestInfo? {
-        val parser = AxmlParser(Utils.getBytesFromInputStream(inputStream))
-        var packageName: String? = null
-        var appComponentFactory: String? = null
-        var minSdkVersion = 0
+    fun parseManifestFile(inputStream: InputStream): Result<ManifestInfo> {
+        return runCatching {
+            val parser = AxmlParser(Utils.getBytesFromInputStream(inputStream))
+            var packageName: String? = null
+            var appComponentFactory: String? = null
+            var minSdkVersion = 0
 
-        try {
             while (true) {
-                when (val type = parser.next()) {
+                when (parser.next()) {
                     AxmlParser.END_FILE -> break
                     AxmlParser.START_TAG -> {
                         val attrCount = parser.attributeCount
@@ -53,23 +53,22 @@ object ManifestParser {
                                 !appComponentFactory.isNullOrEmpty() &&
                                 minSdkVersion > 0
                             ) {
-                                return ManifestInfo(packageName, appComponentFactory, minSdkVersion)
+                                return@runCatching ManifestInfo(packageName, appComponentFactory, minSdkVersion)
                             }
                         }
                     }
                 }
             }
-        } catch (e: Exception) {
-            log.e(e) { "Failed to parse manifest" }
-            return null
-        }
 
-        return ManifestInfo(packageName, appComponentFactory, minSdkVersion)
+            ManifestInfo(packageName, appComponentFactory, minSdkVersion)
+        }.onFailure { e ->
+            log.e(e) { "Failed to parse manifest" }
+        }
     }
 
     @JvmStatic
     @Throws(IOException::class)
-    fun parseManifestFile(filePath: String): ManifestInfo? {
+    fun parseManifestFile(filePath: String): Result<ManifestInfo> {
         return FileInputStream(File(filePath)).use { parseManifestFile(it) }
     }
 }

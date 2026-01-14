@@ -23,13 +23,14 @@ class LocalApplicationService(context: Context) : ILSPApplicationService.Stub() 
     private val modules = mutableListOf<Module>()
 
     init {
-        try {
-            context.assets.list("phantom/modules")?.forEach { name ->
+        context.assets.list("phantom/modules")?.forEach { name ->
+            runCatching {
                 val packageName = name.dropLast(4)
                 val modulePath = "${context.cacheDir}/phantom/$packageName/"
 
                 val cacheApkPath = ZipFile(context.packageResourcePath).use { sourceFile ->
                     val entry = sourceFile.getEntry(Constants.EMBEDDED_MODULES_ASSET_PATH + name)
+                        ?: throw IOException("Module asset not found: $name")
                     "$modulePath${entry.crc}.apk"
                 }
 
@@ -48,9 +49,10 @@ class LocalApplicationService(context: Context) : ILSPApplicationService.Stub() 
                     file = ModuleLoader.loadModule(cacheApkPath)
                 }
                 modules.add(module)
+                log.i { "Loaded module: $packageName" }
+            }.onFailure { e ->
+                log.e(e) { "Failed to load module: $name" }
             }
-        } catch (e: IOException) {
-            log.e(e) { "Error when initializing LocalApplicationServiceClient" }
         }
     }
 

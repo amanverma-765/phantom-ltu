@@ -88,7 +88,7 @@ object ApkSignatureHelper {
                         }
                     }
                 }
-                certs?.let { String(toChars(it[0].encoded)) }
+                certs?.firstOrNull()?.let { String(toChars(it.encoded)) }
             }
         } catch (e: Throwable) {
             log.w(e) { "Failed to get V1 signature" }
