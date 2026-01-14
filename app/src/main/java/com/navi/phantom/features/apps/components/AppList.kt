@@ -1,7 +1,7 @@
 package com.navi.phantom.features.apps.components
 
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,15 +14,15 @@ internal fun AppList(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
-        items(
+        itemsIndexed(
             items = apps,
-            key = { it.packageName }
-        ) { app ->
+            key = { _, app -> app.packageName }
+        ) { index, app ->
             AppListItem(
                 app = app,
                 onClick = { onAppClick(app) }
             )
-            if (app != apps.last()) {
+            if (index < apps.lastIndex) {
                 HorizontalDivider()
             }
         }

@@ -38,10 +38,10 @@ object ApksBundleHelper {
         val extractedPaths = mutableListOf<String>()
 
         ZipInputStream(FileInputStream(bundleFile)).use { zis ->
-            var entry: ZipEntry?
-            while (zis.nextEntry.also { entry = it } != null) {
-                val name = entry!!.name
-                if (entry!!.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
+            while (true) {
+                val entry = zis.nextEntry ?: break
+                val name = entry.name
+                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
                     zis.closeEntry()
                     continue
                 }
@@ -74,10 +74,10 @@ object ApksBundleHelper {
         val extractedPaths = mutableListOf<String>()
 
         ZipInputStream(bundleStream).use { zis ->
-            var entry: ZipEntry?
-            while (zis.nextEntry.also { entry = it } != null) {
-                val name = entry!!.name
-                if (entry!!.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
+            while (true) {
+                val entry = zis.nextEntry ?: break
+                val name = entry.name
+                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
                     zis.closeEntry()
                     continue
                 }

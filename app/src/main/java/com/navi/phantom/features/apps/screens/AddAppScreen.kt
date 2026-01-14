@@ -79,11 +79,13 @@ fun AddAppScreen(
                     message = "Loading installed apps...",
                     modifier = Modifier.fillMaxSize()
                 )
-                uiState.errorMsg != null -> ErrorState(
-                    message = uiState.errorMsg!!,
-                    onRetry = { viewModel.onEvent(AppUiEvent.GetAllInstalledApps) },
-                    modifier = Modifier.fillMaxSize()
-                )
+                uiState.errorMsg != null -> uiState.errorMsg?.let { errorMsg ->
+                    ErrorState(
+                        message = errorMsg,
+                        onRetry = { viewModel.onEvent(AppUiEvent.GetAllInstalledApps) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 uiState.filteredApps.isEmpty() && uiState.searchQuery.isNotBlank() -> {
                     EmptyState(
                         message = "No apps found for \"${uiState.searchQuery}\"",

@@ -64,18 +64,23 @@ class RemoteApplicationService @SuppressLint("DiscouragedPrivateApi") constructo
                 val handlerThread = HandlerThread("RemoteApplicationService")
                 handlerThread.start()
                 val handler = Handler(handlerThread.looper)
-                val contextImplClass = context.javaClass
-                val getUserMethod = contextImplClass.getMethod("getUser")
-                val bindServiceAsUserMethod = contextImplClass.getDeclaredMethod(
-                    "bindServiceAsUser",
-                    Intent::class.java,
-                    ServiceConnection::class.java,
-                    Int::class.javaPrimitiveType,
-                    Handler::class.java,
-                    UserHandle::class.java
-                )
-                val userHandle = getUserMethod.invoke(context) as UserHandle
-                bindServiceAsUserMethod.invoke(context, intent, conn, Context.BIND_AUTO_CREATE, handler, userHandle)
+                try {
+                    val contextImplClass = context.javaClass
+                    val getUserMethod = contextImplClass.getMethod("getUser")
+                    val bindServiceAsUserMethod = contextImplClass.getDeclaredMethod(
+                        "bindServiceAsUser",
+                        Intent::class.java,
+                        ServiceConnection::class.java,
+                        Int::class.javaPrimitiveType,
+                        Handler::class.java,
+                        UserHandle::class.java
+                    )
+                    val userHandle = getUserMethod.invoke(context) as UserHandle
+                    bindServiceAsUserMethod.invoke(context, intent, conn, Context.BIND_AUTO_CREATE, handler, userHandle)
+                } catch (e: ReflectiveOperationException) {
+                    log.e(e) { "Failed to bind service using reflection, API may be unsupported" }
+                    throw RemoteException("Unsupported Android version for manager binding").apply { initCause(e) }
+                }
             }
 
             val success = latch.await(1, TimeUnit.SECONDS)

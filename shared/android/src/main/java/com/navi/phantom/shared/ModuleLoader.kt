@@ -20,18 +20,21 @@ object ModuleLoader {
         var secondary = 2
         var dexFile = apkFile.getEntry("classes.dex")
         while (dexFile != null) {
+            var memory: SharedMemory? = null
             try {
                 apkFile.getInputStream(dexFile).use { input ->
-                    val memory = SharedMemory.create(null, input.available())
-                    val byteBuffer = memory.mapReadWrite()
+                    memory = SharedMemory.create(null, input.available())
+                    val byteBuffer = memory!!.mapReadWrite()
                     Channels.newChannel(input).read(byteBuffer)
                     SharedMemory.unmap(byteBuffer)
-                    memory.setProtect(OsConstants.PROT_READ)
-                    preLoadedDexes.add(memory)
+                    memory!!.setProtect(OsConstants.PROT_READ)
+                    preLoadedDexes.add(memory!!)
                 }
             } catch (e: IOException) {
+                memory?.close()
                 log.w(e) { "Can not load $dexFile in $apkFile" }
             } catch (e: ErrnoException) {
+                memory?.close()
                 log.w(e) { "Can not load $dexFile in $apkFile" }
             }
             dexFile = apkFile.getEntry("classes${secondary++}.dex")

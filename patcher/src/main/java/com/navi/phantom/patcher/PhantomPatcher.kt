@@ -118,7 +118,9 @@ class PhantomPatcher(args: Array<String>) {
                 log.i { "Extracting bundle: $path" }
                 if (tempDir == null) {
                     tempDir = Files.createTempDirectory("phantom-bundle-").toFile()
-                    tempDir.deleteOnExit()
+                    Runtime.getRuntime().addShutdownHook(Thread {
+                        tempDir?.walkBottomUp()?.forEach { it.delete() }
+                    })
                 }
                 val extracted = ApksBundleHelper.extractBundle(File(path), tempDir)
                 log.i { "Extracted ${extracted.size} APK(s) from bundle" }
@@ -219,7 +221,9 @@ class PhantomPatcher(args: Array<String>) {
                 val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
                 if (keystoreArgs[0] == null) {
                     log.i { "Register apk signer with default keystore..." }
-                    javaClass.classLoader?.getResourceAsStream("assets/keystore")?.use { inputStream ->
+                    val keystoreStream = javaClass.classLoader?.getResourceAsStream("assets/keystore")
+                        ?: throw PatchError("Default keystore resource not found")
+                    keystoreStream.use { inputStream ->
                         keyStore.load(inputStream, keystoreArgs[1]!!.toCharArray())
                     }
                 } else {
@@ -326,7 +330,9 @@ class PhantomPatcher(args: Array<String>) {
 
             log.i { "Adding metaloader dex..." }
             try {
-                javaClass.classLoader?.getResourceAsStream(Constants.META_LOADER_DEX_ASSET_PATH)?.use { inputStream ->
+                val metaLoaderStream = javaClass.classLoader?.getResourceAsStream(Constants.META_LOADER_DEX_ASSET_PATH)
+                    ?: throw PatchError("Meta loader dex resource not found")
+                metaLoaderStream.use { inputStream ->
                     if (!injectDex) {
                         dstZFile.add("classes.dex", inputStream)
                     } else {
@@ -344,7 +350,9 @@ class PhantomPatcher(args: Array<String>) {
             if (!useManager) {
                 log.i { "Adding loader dex..." }
                 try {
-                    javaClass.classLoader?.getResourceAsStream(LOADER_DEX_ASSET_PATH)?.use { inputStream ->
+                    val loaderDexStream = javaClass.classLoader?.getResourceAsStream(LOADER_DEX_ASSET_PATH)
+                        ?: throw PatchError("Loader dex resource not found")
+                    loaderDexStream.use { inputStream ->
                         dstZFile.add(LOADER_DEX_ASSET_PATH, inputStream)
                     }
                 } catch (e: Throwable) {
@@ -427,12 +435,12 @@ class PhantomPatcher(args: Array<String>) {
             property.addUsesPermission("android.permission.QUERY_ALL_PACKAGES")
         }
 
-        val os = ByteArrayOutputStream()
-        ManifestEditor(inputStream, os, property).processManifest()
-        inputStream.close()
-        os.flush()
-        os.close()
-        return os.toByteArray()
+        return inputStream.use { input ->
+            ByteArrayOutputStream().use { os ->
+                ManifestEditor(input, os, property).processManifest()
+                os.toByteArray()
+            }
+        }
     }
 
     companion object {

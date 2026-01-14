@@ -24,7 +24,7 @@ object SigBypass {
 
     private val log = Logger.withTag("Phantom-SigBypass")
 
-    private val signatures = mutableMapOf<String, String?>()
+    private val signatures = java.util.concurrent.ConcurrentHashMap<String, String?>()
 
     private fun replaceSignature(context: Context, packageInfo: PackageInfo) {
         val signingInfo = packageInfo.signingInfo ?: return
@@ -47,7 +47,8 @@ object SigBypass {
                         log.w(e) { "fail to get originalSignature" }
                     }
                 }
-            } catch (_: PackageManager.NameNotFoundException) {
+            } catch (e: PackageManager.NameNotFoundException) {
+                log.d { "Package not found: $packageName" }
             }
             signatures[packageName] = replacement
         }
@@ -120,7 +121,9 @@ object SigBypass {
         }
         if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT) {
             val cacheApkPath = ZipFile(context.packageResourcePath).use { sourceFile ->
-                "${context.cacheDir}/phantom/origin/${sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH).crc}.apk"
+                val entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH)
+                    ?: throw IOException("Original APK asset not found in patched APK")
+                "${context.cacheDir}/phantom/origin/${entry.crc}.apk"
             }
             SigBypass.enableOpenatHook(context.packageResourcePath, cacheApkPath)
         }

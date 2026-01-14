@@ -256,7 +256,7 @@ project(":core") {
         extensions.findByType(LibraryExtension::class)?.run {
             buildTypes {
                 release {
-                    proguardFiles(rootProject.file("shared/phantom-rules.pro"))
+                    proguardFiles(rootProject.file("shared/proguard-rules.pro"))
                 }
             }
         }

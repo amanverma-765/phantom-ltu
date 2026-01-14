@@ -1,5 +1,6 @@
 package com.navi.phantom.patcher.util
 
+import co.touchlab.kermit.Logger
 import com.wind.meditor.utils.Utils
 import pxb.android.axml.AxmlParser
 import java.io.File
@@ -14,6 +15,8 @@ data class ManifestInfo(
 )
 
 object ManifestParser {
+
+    private val log = Logger.withTag("ManifestParser")
 
     @JvmStatic
     @Throws(IOException::class)
@@ -57,6 +60,7 @@ object ManifestParser {
                 }
             }
         } catch (e: Exception) {
+            log.e(e) { "Failed to parse manifest" }
             return null
         }
 

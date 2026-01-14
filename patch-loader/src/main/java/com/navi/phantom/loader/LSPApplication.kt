@@ -107,7 +107,9 @@ object LSPApplication {
 
             val originPath = Paths.get(appInfo.dataDir, "cache/phantom/origin/")
             val cacheApkPath = ZipFile(appInfo.sourceDir).use { sourceFile ->
-                originPath.resolve("${sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH).crc}.apk")
+                val entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH)
+                    ?: throw IOException("Original APK asset not found in patched APK")
+                originPath.resolve("${entry.crc}.apk")
             }
 
             appInfo.sourceDir = cacheApkPath.toString()

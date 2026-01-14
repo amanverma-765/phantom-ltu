@@ -1,5 +1,6 @@
 package com.navi.phantom.patcher.util
 
+import co.touchlab.kermit.Logger
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -9,6 +10,8 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
 object ApkSignatureHelper {
+
+    private val log = Logger.withTag("ApkSignatureHelper")
 
     private val APK_V2_MAGIC = byteArrayOf(
         'A'.code.toByte(), 'P'.code.toByte(), 'K'.code.toByte(), ' '.code.toByte(),
@@ -39,6 +42,7 @@ object ApkSignatureHelper {
             }
             je.certificates
         } catch (e: Exception) {
+            log.w(e) { "Failed to load certificates from jar entry: ${je.name}" }
             null
         }
     }
@@ -87,6 +91,7 @@ object ApkSignatureHelper {
                 certs?.let { String(toChars(it[0].encoded)) }
             }
         } catch (e: Throwable) {
+            log.w(e) { "Failed to get V1 signature" }
             null
         }
     }

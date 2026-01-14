@@ -7,7 +7,9 @@ import kotlin.collections.removeLastOrNull
 
 class Navigator(startDestination: Destination) {
 
-    private val tabBackStacks = mutableMapOf<Destination, SnapshotStateList<Destination>>()
+    private val tabBackStacks = java.util.Collections.synchronizedMap(
+        mutableMapOf<Destination, SnapshotStateList<Destination>>()
+    )
     private val _currentTab = mutableStateOf(startDestination)
     private val _isTabSwitch = mutableStateOf(false)
 
