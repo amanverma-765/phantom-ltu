@@ -11,6 +11,7 @@ import com.navi.phantom.domain.models.InstalledApp
 internal fun AppList(
     apps: List<InstalledApp>,
     onAppClick: (InstalledApp) -> Unit,
+    onUnsupportedAppClick: (InstalledApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
@@ -20,7 +21,8 @@ internal fun AppList(
         ) { index, app ->
             AppListItem(
                 app = app,
-                onClick = { onAppClick(app) }
+                onClick = { onAppClick(app) },
+                onUnsupportedClick = { onUnsupportedAppClick(app) }
             )
             if (index < apps.lastIndex) {
                 HorizontalDivider()

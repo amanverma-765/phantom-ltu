@@ -1,5 +1,6 @@
 package com.navi.phantom.features.apps.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.components.EmptyState
@@ -37,6 +39,7 @@ fun AddAppScreen(
     onAppSelected: (InstalledApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -101,6 +104,13 @@ fun AddAppScreen(
                     onAppClick = { app ->
                         viewModel.onEvent(AppUiEvent.SelectApp(app))
                         onAppSelected(app)
+                    },
+                    onUnsupportedAppClick = { app ->
+                        Toast.makeText(
+                            context,
+                            "${app.appName} doesn't use location services",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     modifier = Modifier.fillMaxSize()
                 )

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -22,8 +23,11 @@ import com.navi.phantom.domain.models.InstalledApp
 internal fun AppListItem(
     app: InstalledApp,
     onClick: () -> Unit,
+    onUnsupportedClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isSupported = app.usesLocation
+
     ListItem(
         headlineContent = {
             Text(
@@ -42,18 +46,28 @@ internal fun AppListItem(
             )
         },
         trailingContent = {
-            if (app.usesLocation) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = "Uses location",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp).padding(4.dp)
-                    )
-                }
+            Surface(
+                color = if (isSupported) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = if (isSupported) {
+                        Icons.Outlined.LocationOn
+                    } else {
+                        Icons.Outlined.LocationOff
+                    },
+                    contentDescription = if (isSupported) "Uses location" else "No location",
+                    tint = if (isSupported) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier.size(28.dp).padding(4.dp)
+                )
             }
         },
         leadingContent = {
@@ -67,6 +81,6 @@ internal fun AppListItem(
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier.clickable(onClick = if (isSupported) onClick else onUnsupportedClick)
     )
 }
