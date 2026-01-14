@@ -83,6 +83,7 @@ afterEvaluate {
 dependencies {
     // Shared modules
     implementation(projects.shared.java)
+    implementation(projects.shared.android)
     implementation(projects.patcher)
     implementation(projects.services.daemonService)
 
