@@ -24,11 +24,11 @@ object ModuleLoader {
             try {
                 apkFile.getInputStream(dexFile).use { input ->
                     memory = SharedMemory.create(null, input.available())
-                    val byteBuffer = memory!!.mapReadWrite()
+                    val byteBuffer = memory.mapReadWrite()
                     Channels.newChannel(input).read(byteBuffer)
                     SharedMemory.unmap(byteBuffer)
-                    memory!!.setProtect(OsConstants.PROT_READ)
-                    preLoadedDexes.add(memory!!)
+                    memory.setProtect(OsConstants.PROT_READ)
+                    preLoadedDexes.add(memory)
                 }
             } catch (e: IOException) {
                 memory?.close()
