@@ -54,6 +54,12 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+composeCompiler {
+    // Disable compose mapping file generation to work around ASM version incompatibility
+    // with Kotlin 2.3.0 (class file version 69 not supported by bundled ASM)
+    includeComposeMappingFile.set(false)
+}
+
 afterEvaluate {
     android.applicationVariants.forEach { variant ->
         val variantLowered = variant.name.lowercase()
