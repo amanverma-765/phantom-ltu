@@ -103,11 +103,18 @@ object ApksBundleHelper {
 
     @Throws(IOException::class)
     fun createBundle(apkFiles: List<File>, bundleFile: File) {
+        createBundle(apkFiles, bundleFile, emptyMap())
+    }
+
+    @Throws(IOException::class)
+    fun createBundle(apkFiles: List<File>, bundleFile: File, originalNames: Map<File, String>) {
         ZipOutputStream(FileOutputStream(bundleFile)).use { zos ->
             zos.setMethod(ZipOutputStream.STORED)
 
             for (apkFile in apkFiles) {
-                val entry = ZipEntry(apkFile.name).apply {
+                // Use original name if provided, otherwise use current file name
+                val entryName = originalNames[apkFile] ?: apkFile.name
+                val entry = ZipEntry(entryName).apply {
                     method = ZipEntry.STORED
                     size = apkFile.length()
                     compressedSize = apkFile.length()
@@ -123,7 +130,18 @@ object ApksBundleHelper {
 
     @Throws(IOException::class)
     fun createBundle(apkFiles: List<File>, bundleFile: File, deleteSourceApks: Boolean) {
-        createBundle(apkFiles, bundleFile)
+        createBundle(apkFiles, bundleFile, emptyMap())
+
+        if (deleteSourceApks) {
+            for (apkFile in apkFiles) {
+                apkFile.delete()
+            }
+        }
+    }
+
+    @Throws(IOException::class)
+    fun createBundle(apkFiles: List<File>, bundleFile: File, originalNames: Map<File, String>, deleteSourceApks: Boolean) {
+        createBundle(apkFiles, bundleFile, originalNames)
 
         if (deleteSourceApks) {
             for (apkFile in apkFiles) {

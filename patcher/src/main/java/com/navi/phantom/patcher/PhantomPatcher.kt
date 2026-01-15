@@ -124,6 +124,7 @@ class PhantomPatcher(args: Array<String>) {
         apkPaths = expandedApkPaths
 
         val patchedFiles = mutableListOf<File>()
+        val originalNames = mutableMapOf<File, String>()
         var basePackageName: String? = null
 
         for (apk in apkPaths) {
@@ -147,6 +148,7 @@ class PhantomPatcher(args: Array<String>) {
 
             patch(srcApkFile, outputFile)
             patchedFiles.add(outputFile)
+            originalNames[outputFile] = apkFileName
 
             if (basePackageName == null && !apkFileName.startsWith("split_")) {
                 try {
@@ -181,10 +183,11 @@ class PhantomPatcher(args: Array<String>) {
 
             log.i { "Creating bundle: ${bundleFile.name}" }
             for (apkFile in patchedFiles) {
-                log.d { "Adding to bundle: ${apkFile.name}" }
+                val originalName = originalNames[apkFile] ?: apkFile.name
+                log.d { "Adding to bundle: ${apkFile.name} -> $originalName" }
             }
 
-            ApksBundleHelper.createBundle(patchedFiles, bundleFile, true)
+            ApksBundleHelper.createBundle(patchedFiles, bundleFile, originalNames, true)
             log.i { "Done. Output bundle: ${bundleFile.absolutePath}" }
         } else if (patchedFiles.size == 1) {
             log.i { "Done. Output APK: ${patchedFiles[0].absolutePath}" }
