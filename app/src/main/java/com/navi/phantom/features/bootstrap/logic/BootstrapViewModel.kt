@@ -96,12 +96,14 @@ class BootstrapViewModel(
 
     private suspend fun simulateBootstrap() {
         val steps = listOf(
-            "Reading APK structure...",
-            "Extracting classes.dex...",
-            "Injecting location hooks...",
+            "Parsing APK...",
+            "Setting up signing...",
+            "Extracting signature...",
             "Modifying manifest...",
-            "Rebuilding APK...",
-            "Signing APK...",
+            "Adding config...",
+            "Adding metaloader...",
+            "Creating links...",
+            "Writing APK...",
             "Bootstrapped!"
         )
 

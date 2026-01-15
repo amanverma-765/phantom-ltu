@@ -1,21 +1,29 @@
 package com.navi.phantom.features.bootstrap.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,57 +61,110 @@ fun StatusBar(
         label = "cursorBlink"
     )
 
+    val dotPulse by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dotPulse"
+    )
+
+    // Material 3 color hierarchy:
+    // Header uses surfaceContainerHigh, status bar uses surfaceContainer (one level below)
     val backgroundColor by animateColorAsState(
         targetValue = when {
             isBootstrapped -> statusColors.successContainer
             hasFailed -> statusColors.errorContainer
-            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+            else -> MaterialTheme.colorScheme.surfaceContainer
         },
         animationSpec = tween(400),
         label = "statusBg"
     )
 
+    val textColor by animateColorAsState(
+        targetValue = when {
+            isBootstrapped -> statusColors.success
+            hasFailed -> statusColors.error
+            else -> MaterialTheme.colorScheme.onSurface
+        },
+        animationSpec = tween(400),
+        label = "textColor"
+    )
+
+    val dotColor by animateColorAsState(
+        targetValue = when {
+            isBootstrapped -> statusColors.success
+            hasFailed -> statusColors.error
+            isBootstrapping -> MaterialTheme.colorScheme.tertiary
+            else -> MaterialTheme.colorScheme.outline
+        },
+        animationSpec = tween(400),
+        label = "dotColor"
+    )
+
     Surface(
         color = backgroundColor,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Status indicator dot
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(accentColor)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Status indicator dot
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .alpha(if (isBootstrapping) dotPulse else 1f)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = if (isBootstrapped || hasFailed) FontWeight.Medium else FontWeight.Normal,
-                color = when {
-                    isBootstrapped -> statusColors.success
-                    hasFailed -> statusColors.error
-                    else -> MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-
-            // Blinking cursor during bootstrapping
-            if (isBootstrapping) {
                 Text(
-                    text = "_",
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontFamily = FontFamily.Monospace,
-                    color = accentColor,
-                    modifier = Modifier.alpha(cursorAlpha)
+                    fontWeight = if (isBootstrapping || isBootstrapped) FontWeight.Medium else FontWeight.Normal,
+                    color = textColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Blinking cursor during bootstrapping
+                if (isBootstrapping) {
+                    Text(
+                        text = "_",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontFamily = FontFamily.Monospace,
+                        color = textColor,
+                        modifier = Modifier.alpha(cursorAlpha)
+                    )
+                }
+            }
+
+            // Progress indicator during bootstrapping
+            AnimatedVisibility(
+                visible = isBootstrapping,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                LinearProgressIndicator(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    strokeCap = StrokeCap.Round,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
                 )
             }
         }
