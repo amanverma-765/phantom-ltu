@@ -49,12 +49,13 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
 
     private fun getAllInstalledApps() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMsg = null) }
+            _uiState.update { it.copy(isLoadingApps = true, errorMessage = null) }
             installedAppRepository.getAllInstalledApps()
                 .onSuccess { apps ->
                     _uiState.update { state ->
                         state.copy(
-                            isLoading = false,
+                            isLoadingApps = false,
+                            errorMessage = null,
                             allInstalledApps = apps,
                             filteredApps = filterApps(apps, state.searchQuery)
                         )
@@ -62,16 +63,14 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
                 }
                 .onFailure { throwable ->
                     log.e(throwable) { "getAllInstalledApps failed" }
-                    val errorMessage = when (throwable) {
-                        is SecurityException ->
-                            AppError.PermissionDenied.message
-                        else ->
-                            AppError.Unknown.message
+                    val message = when (throwable) {
+                        is SecurityException -> AppError.PermissionDenied.message
+                        else -> AppError.Unknown.message
                     }
                     _uiState.update {
                         it.copy(
-                            isLoading = false,
-                            errorMsg = errorMessage
+                            isLoadingApps = false,
+                            errorMessage = message
                         )
                     }
                 }

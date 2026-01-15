@@ -4,7 +4,7 @@ import com.navi.phantom.domain.models.DetailedAppInfo
 
 data class BootstrapUiState(
     val app: DetailedAppInfo? = null,
-    val isLoading: Boolean = false,
+    val isLoadingAppDetails: Boolean = false,
     val isBootstrapping: Boolean = false,
     val isBootstrapped: Boolean = false,
     val hasBootstrapAttempted: Boolean = false,

@@ -16,8 +16,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -33,7 +35,7 @@ import com.navi.phantom.features.apps.logic.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddAppScreen(
+fun SelectAppScreen(
     viewModel: AppViewModel,
     onNavigateBack: () -> Unit,
     onAppSelected: (InstalledApp) -> Unit,
@@ -41,6 +43,7 @@ fun AddAppScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(AppUiEvent.GetAllInstalledApps)
@@ -50,7 +53,7 @@ fun AddAppScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = { Text("Installed Apps") },
+                title = { Text("Select an App") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -78,11 +81,11 @@ fun AddAppScreen(
             )
 
             when {
-                uiState.isLoading -> LoadingState(
+                uiState.isLoadingApps && uiState.allInstalledApps.isEmpty() -> LoadingState(
                     message = "Loading installed apps...",
                     modifier = Modifier.fillMaxSize()
                 )
-                uiState.errorMsg != null -> uiState.errorMsg?.let { errorMsg ->
+                uiState.errorMessage != null -> uiState.errorMessage?.let { errorMsg ->
                     ErrorState(
                         message = errorMsg,
                         onRetry = { viewModel.onEvent(AppUiEvent.GetAllInstalledApps) },
@@ -112,6 +115,7 @@ fun AddAppScreen(
                             Toast.LENGTH_SHORT
                         ).show()
                     },
+                    listState = listState,
                     modifier = Modifier.fillMaxSize()
                 )
             }

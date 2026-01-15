@@ -2,6 +2,7 @@ package com.navi.phantom.features.bootstrap.logic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.navi.phantom.domain.errors.AppError
 import com.navi.phantom.domain.repository.InstalledAppRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,7 @@ class BootstrapViewModel(
     private fun loadApp(packageName: String) {
         _uiState.update {
             it.copy(
-                isLoading = true,
+                isLoadingAppDetails = true,
                 errorMessage = null
             )
         }
@@ -42,7 +43,7 @@ class BootstrapViewModel(
                     _uiState.update {
                         it.copy(
                             app = appInfo,
-                            isLoading = false,
+                            isLoadingAppDetails = false,
                             isBootstrapping = false,
                             isBootstrapped = false,
                             hasBootstrapAttempted = false,
@@ -56,8 +57,8 @@ class BootstrapViewModel(
                     log.e(e) { "Failed to load app details" }
                     _uiState.update {
                         it.copy(
-                            isLoading = false,
-                            errorMessage = "Failed to load app: ${e.message}"
+                            isLoadingAppDetails = false,
+                            errorMessage = AppError.AppDetailsLoadFailed.message
                         )
                     }
                 }
@@ -86,7 +87,7 @@ class BootstrapViewModel(
                 _uiState.update {
                     it.copy(
                         isBootstrapping = false,
-                        errorMessage = "Bootstrap failed: ${e.message}"
+                        errorMessage = AppError.BootstrapFailed.message
                     )
                 }
             }
@@ -131,7 +132,8 @@ class BootstrapViewModel(
         _uiState.update {
             it.copy(
                 isBootstrapping = false,
-                statusMessage = "Cancelled"
+                statusMessage = "Cancelled",
+                errorMessage = null
             )
         }
     }

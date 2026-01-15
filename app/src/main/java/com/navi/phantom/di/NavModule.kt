@@ -2,7 +2,7 @@ package com.navi.phantom.di
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.navi.phantom.features.apps.screens.AddAppScreen
+import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.AppScreen
 import com.navi.phantom.features.apps.logic.AppViewModel
 import com.navi.phantom.features.bootstrap.screens.BootstrapScreen
@@ -22,7 +22,7 @@ val navModule = module {
     single { Navigator(startDestination = Destination.Apps) }
 
     navigation<Destination.Apps> {
-        AppScreen(onAddAppClick = { get<Navigator>().navigateTo(Destination.AddApp) })
+        AppScreen(onAddAppClick = { get<Navigator>().navigateTo(Destination.SelectApp) })
     }
     navigation<Destination.Places> {
         LocationScreen(onAddPlaceClick = {})
@@ -30,12 +30,12 @@ val navModule = module {
     navigation<Destination.Setting> {
         SettingScreen()
     }
-    navigation<Destination.AddApp> {
+    navigation<Destination.SelectApp> {
         val appViewModel = get<AppViewModel>()
         val bootstrapViewModel = koinActivityViewModel<BootstrapViewModel>()
         val navigator = get<Navigator>()
 
-        AddAppScreen(
+        SelectAppScreen(
             viewModel = appViewModel,
             onNavigateBack = { navigator.goBack() },
             onAppSelected = { app ->
@@ -51,7 +51,7 @@ val navModule = module {
 
         BootstrapScreen(
             app = uiState.app,
-            isLoading = uiState.isLoading,
+            isLoadingAppDetails = uiState.isLoadingAppDetails,
             statusMessage = uiState.errorMessage ?: uiState.statusMessage,
             isBootstrapping = uiState.isBootstrapping,
             isBootstrapped = uiState.isBootstrapped,

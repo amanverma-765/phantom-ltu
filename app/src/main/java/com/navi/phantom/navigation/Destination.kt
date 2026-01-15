@@ -14,7 +14,7 @@ sealed class Destination(val showNavbar: Boolean = false) {
     data object Setting : Destination(true)
 
     @Serializable
-    data object AddApp : Destination()
+    data object SelectApp : Destination()
 
     @Serializable
     data object Bootstrap : Destination()

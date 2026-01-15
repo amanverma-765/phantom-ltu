@@ -38,7 +38,7 @@ import com.navi.phantom.features.bootstrap.components.rememberBootstrapStatusCol
 @Composable
 fun BootstrapScreen(
     app: DetailedAppInfo?,
-    isLoading: Boolean,
+    isLoadingAppDetails: Boolean,
     statusMessage: String,
     isBootstrapping: Boolean,
     isBootstrapped: Boolean,
@@ -82,7 +82,7 @@ fun BootstrapScreen(
         }
     ) { innerPadding ->
         when {
-            isLoading -> {
+            isLoadingAppDetails -> {
                 LoadingState(
                     message = "Loading app details...",
                     modifier = Modifier
