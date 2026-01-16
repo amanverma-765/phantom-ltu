@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -47,15 +47,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun StatusBar(
     message: String,
-    isBootstrapping: Boolean,
-    isBootstrapped: Boolean,
+    isPatching: Boolean,
+    isPatched: Boolean,
     hasFailed: Boolean,
     accentColor: Color,
-    statusColors: BootstrapStatusColors,
+    statusColors: PatcherStatusColors,
     modifier: Modifier = Modifier,
     showCopyButton: Boolean = false,
     onCopyError: () -> Unit = {},
-    // Installation progress
     isInstalling: Boolean = false,
     installationProgress: Int = 0,
     installationProgressMax: Int = 100
@@ -81,13 +80,10 @@ fun StatusBar(
         label = "dotPulse"
     )
 
-    // Material 3 color hierarchy:
-    // Header uses surfaceContainerHigh, status bar uses surfaceContainer (one level below)
-    // Error state takes precedence over success (e.g., bootstrap succeeded but installation failed)
     val backgroundColor by animateColorAsState(
         targetValue = when {
             hasFailed -> statusColors.errorContainer
-            isBootstrapped -> statusColors.successContainer
+            isPatched -> statusColors.successContainer
             else -> MaterialTheme.colorScheme.surfaceContainer
         },
         animationSpec = tween(400),
@@ -97,7 +93,7 @@ fun StatusBar(
     val textColor by animateColorAsState(
         targetValue = when {
             hasFailed -> statusColors.error
-            isBootstrapped -> statusColors.success
+            isPatched -> statusColors.success
             else -> MaterialTheme.colorScheme.onSurface
         },
         animationSpec = tween(400),
@@ -107,8 +103,8 @@ fun StatusBar(
     val dotColor by animateColorAsState(
         targetValue = when {
             hasFailed -> statusColors.error
-            isBootstrapped -> statusColors.success
-            isBootstrapping -> MaterialTheme.colorScheme.tertiary
+            isPatched -> statusColors.success
+            isPatching -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.outline
         },
         animationSpec = tween(400),
@@ -127,11 +123,10 @@ fun StatusBar(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Status indicator dot
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .alpha(if (isBootstrapping) dotPulse else 1f)
+                        .alpha(if (isPatching) dotPulse else 1f)
                         .clip(CircleShape)
                         .background(dotColor)
                 )
@@ -142,15 +137,14 @@ fun StatusBar(
                     text = message,
                     style = MaterialTheme.typography.bodyLarge,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = if (isBootstrapping || isBootstrapped) FontWeight.Medium else FontWeight.Normal,
+                    fontWeight = if (isPatching || isPatched) FontWeight.Medium else FontWeight.Normal,
                     color = textColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
 
-                // Blinking cursor during bootstrapping
-                if (isBootstrapping) {
+                if (isPatching) {
                     Text(
                         text = "_",
                         style = MaterialTheme.typography.bodyLarge,
@@ -160,7 +154,6 @@ fun StatusBar(
                     )
                 }
 
-                // Copy error log button
                 if (showCopyButton && hasFailed) {
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = onCopyError) {
@@ -173,14 +166,12 @@ fun StatusBar(
                 }
             }
 
-            // Progress indicator during bootstrapping or installation
             AnimatedVisibility(
-                visible = isBootstrapping || isInstalling,
+                visible = isPatching || isInstalling,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
                 if (isInstalling && installationProgressMax > 0) {
-                    // Determinate progress for installation
                     LinearProgressIndicator(
                         progress = { installationProgress.toFloat() / installationProgressMax },
                         color = MaterialTheme.colorScheme.tertiary,
@@ -193,7 +184,6 @@ fun StatusBar(
                             .clip(RoundedCornerShape(2.dp))
                     )
                 } else {
-                    // Indeterminate progress for bootstrapping
                     LinearProgressIndicator(
                         color = MaterialTheme.colorScheme.tertiary,
                         trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,

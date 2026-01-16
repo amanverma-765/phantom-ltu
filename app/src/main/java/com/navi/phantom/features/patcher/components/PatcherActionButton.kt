@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -31,19 +31,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.features.bootstrap.logic.BootstrapPhase
-import com.navi.phantom.features.bootstrap.logic.FailedPhase
+import com.navi.phantom.features.patcher.logic.PatcherPhase
+import com.navi.phantom.features.patcher.logic.FailedPhase
 
 /**
- * Internal button state derived from BootstrapPhase.
+ * Internal button state derived from PatcherPhase.
  */
 private enum class ButtonState {
     READY,
-    BOOTSTRAPPING,
-    BOOTSTRAPPED,
+    PATCHING,
+    PATCHED,
     INSTALLING,
     INSTALLED,
-    FAILED_BOOTSTRAP,
+    FAILED_PATCHING,
     FAILED_INSTALL,
     UNINSTALLING,
     AWAITING_UNINSTALL_CONFIRM,
@@ -51,35 +51,35 @@ private enum class ButtonState {
 }
 
 /**
- * Action button for the bootstrap screen.
- * Derives its state from [BootstrapPhase] for a single source of truth.
+ * Action button for the patcher screen.
+ * Derives its state from [PatcherPhase] for a single source of truth.
  */
 @Composable
-fun BootstrapActionButton(
-    phase: BootstrapPhase,
-    canStartBootstrap: Boolean,
+fun PatcherActionButton(
+    phase: PatcherPhase,
+    canStartPatching: Boolean,
     canInstall: Boolean,
-    onStartBootstrap: () -> Unit,
+    onStartPatching: () -> Unit,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onLaunch: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    statusColors: BootstrapStatusColors = rememberBootstrapStatusColors()
+    statusColors: PatcherStatusColors = rememberPatcherStatusColors()
 ) {
     // Derive button state from phase
     val buttonState = when (phase) {
-        is BootstrapPhase.Ready -> ButtonState.READY
-        is BootstrapPhase.Bootstrapping -> ButtonState.BOOTSTRAPPING
-        is BootstrapPhase.Bootstrapped -> ButtonState.BOOTSTRAPPED
-        is BootstrapPhase.Installing -> ButtonState.INSTALLING
-        is BootstrapPhase.Installed -> ButtonState.INSTALLED
-        is BootstrapPhase.AwaitingUninstallConfirm -> ButtonState.AWAITING_UNINSTALL_CONFIRM
-        is BootstrapPhase.Uninstalling -> ButtonState.UNINSTALLING
-        is BootstrapPhase.Cancelled -> ButtonState.CANCELLED
-        is BootstrapPhase.Failed -> when (phase.failedDuring) {
-            FailedPhase.BOOTSTRAP -> ButtonState.FAILED_BOOTSTRAP
+        is PatcherPhase.Ready -> ButtonState.READY
+        is PatcherPhase.Patching -> ButtonState.PATCHING
+        is PatcherPhase.Patched -> ButtonState.PATCHED
+        is PatcherPhase.Installing -> ButtonState.INSTALLING
+        is PatcherPhase.Installed -> ButtonState.INSTALLED
+        is PatcherPhase.AwaitingUninstallConfirm -> ButtonState.AWAITING_UNINSTALL_CONFIRM
+        is PatcherPhase.Uninstalling -> ButtonState.UNINSTALLING
+        is PatcherPhase.Cancelled -> ButtonState.CANCELLED
+        is PatcherPhase.Failed -> when (phase.failedDuring) {
+            FailedPhase.PATCHING -> ButtonState.FAILED_PATCHING
             FailedPhase.INSTALL -> ButtonState.FAILED_INSTALL
             FailedPhase.UNINSTALL -> ButtonState.FAILED_INSTALL // Treat as install failure for retry
         }
@@ -97,9 +97,9 @@ fun BootstrapActionButton(
         when (state) {
             ButtonState.READY -> {
                 ActionButton(
-                    onClick = onStartBootstrap,
+                    onClick = onStartPatching,
                     icon = Icons.Outlined.PlayArrow,
-                    text = "Bootstrap",
+                    text = "Patch",
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -107,7 +107,7 @@ fun BootstrapActionButton(
                 )
             }
 
-            ButtonState.BOOTSTRAPPED -> {
+            ButtonState.PATCHED -> {
                 ActionButton(
                     onClick = onInstall,
                     icon = Icons.Outlined.InstallMobile,
@@ -119,7 +119,7 @@ fun BootstrapActionButton(
                 )
             }
 
-            ButtonState.BOOTSTRAPPING -> {
+            ButtonState.PATCHING -> {
                 CancelButton(
                     onClick = onCancel,
                     text = "Cancel"
@@ -160,7 +160,7 @@ fun BootstrapActionButton(
                 )
             }
 
-            ButtonState.FAILED_BOOTSTRAP -> {
+            ButtonState.FAILED_PATCHING -> {
                 Button(
                     onClick = onRetry,
                     colors = ButtonDefaults.buttonColors(
@@ -173,7 +173,7 @@ fun BootstrapActionButton(
                 ) {
                     ButtonContent(
                         icon = Icons.Default.Refresh,
-                        text = "Retry Bootstrap",
+                        text = "Retry",
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -199,7 +199,7 @@ fun BootstrapActionButton(
             }
 
             ButtonState.CANCELLED -> {
-                // Can restart bootstrap or install depending on what we have
+                // Can restart patching or install depending on what we have
                 if (canInstall) {
                     ActionButton(
                         onClick = onInstall,
@@ -210,11 +210,11 @@ fun BootstrapActionButton(
                             contentColor = MaterialTheme.colorScheme.onTertiary
                         )
                     )
-                } else if (canStartBootstrap) {
+                } else if (canStartPatching) {
                     ActionButton(
-                        onClick = onStartBootstrap,
+                        onClick = onStartPatching,
                         icon = Icons.Outlined.PlayArrow,
-                        text = "Bootstrap",
+                        text = "Patch",
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary

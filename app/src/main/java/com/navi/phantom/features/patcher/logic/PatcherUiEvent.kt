@@ -1,13 +1,13 @@
-package com.navi.phantom.features.bootstrap.logic
+package com.navi.phantom.features.patcher.logic
 
-sealed interface BootstrapUiEvent {
-    data class LoadApp(val packageName: String) : BootstrapUiEvent
-    data object StartBootstrap : BootstrapUiEvent
-    data object Install : BootstrapUiEvent
-    data object Cancel : BootstrapUiEvent
-    data object Retry : BootstrapUiEvent
-    data object CopyError : BootstrapUiEvent
-    data object ConfirmUninstall : BootstrapUiEvent
-    data object DismissUninstallDialog : BootstrapUiEvent
-    data object LaunchApp : BootstrapUiEvent
+sealed interface PatcherUiEvent {
+    data class LoadApp(val packageName: String) : PatcherUiEvent
+    data object StartPatching : PatcherUiEvent
+    data object Install : PatcherUiEvent
+    data object Cancel : PatcherUiEvent
+    data object Retry : PatcherUiEvent
+    data object CopyError : PatcherUiEvent
+    data object ConfirmUninstall : PatcherUiEvent
+    data object DismissUninstallDialog : PatcherUiEvent
+    data object LaunchApp : PatcherUiEvent
 }

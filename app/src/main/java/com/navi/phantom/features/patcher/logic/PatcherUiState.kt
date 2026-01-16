@@ -1,86 +1,86 @@
-package com.navi.phantom.features.bootstrap.logic
+package com.navi.phantom.features.patcher.logic
 
-import com.navi.phantom.domain.model.BootstrapStep
-import com.navi.phantom.domain.model.DetailedAppInfo
+import com.navi.phantom.domain.model.PatchingStep
+import com.navi.phantom.domain.model.DeviceAppDetails
 
-data class BootstrapUiState(
-    val app: DetailedAppInfo? = null,
+data class PatcherUiState(
+    val app: DeviceAppDetails? = null,
     val isLoadingApp: Boolean = false,
-    val phase: BootstrapPhase = BootstrapPhase.Ready,
-    val bootstrappedApkPath: String? = null
+    val phase: PatcherPhase = PatcherPhase.Ready,
+    val patchedApkPath: String? = null
 ) {
     val hasCopyableError: Boolean
-        get() = phase is BootstrapPhase.Failed
+        get() = phase is PatcherPhase.Failed
 
     val error: PhaseError?
-        get() = (phase as? BootstrapPhase.Failed)?.error
+        get() = (phase as? PatcherPhase.Failed)?.error
 
     val statusMessage: String
         get() = when (val p = phase) {
-            is BootstrapPhase.Ready -> "Ready to bootstrap"
-            is BootstrapPhase.Bootstrapping -> "${p.step.title}..."
-            is BootstrapPhase.Bootstrapped -> "Bootstrapped!"
-            is BootstrapPhase.Installing -> {
+            is PatcherPhase.Ready -> "Ready to patch"
+            is PatcherPhase.Patching -> "${p.step.title}..."
+            is PatcherPhase.Patched -> "Patched!"
+            is PatcherPhase.Installing -> {
                 val percent = p.progressPercent.toInt()
                 "Installing... $percent%"
             }
-            is BootstrapPhase.Installed -> "Installed!"
-            is BootstrapPhase.AwaitingUninstallConfirm -> "Reinstall required (${p.reason})"
-            is BootstrapPhase.Uninstalling -> "Uninstalling..."
-            is BootstrapPhase.Failed -> p.error.message
-            is BootstrapPhase.Cancelled -> "Cancelled"
+            is PatcherPhase.Installed -> "Installed!"
+            is PatcherPhase.AwaitingUninstallConfirm -> "Reinstall required (${p.reason})"
+            is PatcherPhase.Uninstalling -> "Uninstalling..."
+            is PatcherPhase.Failed -> p.error.message
+            is PatcherPhase.Cancelled -> "Cancelled"
         }
 
-    val currentStep: BootstrapStep?
+    val currentStep: PatchingStep?
         get() = when (val p = phase) {
-            is BootstrapPhase.Bootstrapping -> p.step
-            is BootstrapPhase.Bootstrapped -> BootstrapStep.COMPLETE
-            is BootstrapPhase.Installed -> BootstrapStep.COMPLETE
+            is PatcherPhase.Patching -> p.step
+            is PatcherPhase.Patched -> PatchingStep.COMPLETE
+            is PatcherPhase.Installed -> PatchingStep.COMPLETE
             else -> null
         }
 
     val installationProgress: Int
-        get() = (phase as? BootstrapPhase.Installing)?.progress ?: 0
+        get() = (phase as? PatcherPhase.Installing)?.progress ?: 0
 
     val installationProgressMax: Int
-        get() = (phase as? BootstrapPhase.Installing)?.max ?: 100
+        get() = (phase as? PatcherPhase.Installing)?.max ?: 100
 
-    val isBootstrapping: Boolean
-        get() = phase is BootstrapPhase.Bootstrapping
-    
-    val isBootstrapped: Boolean
-        get() = phase is BootstrapPhase.Bootstrapped ||
-                phase is BootstrapPhase.Installing ||
-                phase is BootstrapPhase.Installed ||
-                phase is BootstrapPhase.AwaitingUninstallConfirm ||
-                phase is BootstrapPhase.Uninstalling ||
-                (phase is BootstrapPhase.Failed && phase.failedDuring != FailedPhase.BOOTSTRAP)
-    
+    val isPatching: Boolean
+        get() = phase is PatcherPhase.Patching
+
+    val isPatched: Boolean
+        get() = phase is PatcherPhase.Patched ||
+                phase is PatcherPhase.Installing ||
+                phase is PatcherPhase.Installed ||
+                phase is PatcherPhase.AwaitingUninstallConfirm ||
+                phase is PatcherPhase.Uninstalling ||
+                (phase is PatcherPhase.Failed && phase.failedDuring != FailedPhase.PATCHING)
+
     val isInstalling: Boolean
-        get() = phase is BootstrapPhase.Installing
-    
+        get() = phase is PatcherPhase.Installing
+
     val isInstalled: Boolean
-        get() = phase is BootstrapPhase.Installed
-    
+        get() = phase is PatcherPhase.Installed
+
     val isUninstalling: Boolean
-        get() = phase is BootstrapPhase.Uninstalling
-    
+        get() = phase is PatcherPhase.Uninstalling
+
     val hasFailed: Boolean
-        get() = phase is BootstrapPhase.Failed
-    
+        get() = phase is PatcherPhase.Failed
+
     val showUninstallDialog: Boolean
-        get() = phase is BootstrapPhase.AwaitingUninstallConfirm
-    
+        get() = phase is PatcherPhase.AwaitingUninstallConfirm
+
     val conflictingPackageName: String?
         get() = when (val p = phase) {
-            is BootstrapPhase.AwaitingUninstallConfirm -> p.packageName
-            is BootstrapPhase.Uninstalling -> p.packageName
+            is PatcherPhase.AwaitingUninstallConfirm -> p.packageName
+            is PatcherPhase.Uninstalling -> p.packageName
             else -> null
         }
 
-    val canStartBootstrap: Boolean
-        get() = app != null && !isLoadingApp && phase.canStartBootstrap
+    val canStartPatching: Boolean
+        get() = app != null && !isLoadingApp && phase.canStartPatching
 
     val canInstall: Boolean
-        get() = bootstrappedApkPath != null && phase.canInstall
+        get() = patchedApkPath != null && phase.canInstall
 }

@@ -1,52 +1,49 @@
-package com.navi.phantom.features.bootstrap.logic
+package com.navi.phantom.features.patcher.logic
 
-import com.navi.phantom.domain.error.BootstrapError
+import com.navi.phantom.domain.error.PatchingError
 import com.navi.phantom.domain.error.InstallationError
 import com.navi.phantom.domain.error.PhantomError
-import com.navi.phantom.domain.model.BootstrapStep
+import com.navi.phantom.domain.model.PatchingStep
 
-sealed interface BootstrapPhase {
-    data object Ready : BootstrapPhase
+sealed interface PatcherPhase {
+    data object Ready : PatcherPhase
 
-    data class Bootstrapping(
-        val step: BootstrapStep,
+    data class Patching(
+        val step: PatchingStep,
         val message: String
-    ) : BootstrapPhase
+    ) : PatcherPhase
 
-    data class Bootstrapped(val apkPath: String) : BootstrapPhase
+    data class Patched(val apkPath: String) : PatcherPhase
 
     data class Installing(
         val progress: Int,
         val max: Int,
         val message: String = "Installing..."
-    ) : BootstrapPhase {
+    ) : PatcherPhase {
         val progressPercent: Float
             get() = if (max > 0) (progress.toFloat() / max) * 100f else 0f
     }
 
-    data object Installed : BootstrapPhase
+    data object Installed : PatcherPhase
 
     data class AwaitingUninstallConfirm(
         val packageName: String,
         val reason: String
-    ) : BootstrapPhase
+    ) : PatcherPhase
 
-    data class Uninstalling(
-        val packageName: String,
-        val willReinstall: Boolean = true
-    ) : BootstrapPhase
+    data class Uninstalling(val packageName: String) : PatcherPhase
 
     data class Failed(
         val error: PhaseError,
         val failedDuring: FailedPhase,
         val canRetry: Boolean = true
-    ) : BootstrapPhase
+    ) : PatcherPhase
 
-    data object Cancelled : BootstrapPhase
+    data object Cancelled : PatcherPhase
 }
 
 enum class FailedPhase {
-    BOOTSTRAP,
+    PATCHING,
     INSTALL,
     UNINSTALL
 }
@@ -57,7 +54,7 @@ sealed class PhaseError(
     override val cause: Throwable? = null
 ) : PhantomError {
 
-    data class Bootstrap(val error: BootstrapError) : PhaseError(
+    data class Patching(val error: PatchingError) : PhaseError(
         title = error.title,
         message = error.message,
         cause = error.cause
@@ -85,11 +82,11 @@ sealed class PhaseError(
     )
 }
 
-val BootstrapPhase.canStartBootstrap: Boolean
-    get() = this is BootstrapPhase.Ready ||
-            this is BootstrapPhase.Cancelled ||
-            (this is BootstrapPhase.Failed && failedDuring == FailedPhase.BOOTSTRAP)
+val PatcherPhase.canStartPatching: Boolean
+    get() = this is PatcherPhase.Ready ||
+            this is PatcherPhase.Cancelled ||
+            (this is PatcherPhase.Failed && failedDuring == FailedPhase.PATCHING)
 
-val BootstrapPhase.canInstall: Boolean
-    get() = this is BootstrapPhase.Bootstrapped ||
-            (this is BootstrapPhase.Failed && failedDuring == FailedPhase.INSTALL)
+val PatcherPhase.canInstall: Boolean
+    get() = this is PatcherPhase.Patched ||
+            (this is PatcherPhase.Failed && failedDuring == FailedPhase.INSTALL)

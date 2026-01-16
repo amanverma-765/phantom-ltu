@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -37,17 +37,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.domain.model.BootstrapStep
+import com.navi.phantom.domain.model.PatchingStep
 
-private val timelineSteps = BootstrapStep.entries
+private val timelineSteps = PatchingStep.entries
 
 @Composable
-fun BootstrapTimeline(
-    currentStep: BootstrapStep?,
-    isBootstrapping: Boolean,
-    isBootstrapped: Boolean,
+fun PatcherTimeline(
+    currentStep: PatchingStep?,
+    isPatching: Boolean,
+    isPatched: Boolean,
     hasFailed: Boolean,
-    statusColors: BootstrapStatusColors,
+    statusColors: PatcherStatusColors,
     modifier: Modifier = Modifier
 ) {
     // Find current step index in the timeline
@@ -56,13 +56,13 @@ fun BootstrapTimeline(
     }
 
     val completedSteps = when {
-        isBootstrapped -> timelineSteps.size
+        isPatched -> timelineSteps.size
         currentStepIndex >= 0 -> currentStepIndex
         else -> 0
     }
 
     val progress by animateFloatAsState(
-        targetValue = if (isBootstrapped) 1f else completedSteps.toFloat() / timelineSteps.size,
+        targetValue = if (isPatched) 1f else completedSteps.toFloat() / timelineSteps.size,
         animationSpec = tween(400),
         label = "progress"
     )
@@ -101,9 +101,9 @@ fun BootstrapTimeline(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = if (isBootstrapped) "Complete" else "$completedSteps of ${timelineSteps.size}",
+                    text = if (isPatched) "Complete" else "$completedSteps of ${timelineSteps.size}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isBootstrapped) statusColors.success else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isPatched) statusColors.success else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -112,7 +112,7 @@ fun BootstrapTimeline(
             // Progress bar
             LinearProgressIndicator(
                 progress = { progress },
-                color = if (isBootstrapped) statusColors.success
+                color = if (isPatched) statusColors.success
                         else if (hasFailed) statusColors.error
                         else MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -127,8 +127,8 @@ fun BootstrapTimeline(
 
             // Steps list
             timelineSteps.forEachIndexed { index, step ->
-                val isCompleted = isBootstrapped || index < currentStepIndex
-                val isActive = index == currentStepIndex && isBootstrapping && !hasFailed
+                val isCompleted = isPatched || index < currentStepIndex
+                val isActive = index == currentStepIndex && isPatching && !hasFailed
                 val isPending = !isCompleted && !isActive
 
                 TimelineStep(
@@ -154,7 +154,7 @@ private fun TimelineStep(
     isPending: Boolean,
     hasFailed: Boolean,
     pulseAlpha: Float,
-    statusColors: BootstrapStatusColors,
+    statusColors: PatcherStatusColors,
     showConnector: Boolean
 ) {
     val dotColor by animateColorAsState(

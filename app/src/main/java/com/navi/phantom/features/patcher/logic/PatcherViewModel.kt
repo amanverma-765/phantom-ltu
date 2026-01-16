@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.logic
+package com.navi.phantom.features.patcher.logic
 
 import android.app.Application
 import android.content.ClipData
@@ -8,16 +8,18 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.navi.phantom.domain.usecase.BootstrapUseCase
 import com.navi.phantom.domain.error.AppError
 import com.navi.phantom.domain.error.InstallationError
-import com.navi.phantom.domain.model.BootstrapOptions
-import com.navi.phantom.domain.model.BootstrapProgress
-import com.navi.phantom.domain.model.BootstrapStep
+import com.navi.phantom.domain.model.PatchingOptions
+import com.navi.phantom.domain.model.PatchingProgress
+import com.navi.phantom.domain.model.PatchingStep
 import com.navi.phantom.domain.model.InstallationState
 import com.navi.phantom.domain.model.UninstallState
-import com.navi.phantom.domain.usecase.InstalledAppUseCase
+import com.navi.phantom.core.ext.toByteArray
+import com.navi.phantom.domain.usecase.PatcherUseCase
+import com.navi.phantom.domain.usecase.DeviceAppUseCase
 import com.navi.phantom.domain.usecase.InstallationUseCase
+import com.navi.phantom.domain.usecase.PatchedAppUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -29,34 +31,35 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class BootstrapViewModel(
+class PatcherViewModel(
     private val application: Application,
-    private val installedAppUseCase: InstalledAppUseCase,
-    private val bootstrapUseCase: BootstrapUseCase,
-    private val installationUseCase: InstallationUseCase
+    private val deviceAppUseCase: DeviceAppUseCase,
+    private val patcherUseCase: PatcherUseCase,
+    private val installationUseCase: InstallationUseCase,
+    private val patchedAppUseCase: PatchedAppUseCase
 ) : ViewModel() {
-    
-    private val log = Logger.withTag("BootstrapViewModel")
 
-    private val _uiState = MutableStateFlow(BootstrapUiState())
-    val uiState: StateFlow<BootstrapUiState> = _uiState.asStateFlow()
+    private val log = Logger.withTag("PatcherViewModel")
+
+    private val _uiState = MutableStateFlow(PatcherUiState())
+    val uiState: StateFlow<PatcherUiState> = _uiState.asStateFlow()
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     private var currentJob: Job? = null
 
-    fun onEvent(event: BootstrapUiEvent) {
+    fun onEvent(event: PatcherUiEvent) {
         when (event) {
-            is BootstrapUiEvent.LoadApp -> loadApp(event.packageName)
-            is BootstrapUiEvent.StartBootstrap -> startBootstrap()
-            is BootstrapUiEvent.Install -> install()
-            is BootstrapUiEvent.Cancel -> cancel()
-            is BootstrapUiEvent.Retry -> retry()
-            is BootstrapUiEvent.CopyError -> copyError()
-            is BootstrapUiEvent.ConfirmUninstall -> confirmUninstall()
-            is BootstrapUiEvent.DismissUninstallDialog -> dismissUninstallDialog()
-            is BootstrapUiEvent.LaunchApp -> launchApp()
+            is PatcherUiEvent.LoadApp -> loadApp(event.packageName)
+            is PatcherUiEvent.StartPatching -> startPatching()
+            is PatcherUiEvent.Install -> install()
+            is PatcherUiEvent.Cancel -> cancel()
+            is PatcherUiEvent.Retry -> retry()
+            is PatcherUiEvent.CopyError -> copyError()
+            is PatcherUiEvent.ConfirmUninstall -> confirmUninstall()
+            is PatcherUiEvent.DismissUninstallDialog -> dismissUninstallDialog()
+            is PatcherUiEvent.LaunchApp -> launchApp()
         }
     }
 
@@ -65,17 +68,17 @@ class BootstrapViewModel(
         currentJob = null
 
         _uiState.update {
-            BootstrapUiState(isLoadingApp = true)
+            PatcherUiState(isLoadingApp = true)
         }
 
         viewModelScope.launch {
-            installedAppUseCase.getAppDetails(packageName)
+            deviceAppUseCase.getAppDetails(packageName)
                 .onSuccess { appInfo ->
                     _uiState.update {
                         it.copy(
                             app = appInfo,
                             isLoadingApp = false,
-                            phase = BootstrapPhase.Ready
+                            phase = PatcherPhase.Ready
                         )
                     }
                 }
@@ -84,9 +87,9 @@ class BootstrapViewModel(
                     _uiState.update {
                         it.copy(
                             isLoadingApp = false,
-                            phase = BootstrapPhase.Failed(
+                            phase = PatcherPhase.Failed(
                                 error = PhaseError.Generic(AppError.AppDetailsLoadFailed.message),
-                                failedDuring = FailedPhase.BOOTSTRAP,
+                                failedDuring = FailedPhase.PATCHING,
                                 canRetry = false
                             )
                         )
@@ -95,46 +98,48 @@ class BootstrapViewModel(
         }
     }
 
-    private fun startBootstrap() {
+    private fun startPatching() {
         val app = _uiState.value.app ?: return
-        
+
         currentJob?.cancel()
-        setPhase(BootstrapPhase.Bootstrapping(BootstrapStep.PARSE_APK, "Initializing..."))
+        setPhase(PatcherPhase.Patching(PatchingStep.PARSE_APK, "Initializing..."))
 
         currentJob = viewModelScope.launch {
-            val splitApkPaths = bootstrapUseCase.getSplitApkPaths(app.packageName)
-            log.d { "Starting bootstrap for ${app.packageName} with ${splitApkPaths.size} split APKs" }
+            val splitApkPaths = patcherUseCase.getSplitApkPaths(app.packageName)
+            log.d { "Starting patching for ${app.packageName} with ${splitApkPaths.size} split APKs" }
 
-            bootstrapUseCase.bootstrap(
+            patcherUseCase.patch(
                 packageName = app.packageName,
                 versionCode = app.versionCode,
                 apkPath = app.apkPath,
                 splitApkPaths = splitApkPaths,
-                options = BootstrapOptions(sigbypassLevel = 1)
+                options = PatchingOptions(sigbypassLevel = 1)
             ).collect { progress ->
                 when (progress) {
-                    is BootstrapProgress.Step -> {
-                        setPhase(BootstrapPhase.Bootstrapping(progress.step, progress.message))
+                    is PatchingProgress.Step -> {
+                        setPhase(PatcherPhase.Patching(progress.step, progress.message))
                     }
-                    is BootstrapProgress.Completed -> {
-                        log.i { "Bootstrap completed: ${progress.outputPath}" }
+                    is PatchingProgress.Completed -> {
+                        log.i { "Patching completed: ${progress.outputPath}" }
+                        // Save patched app to database
+                        savePatchedApp(progress.outputPath, splitApkPaths.isNotEmpty())
                         _uiState.update {
                             it.copy(
-                                phase = BootstrapPhase.Bootstrapped(progress.outputPath),
-                                bootstrappedApkPath = progress.outputPath
+                                phase = PatcherPhase.Patched(progress.outputPath),
+                                patchedApkPath = progress.outputPath
                             )
                         }
                     }
-                    is BootstrapProgress.Failed -> {
-                        log.e { "Bootstrap failed: ${progress.error.title}" }
-                        setPhase(BootstrapPhase.Failed(
-                            error = PhaseError.Bootstrap(progress.error),
-                            failedDuring = FailedPhase.BOOTSTRAP
+                    is PatchingProgress.Failed -> {
+                        log.e { "Patching failed: ${progress.error.title}" }
+                        setPhase(PatcherPhase.Failed(
+                            error = PhaseError.Patching(progress.error),
+                            failedDuring = FailedPhase.PATCHING
                         ))
                     }
-                    is BootstrapProgress.Cancelled -> {
-                        log.i { "Bootstrap cancelled" }
-                        setPhase(BootstrapPhase.Cancelled)
+                    is PatchingProgress.Cancelled -> {
+                        log.i { "Patching cancelled" }
+                        setPhase(PatcherPhase.Cancelled)
                     }
                 }
             }
@@ -142,22 +147,22 @@ class BootstrapViewModel(
     }
 
     private fun install() {
-        val bootstrappedPath = _uiState.value.bootstrappedApkPath ?: return
-        val appName = _uiState.value.app?.appName ?: "Bootstrapped App"
+        val patchedPath = _uiState.value.patchedApkPath ?: return
+        val appName = _uiState.value.app?.appName ?: "Patched App"
 
-        log.d { "Starting installation for: $bootstrappedPath" }
+        log.d { "Starting installation for: $patchedPath" }
         currentJob?.cancel()
-        setPhase(BootstrapPhase.Installing(0, 100, "Checking installation..."))
+        setPhase(PatcherPhase.Installing(0, 100, "Checking installation..."))
 
         currentJob = viewModelScope.launch {
             // Run preflight check
-            when (val result = installationUseCase.runPreflightCheck(bootstrappedPath)) {
+            when (val result = installationUseCase.runPreflightCheck(patchedPath)) {
                 is InstallationUseCase.PreflightResult.CanInstall -> {
-                    performInstall(bootstrappedPath, appName)
+                    performInstall(patchedPath, appName)
                 }
                 is InstallationUseCase.PreflightResult.RequiresUninstall -> {
                     log.d { "Preflight requires uninstall: ${result.reason}" }
-                    setPhase(BootstrapPhase.AwaitingUninstallConfirm(
+                    setPhase(PatcherPhase.AwaitingUninstallConfirm(
                         packageName = result.packageName,
                         reason = result.reason
                     ))
@@ -167,23 +172,23 @@ class BootstrapViewModel(
     }
 
     private suspend fun performInstall(path: String, appName: String) {
-        setPhase(BootstrapPhase.Installing(0, 100, "Preparing installation..."))
+        setPhase(PatcherPhase.Installing(0, 100, "Preparing installation..."))
 
         installationUseCase.install(path, appName).collect { state ->
             when (state) {
-                is InstallationState.Idle -> { /* No-op */ }
+                is InstallationState.Idle -> { }
                 is InstallationState.Preparing -> {
-                    setPhase(BootstrapPhase.Installing(0, 100, "Preparing..."))
+                    setPhase(PatcherPhase.Installing(0, 100, "Preparing..."))
                 }
                 is InstallationState.Installing -> {
-                    setPhase(BootstrapPhase.Installing(state.progress, state.max))
+                    setPhase(PatcherPhase.Installing(state.progress, state.max))
                 }
                 is InstallationState.AwaitingConfirmation -> {
-                    setPhase(BootstrapPhase.Installing(50, 100, "Waiting for confirmation..."))
+                    setPhase(PatcherPhase.Installing(50, 100, "Waiting for confirmation..."))
                 }
                 is InstallationState.Succeeded -> {
                     log.i { "Installation succeeded" }
-                    setPhase(BootstrapPhase.Installed)
+                    setPhase(PatcherPhase.Installed)
                     _toastEvent.emit("Installation complete!")
                 }
                 is InstallationState.Failed -> {
@@ -192,7 +197,7 @@ class BootstrapViewModel(
                 }
                 is InstallationState.Cancelled -> {
                     log.i { "Installation cancelled" }
-                    setPhase(BootstrapPhase.Cancelled)
+                    setPhase(PatcherPhase.Cancelled)
                 }
             }
         }
@@ -201,19 +206,19 @@ class BootstrapViewModel(
     private fun handleInstallationError(error: InstallationError) {
         if (installationUseCase.requiresUninstall(error)) {
             val packageName = installationUseCase.getConflictingPackage(
-                error, 
+                error,
                 _uiState.value.app?.packageName
             )
             if (packageName != null) {
-                setPhase(BootstrapPhase.AwaitingUninstallConfirm(
+                setPhase(PatcherPhase.AwaitingUninstallConfirm(
                     packageName = packageName,
                     reason = error.title
                 ))
                 return
             }
         }
-        
-        setPhase(BootstrapPhase.Failed(
+
+        setPhase(PatcherPhase.Failed(
             error = PhaseError.Installation(error),
             failedDuring = FailedPhase.INSTALL
         ))
@@ -221,26 +226,26 @@ class BootstrapViewModel(
 
     private fun confirmUninstall() {
         val packageName = when (val phase = _uiState.value.phase) {
-            is BootstrapPhase.AwaitingUninstallConfirm -> phase.packageName
+            is PatcherPhase.AwaitingUninstallConfirm -> phase.packageName
             else -> _uiState.value.app?.packageName
         } ?: return
 
         log.d { "Starting uninstall for: $packageName" }
         currentJob?.cancel()
-        setPhase(BootstrapPhase.Uninstalling(packageName, willReinstall = true))
+        setPhase(PatcherPhase.Uninstalling(packageName))
 
         currentJob = viewModelScope.launch {
             installationUseCase.uninstall(packageName).collect { state ->
                 when (state) {
-                    is UninstallState.Idle -> { /* No-op */ }
-                    is UninstallState.Preparing -> { /* Already showing Uninstalling */ }
+                    is UninstallState.Idle -> { }
+                    is UninstallState.Preparing -> { }
                     is UninstallState.Succeeded -> {
                         log.i { "Uninstall succeeded, will reinstall" }
                         performReinstallAfterUninstall(packageName)
                     }
                     is UninstallState.Failed -> {
                         log.e { "Uninstall failed: ${state.message}" }
-                        setPhase(BootstrapPhase.Failed(
+                        setPhase(PatcherPhase.Failed(
                             error = PhaseError.Uninstall(state.cause ?: Exception(state.message)),
                             failedDuring = FailedPhase.UNINSTALL
                         ))
@@ -248,12 +253,12 @@ class BootstrapViewModel(
                     }
                     is UninstallState.Cancelled -> {
                         log.i { "Uninstall cancelled" }
-                        // Go back to bootstrapped state since we still have the APK
-                        val apkPath = _uiState.value.bootstrappedApkPath
+                        // Go back to patched state since we still have the APK
+                        val apkPath = _uiState.value.patchedApkPath
                         if (apkPath != null) {
-                            setPhase(BootstrapPhase.Bootstrapped(apkPath))
+                            setPhase(PatcherPhase.Patched(apkPath))
                         } else {
-                            setPhase(BootstrapPhase.Cancelled)
+                            setPhase(PatcherPhase.Cancelled)
                         }
                     }
                 }
@@ -262,33 +267,33 @@ class BootstrapViewModel(
     }
 
     private suspend fun performReinstallAfterUninstall(uninstalledPackage: String) {
-        val bootstrappedPath = _uiState.value.bootstrappedApkPath ?: return
-        val appName = _uiState.value.app?.appName ?: "Bootstrapped App"
+        val patchedPath = _uiState.value.patchedApkPath ?: return
+        val appName = _uiState.value.app?.appName ?: "Patched App"
 
         // Wait for package to be fully uninstalled
-        setPhase(BootstrapPhase.Installing(0, 100, "Waiting for system..."))
-        
+        setPhase(PatcherPhase.Installing(0, 100, "Waiting for system..."))
+
         val uninstalled = installationUseCase.waitForUninstall(uninstalledPackage)
         if (!uninstalled) {
             log.w { "Package may not be fully uninstalled" }
         }
 
         // Cleanup orphaned sessions
-        setPhase(BootstrapPhase.Installing(0, 100, "Cleaning up..."))
+        setPhase(PatcherPhase.Installing(0, 100, "Cleaning up..."))
         installationUseCase.cleanupSessions()
         delay(300) // Brief delay for system to settle
 
         // Perform installation
-        performInstall(bootstrappedPath, appName)
+        performInstall(patchedPath, appName)
     }
 
     private fun dismissUninstallDialog() {
-        // Go back to bootstrapped state
-        val apkPath = _uiState.value.bootstrappedApkPath
+        // Go back to patched state
+        val apkPath = _uiState.value.patchedApkPath
         if (apkPath != null) {
-            setPhase(BootstrapPhase.Bootstrapped(apkPath))
+            setPhase(PatcherPhase.Patched(apkPath))
         } else {
-            setPhase(BootstrapPhase.Ready)
+            setPhase(PatcherPhase.Ready)
         }
     }
 
@@ -296,42 +301,42 @@ class BootstrapViewModel(
         log.d { "Cancelling current operation" }
         currentJob?.cancel()
         currentJob = null
-        
-        // Also cancel the bootstrap use case in case it's running
-        bootstrapUseCase.cancel()
+
+        // Also cancel the patcher use case in case it's running
+        patcherUseCase.cancel()
 
         // Determine what state to go back to
-        val apkPath = _uiState.value.bootstrappedApkPath
-        if (apkPath != null && _uiState.value.phase !is BootstrapPhase.Bootstrapping) {
-            // We have a bootstrapped APK, go back to that state
-            setPhase(BootstrapPhase.Bootstrapped(apkPath))
+        val apkPath = _uiState.value.patchedApkPath
+        if (apkPath != null && _uiState.value.phase !is PatcherPhase.Patching) {
+            // We have a patched APK, go back to that state
+            setPhase(PatcherPhase.Patched(apkPath))
         } else {
-            setPhase(BootstrapPhase.Cancelled)
+            setPhase(PatcherPhase.Cancelled)
         }
     }
 
     private fun retry() {
         val phase = _uiState.value.phase
-        if (phase is BootstrapPhase.Failed) {
+        if (phase is PatcherPhase.Failed) {
             when (phase.failedDuring) {
-                FailedPhase.BOOTSTRAP -> startBootstrap()
+                FailedPhase.PATCHING -> startPatching()
                 FailedPhase.INSTALL -> install()
                 FailedPhase.UNINSTALL -> {
                     // Try to install directly since uninstall may have succeeded
                     install()
                 }
             }
-        } else if (phase is BootstrapPhase.Cancelled) {
+        } else if (phase is PatcherPhase.Cancelled) {
             // Retry from beginning or install if we have an APK
-            if (_uiState.value.bootstrappedApkPath != null) {
+            if (_uiState.value.patchedApkPath != null) {
                 install()
             } else {
-                startBootstrap()
+                startPatching()
             }
         }
     }
 
-    private fun setPhase(phase: BootstrapPhase) {
+    private fun setPhase(phase: PatcherPhase) {
         _uiState.update { it.copy(phase = phase) }
     }
 
@@ -371,4 +376,30 @@ class BootstrapViewModel(
         }
     }
 
+    /**
+     * Save the patched app to the database for display on the home screen.
+     */
+    private fun savePatchedApp(patchedApkPath: String, isSplitApk: Boolean) {
+        val app = _uiState.value.app ?: return
+
+        viewModelScope.launch {
+            try {
+                val iconBytes = app.icon?.toByteArray()
+                patchedAppUseCase.savePatchedApp(
+                    packageName = app.packageName,
+                    appName = app.appName,
+                    versionName = app.versionName,
+                    versionCode = app.versionCode,
+                    patchedApkPath = patchedApkPath,
+                    originalApkSizeBytes = app.apkSizeBytes,
+                    isSplitApk = isSplitApk,
+                    iconBytes = iconBytes
+                )
+                log.i { "Patched app saved to database: ${app.packageName}" }
+            } catch (e: Exception) {
+                log.e(e) { "Failed to save patched app to database" }
+                // Don't fail the patching operation if DB save fails
+            }
+        }
+    }
 }

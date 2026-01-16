@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.screens
+package com.navi.phantom.features.patcher.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -32,22 +32,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.core.ui.LoadingState
-import com.navi.phantom.features.bootstrap.components.AppInfoHeader
-import com.navi.phantom.features.bootstrap.components.BootstrapActionButton
-import com.navi.phantom.features.bootstrap.components.BootstrapTimeline
-import com.navi.phantom.features.bootstrap.components.StatusBar
-import com.navi.phantom.features.bootstrap.components.UninstallRequiredDialog
-import com.navi.phantom.features.bootstrap.components.rememberBootstrapStatusColors
-import com.navi.phantom.features.bootstrap.logic.BootstrapPhase
-import com.navi.phantom.features.bootstrap.logic.BootstrapUiEvent
-import com.navi.phantom.features.bootstrap.logic.BootstrapViewModel
-import com.navi.phantom.features.bootstrap.logic.FailedPhase
+import com.navi.phantom.features.patcher.components.AppInfoHeader
+import com.navi.phantom.features.patcher.components.PatcherActionButton
+import com.navi.phantom.features.patcher.components.PatcherTimeline
+import com.navi.phantom.features.patcher.components.StatusBar
+import com.navi.phantom.features.patcher.components.UninstallRequiredDialog
+import com.navi.phantom.features.patcher.components.rememberPatcherStatusColors
+import com.navi.phantom.features.patcher.logic.PatcherPhase
+import com.navi.phantom.features.patcher.logic.PatcherUiEvent
+import com.navi.phantom.features.patcher.logic.PatcherViewModel
+import com.navi.phantom.features.patcher.logic.FailedPhase
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BootstrapScreen(
-    viewModel: BootstrapViewModel,
+fun PatcherScreen(
+    viewModel: PatcherViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -58,9 +58,8 @@ fun BootstrapScreen(
     val isLoadingApp = uiState.isLoadingApp
     val phase = uiState.phase
 
-    // Derive all UI state from phase
-    val isBootstrapping = uiState.isBootstrapping
-    val isBootstrapped = uiState.isBootstrapped
+    val isPatching = uiState.isPatching
+    val isPatched = uiState.isPatched
     val isInstalling = uiState.isInstalling
     val isInstalled = uiState.isInstalled
     val isUninstalling = uiState.isUninstalling
@@ -68,10 +67,9 @@ fun BootstrapScreen(
     val showUninstallDialog = uiState.showUninstallDialog
     val hasCopyableError = uiState.hasCopyableError
 
-    // For action button
-    val canStartBootstrap = uiState.canStartBootstrap
+    val canStartPatching = uiState.canStartPatching
     val canInstall = uiState.canInstall
-    val hasInstallError = phase is BootstrapPhase.Failed && 
+    val hasInstallError = phase is PatcherPhase.Failed &&
         phase.failedDuring == FailedPhase.INSTALL
 
     // Handle toast events
@@ -81,7 +79,7 @@ fun BootstrapScreen(
         }
     }
 
-    val statusColors = rememberBootstrapStatusColors()
+    val statusColors = rememberPatcherStatusColors()
     val scrollState = rememberScrollState()
 
     BackHandler { onNavigateBack() }
@@ -89,9 +87,9 @@ fun BootstrapScreen(
     val accentColor by animateColorAsState(
         targetValue = when {
             isInstalled -> statusColors.success
-            isBootstrapped && !isInstalling -> statusColors.success
+            isPatched && !isInstalling -> statusColors.success
             hasFailed -> statusColors.error
-            isBootstrapping || isInstalling || isUninstalling -> MaterialTheme.colorScheme.tertiary
+            isPatching || isInstalling || isUninstalling -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.primary
         },
         animationSpec = tween(400),
@@ -116,15 +114,15 @@ fun BootstrapScreen(
         bottomBar = {
             if (app != null && !isLoadingApp) {
                 BottomAppBar {
-                    BootstrapActionButton(
+                    PatcherActionButton(
                         phase = phase,
-                        canStartBootstrap = canStartBootstrap,
+                        canStartPatching = canStartPatching,
                         canInstall = canInstall,
-                        onStartBootstrap = { viewModel.onEvent(BootstrapUiEvent.StartBootstrap) },
-                        onInstall = { viewModel.onEvent(BootstrapUiEvent.Install) },
-                        onCancel = { viewModel.onEvent(BootstrapUiEvent.Cancel) },
-                        onRetry = { viewModel.onEvent(BootstrapUiEvent.Retry) },
-                        onLaunch = { viewModel.onEvent(BootstrapUiEvent.LaunchApp) },
+                        onStartPatching = { viewModel.onEvent(PatcherUiEvent.StartPatching) },
+                        onInstall = { viewModel.onEvent(PatcherUiEvent.Install) },
+                        onCancel = { viewModel.onEvent(PatcherUiEvent.Cancel) },
+                        onRetry = { viewModel.onEvent(PatcherUiEvent.Retry) },
+                        onLaunch = { viewModel.onEvent(PatcherUiEvent.LaunchApp) },
                         onNavigateBack = onNavigateBack,
                         statusColors = statusColors,
                         modifier = Modifier
@@ -171,7 +169,7 @@ fun BootstrapScreen(
                     // Compact App Info Header
                     AppInfoHeader(
                         app = app,
-                        isBootstrapped = isBootstrapped,
+                        isPatched = isPatched,
                         hasFailed = hasFailed,
                         statusColors = statusColors
                     )
@@ -179,23 +177,23 @@ fun BootstrapScreen(
                     // Status Bar with optional Copy Error button
                     StatusBar(
                         message = uiState.statusMessage,
-                        isBootstrapping = isBootstrapping,
-                        isBootstrapped = isBootstrapped && !isInstalling && !isInstalled,
+                        isPatching = isPatching,
+                        isPatched = isPatched && !isInstalling && !isInstalled,
                         hasFailed = hasFailed,
                         accentColor = accentColor,
                         statusColors = statusColors,
                         showCopyButton = hasCopyableError,
-                        onCopyError = { viewModel.onEvent(BootstrapUiEvent.CopyError) },
+                        onCopyError = { viewModel.onEvent(PatcherUiEvent.CopyError) },
                         isInstalling = isInstalling,
                         installationProgress = uiState.installationProgress,
                         installationProgressMax = uiState.installationProgressMax
                     )
 
                     // Process Timeline - always visible
-                    BootstrapTimeline(
+                    PatcherTimeline(
                         currentStep = uiState.currentStep,
-                        isBootstrapping = isBootstrapping,
-                        isBootstrapped = isBootstrapped,
+                        isPatching = isPatching,
+                        isPatched = isPatched,
                         hasFailed = hasFailed,
                         statusColors = statusColors
                     )
@@ -209,8 +207,8 @@ fun BootstrapScreen(
         UninstallRequiredDialog(
             packageName = uiState.conflictingPackageName,
             errorMessage = uiState.error?.message,
-            onConfirmUninstall = { viewModel.onEvent(BootstrapUiEvent.ConfirmUninstall) },
-            onDismiss = { viewModel.onEvent(BootstrapUiEvent.DismissUninstallDialog) }
+            onConfirmUninstall = { viewModel.onEvent(PatcherUiEvent.ConfirmUninstall) },
+            onDismiss = { viewModel.onEvent(PatcherUiEvent.DismissUninstallDialog) }
         )
     }
 }

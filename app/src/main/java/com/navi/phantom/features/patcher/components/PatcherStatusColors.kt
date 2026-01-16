@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -13,7 +13,7 @@ import com.navi.phantom.core.theme.SuccessGreenContainerLight
 import com.navi.phantom.core.theme.SuccessGreenDark
 import com.navi.phantom.core.theme.SuccessGreenLight
 
-data class BootstrapStatusColors(
+data class PatcherStatusColors(
     val success: Color,
     val successContainer: Color,
     val onSuccess: Color,
@@ -22,10 +22,10 @@ data class BootstrapStatusColors(
 )
 
 @Composable
-fun rememberBootstrapStatusColors(): BootstrapStatusColors {
+fun rememberPatcherStatusColors(): PatcherStatusColors {
     val isDarkTheme = isSystemInDarkTheme()
     return remember(isDarkTheme) {
-        BootstrapStatusColors(
+        PatcherStatusColors(
             success = if (isDarkTheme) SuccessGreenDark else SuccessGreenLight,
             successContainer = if (isDarkTheme) SuccessGreenContainerDark else SuccessGreenContainerLight,
             onSuccess = Color.White,

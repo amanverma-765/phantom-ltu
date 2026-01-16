@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

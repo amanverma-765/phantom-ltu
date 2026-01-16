@@ -1,4 +1,4 @@
-package com.navi.phantom.features.bootstrap.components
+package com.navi.phantom.features.patcher.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.domain.model.DetailedAppInfo
+import com.navi.phantom.domain.model.DeviceAppDetails
 import com.navi.phantom.features.apps.components.AppIcon
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,14 +44,14 @@ import java.util.Locale
 
 @Composable
 fun AppInfoHeader(
-    app: DetailedAppInfo,
-    isBootstrapped: Boolean,
+    app: DeviceAppDetails,
+    isPatched: Boolean,
     hasFailed: Boolean,
-    statusColors: BootstrapStatusColors,
+    statusColors: PatcherStatusColors,
     modifier: Modifier = Modifier
 ) {
     val successScale by animateFloatAsState(
-        targetValue = if (isBootstrapped) 1.02f else 1f,
+        targetValue = if (isPatched) 1.02f else 1f,
         animationSpec = tween(300),
         label = "successScale"
     )
@@ -73,11 +73,9 @@ fun AppInfoHeader(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Top section: Icon + Basic info
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // App Icon with badge
                 Box {
                     AppIcon(
                         icon = app.icon,
@@ -86,7 +84,6 @@ fun AppInfoHeader(
                         cornerRadius = 14.dp
                     )
 
-                    // Status badge - error takes precedence over success
                     when {
                         hasFailed -> {
                             Surface(
@@ -104,7 +101,7 @@ fun AppInfoHeader(
                                 )
                             }
                         }
-                        isBootstrapped -> {
+                        isPatched -> {
                             Surface(
                                 color = statusColors.successContainer,
                                 shape = CircleShape,
@@ -125,7 +122,6 @@ fun AppInfoHeader(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                // App name, package, version
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -167,7 +163,6 @@ fun AppInfoHeader(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Details grid - 2x2
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()

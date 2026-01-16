@@ -1,12 +1,12 @@
-package com.navi.phantom.data.bootstrap
+package com.navi.phantom.data.patcher
 
 import android.content.Context
 import co.touchlab.kermit.Logger
-import com.navi.phantom.domain.error.BootstrapError
-import com.navi.phantom.domain.model.BootstrapOptions
-import com.navi.phantom.domain.model.BootstrapProgress
-import com.navi.phantom.domain.model.BootstrapStep
-import com.navi.phantom.domain.repository.BootstrapProvider
+import com.navi.phantom.domain.error.PatchingError
+import com.navi.phantom.domain.model.PatchingOptions
+import com.navi.phantom.domain.model.PatchingProgress
+import com.navi.phantom.domain.model.PatchingStep
+import com.navi.phantom.domain.repository.PatcherProvider
 import com.navi.phantom.patcher.PhantomPatcher
 import com.navi.phantom.shared.ApksBundleHelper
 import com.navi.phantom.shared.Constants
@@ -25,21 +25,30 @@ private fun getBaseName(fileName: String): String {
     return if (lastDot > 0) fileName.take(lastDot) else fileName
 }
 
-class BootstrapProviderImpl(context: Context) : BootstrapProvider {
+class PatcherProviderImpl(context: Context) : PatcherProvider {
 
-    private val log = Logger.withTag("BootstrapProviderImpl")
-    private val outputDir: File = context.filesDir.resolve("bootstrapped").apply { mkdirs() }
+    private val log = Logger.withTag("PatcherProviderImpl")
+    private val outputDir: File
+
+    init {
+        val oldDir = context.filesDir.resolve("bootstrapped")
+        val newDir = context.filesDir.resolve("patched")
+        if (oldDir.exists() && !newDir.exists()) {
+            oldDir.renameTo(newDir)
+        }
+        outputDir = newDir.apply { mkdirs() }
+    }
 
     @Volatile
     private var isCancelled = false
 
-    override fun bootstrap(
+    override fun patch(
         packageName: String,
         versionCode: Long,
         apkPath: String,
         splitApkPaths: List<String>,
-        options: BootstrapOptions
-    ): Flow<BootstrapProgress> = callbackFlow {
+        options: PatchingOptions
+    ): Flow<PatchingProgress> = callbackFlow {
         isCancelled = false
 
         withContext(Dispatchers.IO) {
@@ -47,22 +56,22 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
                 val isSplitApk = splitApkPaths.isNotEmpty()
 
                 val outputPath = if (isSplitApk) {
-                    bootstrapBundle(packageName, versionCode, apkPath, splitApkPaths, options) { step, message ->
-                        if (!isCancelled && isActive) trySend(BootstrapProgress.Step(step, message))
+                    patchBundle(packageName, versionCode, apkPath, splitApkPaths, options) { step, message ->
+                        if (!isCancelled && isActive) trySend(PatchingProgress.Step(step, message))
                     }
                 } else {
-                    bootstrapSingleApk(packageName, versionCode, apkPath, options) { step, message ->
-                        if (!isCancelled && isActive) trySend(BootstrapProgress.Step(step, message))
+                    patchSingleApk(packageName, versionCode, apkPath, options) { step, message ->
+                        if (!isCancelled && isActive) trySend(PatchingProgress.Step(step, message))
                     }
                 }
 
-                if (!isCancelled && isActive) trySend(BootstrapProgress.Completed(outputPath))
+                if (!isCancelled && isActive) trySend(PatchingProgress.Completed(outputPath))
             } catch (e: CancellationException) {
-                log.i { "Bootstrap cancelled" }
-                trySend(BootstrapProgress.Cancelled)
+                log.i { "Patching cancelled" }
+                trySend(PatchingProgress.Cancelled)
             } catch (e: Throwable) {
-                log.e(e) { "Bootstrap failed" }
-                trySend(BootstrapProgress.Failed(BootstrapError.from(e)))
+                log.e(e) { "Patching failed" }
+                trySend(PatchingProgress.Failed(PatchingError.from(e)))
             }
         }
 
@@ -74,7 +83,7 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
     }
 
     private fun checkCancelled() {
-        if (isCancelled) throw CancellationException("Bootstrap cancelled")
+        if (isCancelled) throw CancellationException("Patching cancelled")
     }
 
     private fun cleanupExistingPatchedFiles(packageName: String, exceptFile: File) {
@@ -86,12 +95,12 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
             }
     }
 
-    private fun bootstrapSingleApk(
+    private fun patchSingleApk(
         packageName: String,
         versionCode: Long,
         apkPath: String,
-        options: BootstrapOptions,
-        onStep: (BootstrapStep, String) -> Unit
+        options: PatchingOptions,
+        onStep: (PatchingStep, String) -> Unit
     ): String {
         val srcApkFile = File(apkPath)
         val outputFile = File(
@@ -99,24 +108,24 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
             String.format(Locale.getDefault(), "%s-%d%s", packageName, versionCode, Constants.PATCH_FILE_SUFFIX)
         )
 
-        log.d { "Bootstrapping: $srcApkFile -> $outputFile" }
+        log.d { "Patching: $srcApkFile -> $outputFile" }
 
         createPatcher(options).patch(srcApkFile, outputFile) { step, details ->
             checkCancelled()
-            mapPatcherStepToBootstrapStep(step)?.let { onStep(it, details) }
+            mapPatcherStepToPatchingStep(step)?.let { onStep(it, details) }
         }
 
         cleanupExistingPatchedFiles(packageName, outputFile)
         return outputFile.absolutePath
     }
 
-    private fun bootstrapBundle(
+    private fun patchBundle(
         packageName: String,
         versionCode: Long,
         baseApkPath: String,
         splitApkPaths: List<String>,
-        options: BootstrapOptions,
-        onStep: (BootstrapStep, String) -> Unit
+        options: PatchingOptions,
+        onStep: (PatchingStep, String) -> Unit
     ): String {
         val allApkPaths = listOf(baseApkPath) + splitApkPaths
         val patchedFiles = mutableListOf<File>()
@@ -135,13 +144,13 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
                 String.format(Locale.getDefault(), "%s-%d-phantom.apk", outputName, versionCode)
             )
 
-            log.d { "Bootstrapping APK ${index + 1}/${allApkPaths.size}: $srcApkFile" }
+            log.d { "Patching APK ${index + 1}/${allApkPaths.size}: $srcApkFile" }
 
             patcher.patch(srcApkFile, outputFile) { step, details ->
                 checkCancelled()
-                mapPatcherStepToBootstrapStep(step)?.let { bootstrapStep ->
+                mapPatcherStepToPatchingStep(step)?.let { patchingStep ->
                     val detailsWithProgress = if (allApkPaths.size > 1) "$details (${index + 1}/${allApkPaths.size})" else details
-                    onStep(bootstrapStep, detailsWithProgress)
+                    onStep(patchingStep, detailsWithProgress)
                 }
             }
 
@@ -158,11 +167,11 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
         ApksBundleHelper.createBundle(patchedFiles, bundleFile, originalNames, true)
         cleanupExistingPatchedFiles(packageName, bundleFile)
 
-        onStep(BootstrapStep.COMPLETE, bundleFile.name)
+        onStep(PatchingStep.COMPLETE, bundleFile.name)
         return bundleFile.absolutePath
     }
 
-    private fun createPatcher(options: BootstrapOptions): PhantomPatcher {
+    private fun createPatcher(options: PatchingOptions): PhantomPatcher {
         val args = mutableListOf<String>()
         if (options.debuggable) args.add("-d")
         if (options.sigbypassLevel > 0) {
@@ -176,6 +185,6 @@ class BootstrapProviderImpl(context: Context) : BootstrapProvider {
         return PhantomPatcher(args.toTypedArray())
     }
 
-    private fun mapPatcherStepToBootstrapStep(step: String): BootstrapStep? =
-        runCatching { BootstrapStep.valueOf(step) }.getOrNull()
+    private fun mapPatcherStepToPatchingStep(step: String): PatchingStep? =
+        runCatching { PatchingStep.valueOf(step) }.getOrNull()
 }
