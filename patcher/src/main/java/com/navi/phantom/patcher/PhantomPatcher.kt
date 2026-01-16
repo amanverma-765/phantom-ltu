@@ -114,7 +114,7 @@ class PhantomPatcher(args: Array<String>) {
         var tempDir: File? = null
 
         for (path in apkPaths) {
-            if (ApksBundleHelper.isApksBundleAny(path)) {
+            if (ApksBundleHelper.isBundleAny(path)) {
                 log.i { "Extracting bundle: $path" }
                 if (tempDir == null) {
                     tempDir = Files.createTempDirectory("phantom-bundle-").toFile()
@@ -336,7 +336,7 @@ class PhantomPatcher(args: Array<String>) {
                     dstZFile.add(CONFIG_ASSET_PATH, inputStream)
                 }
             } catch (e: Throwable) {
-                throw PatchError("Error when saving config")
+                throw PatchError("Error when saving config", e)
             }
 
             log.i { "Adding metaloader dex..." }

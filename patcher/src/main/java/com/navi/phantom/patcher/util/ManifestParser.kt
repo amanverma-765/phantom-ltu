@@ -42,7 +42,7 @@ object ManifestParser {
                             }
 
                             if (name == "uses-sdk" && attrName == "minSdkVersion") {
-                                minSdkVersion = parser.getAttrValue(i).toString().toInt()
+                                minSdkVersion = parser.getAttrValue(i).toString().toIntOrNull() ?: 1
                             }
 
                             if (attrName == "appComponentFactory" || attrNameRes == 0x0101057a) {

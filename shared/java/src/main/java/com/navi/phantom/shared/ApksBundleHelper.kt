@@ -1,13 +1,9 @@
 package com.navi.phantom.shared
 
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
 import java.nio.file.Files
-import java.util.Locale
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -15,110 +11,67 @@ import java.util.zip.ZipOutputStream
 
 object ApksBundleHelper {
 
-    fun isApksBundle(path: String?): Boolean {
-        return path != null && path.lowercase(Locale.ROOT).endsWith(Constants.BUNDLE_EXTENSION)
-    }
+    fun isBundle(path: String?): Boolean =
+        path?.lowercase()?.endsWith(Constants.BUNDLE_EXTENSION) == true
 
-    fun isApksBundleAny(path: String?): Boolean {
-        if (path == null) return false
-        val lower = path.lowercase(Locale.ROOT)
+    fun isBundleAny(path: String?): Boolean {
+        val lower = path?.lowercase() ?: return false
         return lower.endsWith(Constants.APKS_EXTENSION) || lower.endsWith(Constants.BUNDLE_EXTENSION)
     }
 
+    @Deprecated("Use isBundle", ReplaceWith("isBundle(path)"))
+    fun isApksBundle(path: String?): Boolean = isBundle(path)
+
+    @Deprecated("Use isBundleAny", ReplaceWith("isBundleAny(path)"))
+    fun isApksBundleAny(path: String?): Boolean = isBundleAny(path)
+
     @Throws(IOException::class)
     fun extractBundle(bundleFile: File, destDir: File): List<String> {
-        if (!bundleFile.exists()) {
-            throw IOException("Bundle file does not exist: ${bundleFile.absolutePath}")
-        }
-
-        if (!destDir.exists()) {
-            destDir.mkdirs()
-        }
-
-        val extractedPaths = mutableListOf<String>()
-
-        ZipInputStream(FileInputStream(bundleFile)).use { zis ->
-            while (true) {
-                val entry = zis.nextEntry ?: break
-                val name = entry.name
-                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(Constants.APK_EXTENSION)) {
-                    zis.closeEntry()
-                    continue
-                }
-
-                val fileName = File(name).name
-                val outFile = File(destDir, fileName)
-
-                FileOutputStream(outFile).use { fos ->
-                    zis.copyTo(fos)
-                }
-
-                extractedPaths.add(outFile.absolutePath)
-                zis.closeEntry()
-            }
-        }
-
-        if (extractedPaths.isEmpty()) {
-            throw IOException("No APK files found in bundle: ${bundleFile.absolutePath}")
-        }
-
-        return extractedPaths
+        require(bundleFile.exists()) { "Bundle file does not exist: ${bundleFile.absolutePath}" }
+        destDir.mkdirs()
+        return bundleFile.inputStream().use { extractBundle(it, destDir) }
     }
 
     @Throws(IOException::class)
     fun extractBundle(bundleStream: InputStream, destDir: File): List<String> {
-        if (!destDir.exists()) {
-            destDir.mkdirs()
-        }
+        destDir.mkdirs()
 
-        val extractedPaths = mutableListOf<String>()
-
-        ZipInputStream(bundleStream).use { zis ->
-            while (true) {
-                val entry = zis.nextEntry ?: break
-                val name = entry.name
-                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(Constants.APK_EXTENSION)) {
+        val extractedPaths = ZipInputStream(bundleStream).use { zis ->
+            generateSequence { zis.nextEntry }
+                .filter { !it.isDirectory && it.name.lowercase().endsWith(Constants.APK_EXTENSION) }
+                .map { entry ->
+                    val outFile = File(destDir, File(entry.name).name)
+                    outFile.outputStream().use { zis.copyTo(it) }
                     zis.closeEntry()
-                    continue
+                    outFile.absolutePath
                 }
-
-                val fileName = File(name).name
-                val outFile = File(destDir, fileName)
-
-                FileOutputStream(outFile).use { fos ->
-                    zis.copyTo(fos)
-                }
-
-                extractedPaths.add(outFile.absolutePath)
-                zis.closeEntry()
-            }
+                .toList()
         }
 
         if (extractedPaths.isEmpty()) {
             throw IOException("No APK files found in bundle")
         }
-
         return extractedPaths
     }
 
     @Throws(IOException::class)
-    fun createBundle(apkFiles: List<File>, bundleFile: File) {
-        createBundle(apkFiles, bundleFile, emptyMap())
-    }
-
-    @Throws(IOException::class)
-    fun createBundle(apkFiles: List<File>, bundleFile: File, originalNames: Map<File, String>) {
-        ZipOutputStream(FileOutputStream(bundleFile)).use { zos ->
+    @JvmOverloads
+    fun createBundle(
+        apkFiles: List<File>,
+        bundleFile: File,
+        originalNames: Map<File, String> = emptyMap(),
+        deleteSource: Boolean = false
+    ) {
+        ZipOutputStream(bundleFile.outputStream()).use { zos ->
             zos.setMethod(ZipOutputStream.STORED)
 
-            for (apkFile in apkFiles) {
-                // Use original name if provided, otherwise use current file name
+            apkFiles.forEach { apkFile ->
                 val entryName = originalNames[apkFile] ?: apkFile.name
                 val entry = ZipEntry(entryName).apply {
                     method = ZipEntry.STORED
                     size = apkFile.length()
                     compressedSize = apkFile.length()
-                    crc = calculateCrc32(apkFile)
+                    crc = apkFile.crc32()
                 }
 
                 zos.putNextEntry(entry)
@@ -126,40 +79,25 @@ object ApksBundleHelper {
                 zos.closeEntry()
             }
         }
-    }
 
-    @Throws(IOException::class)
-    fun createBundle(apkFiles: List<File>, bundleFile: File, deleteSourceApks: Boolean) {
-        createBundle(apkFiles, bundleFile, emptyMap())
-
-        if (deleteSourceApks) {
-            for (apkFile in apkFiles) {
-                apkFile.delete()
-            }
+        if (deleteSource) {
+            apkFiles.forEach { it.delete() }
         }
     }
 
-    @Throws(IOException::class)
-    fun createBundle(apkFiles: List<File>, bundleFile: File, originalNames: Map<File, String>, deleteSourceApks: Boolean) {
-        createBundle(apkFiles, bundleFile, originalNames)
-
-        if (deleteSourceApks) {
-            for (apkFile in apkFiles) {
-                apkFile.delete()
-            }
-        }
-    }
-
-    @Throws(IOException::class)
-    fun calculateCrc32(file: File): Long {
+    fun File.crc32(): Long {
         val crc = CRC32()
-        FileInputStream(file).use { fis ->
+        inputStream().use { input ->
             val buffer = ByteArray(8192)
             var len: Int
-            while (fis.read(buffer).also { len = it } != -1) {
+            while (input.read(buffer).also { len = it } != -1) {
                 crc.update(buffer, 0, len)
             }
         }
         return crc.value
     }
+
+    @JvmStatic
+    @Throws(IOException::class)
+    fun calculateCrc32(file: File): Long = file.crc32()
 }

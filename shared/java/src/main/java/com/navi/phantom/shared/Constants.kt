@@ -27,4 +27,12 @@ object Constants {
     const val SIGBYPASS_LV_PM = 1
     const val SIGBYPASS_LV_PM_OPENAT = 2
     const val SIGBYPASS_LV_MAX = 3
+
+    // Installation Timeouts (milliseconds)
+    const val INSTALL_TIMEOUT_MS = 120_000L
+    const val UNINSTALL_POLL_TIMEOUT_MS = 60_000L
+    const val UNINSTALL_POLL_INTERVAL_MS = 500L
+
+    // Buffer sizes
+    const val APK_COPY_BUFFER_SIZE = 65536
 }
