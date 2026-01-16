@@ -16,13 +16,13 @@ import java.util.zip.ZipOutputStream
 object ApksBundleHelper {
 
     fun isApksBundle(path: String?): Boolean {
-        return path != null && path.lowercase(Locale.ROOT).endsWith(
-            Constants.PATCH_BUNDLE_SUFFIX.replace("-phantom", "")
-        )
+        return path != null && path.lowercase(Locale.ROOT).endsWith(Constants.BUNDLE_EXTENSION)
     }
 
     fun isApksBundleAny(path: String?): Boolean {
-        return path != null && path.lowercase(Locale.ROOT).endsWith(".apks")
+        if (path == null) return false
+        val lower = path.lowercase(Locale.ROOT)
+        return lower.endsWith(Constants.APKS_EXTENSION) || lower.endsWith(Constants.BUNDLE_EXTENSION)
     }
 
     @Throws(IOException::class)
@@ -41,7 +41,7 @@ object ApksBundleHelper {
             while (true) {
                 val entry = zis.nextEntry ?: break
                 val name = entry.name
-                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
+                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(Constants.APK_EXTENSION)) {
                     zis.closeEntry()
                     continue
                 }
@@ -77,7 +77,7 @@ object ApksBundleHelper {
             while (true) {
                 val entry = zis.nextEntry ?: break
                 val name = entry.name
-                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(".apk")) {
+                if (entry.isDirectory || !name.lowercase(Locale.ROOT).endsWith(Constants.APK_EXTENSION)) {
                     zis.closeEntry()
                     continue
                 }

@@ -47,23 +47,14 @@ class InstalledAppDataSource(
                 packageName = packageName,
                 appName = appInfo.loadLabel(packageManager).toString(),
                 versionName = packageInfo.versionName.orEmpty(),
-                versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    packageInfo.longVersionCode
-                } else {
-                    @Suppress("DEPRECATION")
-                    packageInfo.versionCode.toLong()
-                },
+                versionCode = packageInfo.longVersionCode,
                 icon = appInfo.loadIcon(packageManager),
                 apkPath = appInfo.sourceDir,
                 apkSizeBytes = File(appInfo.sourceDir).length(),
                 installTimeMillis = packageInfo.firstInstallTime,
                 lastUpdateTimeMillis = packageInfo.lastUpdateTime,
                 targetSdk = appInfo.targetSdkVersion,
-                minSdk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    appInfo.minSdkVersion
-                } else {
-                    0
-                },
+                minSdk = appInfo.minSdkVersion,
                 usesLocation = hasLocationPermission(packageName)
             )
         }
@@ -149,10 +140,11 @@ class InstalledAppDataSource(
                 packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             }
             val permissions = packageInfo.requestedPermissions ?: return@runCatching false
-            permissions.any {
-                it == Manifest.permission.ACCESS_FINE_LOCATION ||
-                it == Manifest.permission.ACCESS_COARSE_LOCATION ||
-                it == Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            permissions.any { permission ->
+                permission == Manifest.permission.ACCESS_FINE_LOCATION ||
+                permission == Manifest.permission.ACCESS_COARSE_LOCATION ||
+                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                    permission == Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             }
         }.getOrDefault(false)
     }

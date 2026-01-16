@@ -7,9 +7,17 @@ object Constants {
     const val META_LOADER_DEX_ASSET_PATH = "assets/phantom/metaloader.dex"
     const val ORIGINAL_APK_ASSET_PATH = "assets/phantom/origin.apk"
 
-    // File Naming
-    const val PATCH_FILE_SUFFIX = "-phantom.apk"
-    const val PATCH_BUNDLE_SUFFIX = "-phantom.apks"
+    // File Naming - Patched output suffixes
+    const val PATCH_FILE_SUFFIX = "-phantom.phn"
+    const val PATCH_BUNDLE_SUFFIX = "-phantom.phnx"
+
+    // Pure extensions (for detection/checking)
+    const val PATCH_EXTENSION = ".phn"
+    const val BUNDLE_EXTENSION = ".phnx"
+
+    // Input formats (users provide these)
+    const val APK_EXTENSION = ".apk"
+    const val APKS_EXTENSION = ".apks"
     const val PROXY_APP_COMPONENT_FACTORY = "com.navi.phantom.metaloader.LSPAppComponentFactoryStub"
     const val MANAGER_PACKAGE_NAME = "com.navi.phantom"
     const val MIN_ROLLING_VERSION_CODE = 348
