@@ -7,7 +7,7 @@ import com.navi.phantom.features.bootstrap.screens.BootstrapScreen
 import com.navi.phantom.features.bootstrap.logic.BootstrapUiEvent
 import com.navi.phantom.features.bootstrap.logic.BootstrapViewModel
 import com.navi.phantom.features.places.LocationScreen
-import com.navi.phantom.features.setting.SettingScreen
+import com.navi.phantom.features.settings.SettingsScreen
 import com.navi.phantom.navigation.Navigator
 import com.navi.phantom.navigation.Destination
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -26,7 +26,7 @@ val navModule = module {
         LocationScreen(onAddPlaceClick = {})
     }
     navigation<Destination.Setting> {
-        SettingScreen()
+        SettingsScreen()
     }
     navigation<Destination.SelectApp> {
         val appViewModel = get<AppViewModel>()
@@ -49,7 +49,10 @@ val navModule = module {
         BootstrapScreen(
             viewModel = viewModel,
             onNavigateBack = {
-                if (viewModel.uiState.value.hasBootstrapAttempted) {
+                // If we've done any work (not in Ready state), go back to Apps list
+                // Otherwise just go back to SelectApp screen
+                val phase = viewModel.uiState.value.phase
+                if (phase !is com.navi.phantom.features.bootstrap.logic.BootstrapPhase.Ready) {
                     navigator.popTo(Destination.Apps)
                 } else {
                     navigator.goBack()

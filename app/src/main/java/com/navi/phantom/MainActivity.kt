@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.navi.phantom.navigation.RootNavDisplay
-import com.navi.phantom.theme.PhantomTheme
+import com.navi.phantom.core.theme.PhantomTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
