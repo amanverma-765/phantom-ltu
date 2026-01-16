@@ -9,24 +9,24 @@ import co.touchlab.kermit.Logger
 import com.navi.phantom.core.ext.getApplicationInfoCompat
 import com.navi.phantom.core.ext.getInstalledApplicationsCompat
 import com.navi.phantom.core.ext.getPackageInfoCompat
-import com.navi.phantom.data.apps.dto.DetailedAppInfoDto
-import com.navi.phantom.data.apps.dto.InstalledAppDto
+import com.navi.phantom.data.apps.dto.DeviceAppDetailsDto
+import com.navi.phantom.data.apps.dto.DeviceAppDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class InstalledAppDataSource(private val context: Context) {
+class DeviceAppDataSource(private val context: Context) {
 
-    private val log = Logger.withTag("InstalledAppDataSource")
+    private val log = Logger.withTag("DeviceAppDataSource")
     private val pm: PackageManager get() = context.packageManager
 
-    suspend fun getAllInstalledApps(): Result<List<InstalledAppDto>> = withContext(Dispatchers.IO) {
+    suspend fun getAllInstalledApps(): Result<List<DeviceAppDto>> = withContext(Dispatchers.IO) {
         runCatching {
             pm.getInstalledApplicationsCompat()
                 .asSequence()
                 .filter { it.isUserInstalled }
                 .mapNotNull { app ->
-                    app.toInstalledAppDto()
+                    app.toDeviceAppDto()
                         .onFailure { log.w(it) { "Failed to load: ${app.packageName}" } }
                         .getOrNull()
                 }
@@ -35,12 +35,12 @@ class InstalledAppDataSource(private val context: Context) {
         }
     }
 
-    suspend fun getAppDetails(packageName: String): Result<DetailedAppInfoDto> = withContext(Dispatchers.IO) {
+    suspend fun getAppDetails(packageName: String): Result<DeviceAppDetailsDto> = withContext(Dispatchers.IO) {
         runCatching {
             val appInfo = pm.getApplicationInfoCompat(packageName)
             val pkgInfo = pm.getPackageInfoCompat(packageName, PackageManager.GET_PERMISSIONS.toLong())
 
-            DetailedAppInfoDto(
+            DeviceAppDetailsDto(
                 packageName = packageName,
                 appName = appInfo.loadLabel(pm).toString(),
                 versionName = pkgInfo.versionName.orEmpty(),
@@ -57,8 +57,8 @@ class InstalledAppDataSource(private val context: Context) {
         }
     }
 
-    private fun ApplicationInfo.toInstalledAppDto(): Result<InstalledAppDto> = runCatching {
-        InstalledAppDto(
+    private fun ApplicationInfo.toDeviceAppDto(): Result<DeviceAppDto> = runCatching {
+        DeviceAppDto(
             packageName = packageName,
             appName = loadLabel(pm).toString(),
             versionName = pm.getPackageInfoCompat(packageName).versionName.orEmpty(),

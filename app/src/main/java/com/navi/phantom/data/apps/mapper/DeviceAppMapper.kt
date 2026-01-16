@@ -1,13 +1,13 @@
 package com.navi.phantom.data.apps.mapper
 
-import com.navi.phantom.data.apps.dto.DetailedAppInfoDto
-import com.navi.phantom.data.apps.dto.InstalledAppDto
-import com.navi.phantom.domain.model.DetailedAppInfo
-import com.navi.phantom.domain.model.InstalledApp
+import com.navi.phantom.data.apps.dto.DeviceAppDetailsDto
+import com.navi.phantom.data.apps.dto.DeviceAppDto
+import com.navi.phantom.domain.model.DeviceAppDetails
+import com.navi.phantom.domain.model.DeviceApp
 
-object InstalledAppMapper {
-    fun InstalledAppDto.toInstalledApp() =
-        InstalledApp(
+object DeviceAppMapper {
+    fun DeviceAppDto.toDeviceApp() =
+        DeviceApp(
             packageName = packageName,
             appName = appName,
             versionName = versionName,
@@ -16,8 +16,8 @@ object InstalledAppMapper {
             usesLocation = usesLocation
         )
 
-    fun DetailedAppInfoDto.toDetailedAppInfo() =
-        DetailedAppInfo(
+    fun DeviceAppDetailsDto.toDeviceAppDetails() =
+        DeviceAppDetails(
             packageName = packageName,
             appName = appName,
             versionName = versionName,

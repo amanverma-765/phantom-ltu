@@ -3,7 +3,7 @@ package com.navi.phantom.domain.model
 import android.graphics.drawable.Drawable
 import java.util.Locale
 
-data class DetailedAppInfo(
+data class DeviceAppDetails(
     val packageName: String,
     val appName: String,
     val versionName: String,
