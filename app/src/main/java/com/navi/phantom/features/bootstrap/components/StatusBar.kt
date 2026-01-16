@@ -79,10 +79,11 @@ fun StatusBar(
 
     // Material 3 color hierarchy:
     // Header uses surfaceContainerHigh, status bar uses surfaceContainer (one level below)
+    // Error state takes precedence over success (e.g., bootstrap succeeded but installation failed)
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            isBootstrapped -> statusColors.successContainer
             hasFailed -> statusColors.errorContainer
+            isBootstrapped -> statusColors.successContainer
             else -> MaterialTheme.colorScheme.surfaceContainer
         },
         animationSpec = tween(400),
@@ -91,8 +92,8 @@ fun StatusBar(
 
     val textColor by animateColorAsState(
         targetValue = when {
-            isBootstrapped -> statusColors.success
             hasFailed -> statusColors.error
+            isBootstrapped -> statusColors.success
             else -> MaterialTheme.colorScheme.onSurface
         },
         animationSpec = tween(400),
@@ -101,8 +102,8 @@ fun StatusBar(
 
     val dotColor by animateColorAsState(
         targetValue = when {
-            isBootstrapped -> statusColors.success
             hasFailed -> statusColors.error
+            isBootstrapped -> statusColors.success
             isBootstrapping -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.outline
         },

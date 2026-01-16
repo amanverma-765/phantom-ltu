@@ -86,39 +86,39 @@ fun AppInfoHeader(
                         cornerRadius = 14.dp
                     )
 
-                    // Success badge
-                    if (isBootstrapped) {
-                        Surface(
-                            color = statusColors.successContainer,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(22.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Complete",
-                                tint = statusColors.success,
-                                modifier = Modifier.padding(2.dp)
-                            )
+                    // Status badge - error takes precedence over success
+                    when {
+                        hasFailed -> {
+                            Surface(
+                                color = statusColors.errorContainer,
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(22.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Failed",
+                                    tint = statusColors.error,
+                                    modifier = Modifier.padding(4.dp)
+                                )
+                            }
                         }
-                    }
-
-                    // Failure badge
-                    if (hasFailed) {
-                        Surface(
-                            color = statusColors.errorContainer,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(22.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Failed",
-                                tint = statusColors.error,
-                                modifier = Modifier.padding(4.dp)
-                            )
+                        isBootstrapped -> {
+                            Surface(
+                                color = statusColors.successContainer,
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(22.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Complete",
+                                    tint = statusColors.success,
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
                         }
                     }
                 }
