@@ -12,13 +12,11 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve line number information for debugging stack traces
+-keepattributes SourceFile,LineNumberTable
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep patcher classes unobfuscated for readable error logs
+-keep class com.navi.phantom.patcher.** { *; }
 
 # Suppress warnings for compile-time only annotations from apkzlib
 -dontwarn com.google.auto.value.AutoValue$Builder
