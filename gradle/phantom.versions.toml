@@ -23,6 +23,7 @@ ksp = "2.3.4"
 kermit = "2.0.8"
 commons-io = "2.21.0"
 beust-jcommander = "1.82"
+ackpine = "0.19.2"
 
 
 
@@ -94,3 +95,8 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 # Additional deps
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 beust-jcommander = { module = "com.beust:jcommander", version.ref = "beust-jcommander" }
+# Ackpine - Package Installer
+ackpine-core = { module = "ru.solrudev.ackpine:ackpine-core", version.ref = "ackpine" }
+ackpine-ktx = { module = "ru.solrudev.ackpine:ackpine-ktx", version.ref = "ackpine" }
+ackpine-splits = { module = "ru.solrudev.ackpine:ackpine-splits", version.ref = "ackpine" }
+ackpine-splits-ktx = { module = "ru.solrudev.ackpine:ackpine-splits-ktx", version.ref = "ackpine" }
