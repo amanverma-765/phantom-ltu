@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,7 +52,9 @@ fun StatusBar(
     hasFailed: Boolean,
     accentColor: Color,
     statusColors: BootstrapStatusColors,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showCopyButton: Boolean = false,
+    onCopyError: () -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     val cursorAlpha by infiniteTransition.animateFloat(
@@ -147,6 +153,18 @@ fun StatusBar(
                         color = textColor,
                         modifier = Modifier.alpha(cursorAlpha)
                     )
+                }
+
+                // Copy error log button
+                if (showCopyButton && hasFailed) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = onCopyError) {
+                        Icon(
+                            imageVector = Icons.Filled.ContentCopy,
+                            contentDescription = "Copy error log",
+                            tint = statusColors.error
+                        )
+                    }
                 }
             }
 
