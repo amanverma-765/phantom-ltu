@@ -16,5 +16,5 @@ data class BootstrapUiState(
     val errorDetails: BootstrapError? = null
 ) {
     val hasCopyableError: Boolean
-        get() = errorDetails != null
+        get() = errorMessage != null
 }

@@ -200,15 +200,15 @@ class BootstrapViewModel(
     }
 
     private fun copyErrorLog() {
-        val errorDetails = _uiState.value.errorDetails ?: return
-        val errorLog = errorDetails.fullErrorLog
+        val state = _uiState.value
+        val errorLog = state.errorDetails?.fullErrorLog ?: state.errorMessage ?: return
 
         val clipboard = application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Bootstrap Error Log", errorLog)
+        val clip = ClipData.newPlainText("Error Log", errorLog)
         clipboard.setPrimaryClip(clip)
 
         viewModelScope.launch {
-            _toastEvent.emit("Error log copied to clipboard")
+            _toastEvent.emit("Error copied to clipboard")
         }
     }
 
