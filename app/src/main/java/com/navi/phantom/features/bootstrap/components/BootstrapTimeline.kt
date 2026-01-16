@@ -37,45 +37,43 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.navi.phantom.features.bootstrap.logic.BootstrapStep
 
-private data class BootstrapStep(
-    val message: String,
-    val label: String
-)
-
-private val bootstrapSteps = listOf(
-    BootstrapStep("Parsing APK...", "Parse APK"),
-    BootstrapStep("Setting up signing...", "Setup signing"),
-    BootstrapStep("Extracting signature...", "Extract signature"),
-    BootstrapStep("Modifying manifest...", "Modify manifest"),
-    BootstrapStep("Adding config...", "Add config"),
-    BootstrapStep("Adding metaloader...", "Add metaloader"),
-    BootstrapStep("Creating links...", "Create links"),
-    BootstrapStep("Writing APK...", "Write APK"),
-    BootstrapStep("Bootstrapped!", "Complete")
+// Ordered list of steps for timeline display
+private val timelineSteps = listOf(
+    BootstrapStep.PARSE_APK,
+    BootstrapStep.SETUP_SIGNING,
+    BootstrapStep.EXTRACT_SIGNATURE,
+    BootstrapStep.MODIFY_MANIFEST,
+    BootstrapStep.ADD_CONFIG,
+    BootstrapStep.ADD_METALOADER,
+    BootstrapStep.CREATE_LINKS,
+    BootstrapStep.WRITE_APK,
+    BootstrapStep.COMPLETE
 )
 
 @Composable
 fun BootstrapTimeline(
-    statusMessage: String,
+    currentStep: BootstrapStep?,
     isBootstrapping: Boolean,
     isBootstrapped: Boolean,
     hasFailed: Boolean,
     statusColors: BootstrapStatusColors,
     modifier: Modifier = Modifier
 ) {
-    val currentStepIndex = remember(statusMessage) {
-        bootstrapSteps.indexOfFirst { it.message == statusMessage }.takeIf { it >= 0 } ?: -1
+    // Find current step index in the timeline
+    val currentStepIndex = remember(currentStep) {
+        if (currentStep != null) timelineSteps.indexOf(currentStep) else -1
     }
 
     val completedSteps = when {
-        isBootstrapped -> bootstrapSteps.size
+        isBootstrapped -> timelineSteps.size
         currentStepIndex >= 0 -> currentStepIndex
         else -> 0
     }
 
     val progress by animateFloatAsState(
-        targetValue = if (isBootstrapped) 1f else completedSteps.toFloat() / bootstrapSteps.size,
+        targetValue = if (isBootstrapped) 1f else completedSteps.toFloat() / timelineSteps.size,
         animationSpec = tween(400),
         label = "progress"
     )
@@ -114,7 +112,7 @@ fun BootstrapTimeline(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = if (isBootstrapped) "Complete" else "$completedSteps of ${bootstrapSteps.size}",
+                    text = if (isBootstrapped) "Complete" else "$completedSteps of ${timelineSteps.size}",
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isBootstrapped) statusColors.success else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -139,7 +137,7 @@ fun BootstrapTimeline(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Steps list
-            bootstrapSteps.forEachIndexed { index, step ->
+            timelineSteps.forEachIndexed { index, step ->
                 val isCompleted = when {
                     isBootstrapped -> true
                     hasFailed -> index < currentStepIndex
@@ -149,14 +147,14 @@ fun BootstrapTimeline(
                 val isPending = !isCompleted && !isActive
 
                 TimelineStep(
-                    label = step.label,
+                    label = step.title,
                     isCompleted = isCompleted,
                     isActive = isActive,
                     isPending = isPending,
                     hasFailed = hasFailed && index == currentStepIndex,
                     pulseAlpha = pulseAlpha,
                     statusColors = statusColors,
-                    showConnector = index < bootstrapSteps.lastIndex
+                    showConnector = index < timelineSteps.lastIndex
                 )
             }
         }

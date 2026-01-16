@@ -1,7 +1,5 @@
 package com.navi.phantom.di
 
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.AppScreen
 import com.navi.phantom.features.apps.logic.AppViewModel
@@ -47,25 +45,16 @@ val navModule = module {
     navigation<Destination.Bootstrap> {
         val viewModel = koinActivityViewModel<BootstrapViewModel>()
         val navigator = get<Navigator>()
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
         BootstrapScreen(
-            app = uiState.app,
-            isLoadingAppDetails = uiState.isLoadingAppDetails,
-            statusMessage = uiState.errorMessage ?: uiState.statusMessage,
-            isBootstrapping = uiState.isBootstrapping,
-            isBootstrapped = uiState.isBootstrapped,
-            hasFailed = uiState.errorMessage != null,
-            hasBootstrapAttempted = uiState.hasBootstrapAttempted,
+            viewModel = viewModel,
             onNavigateBack = {
-                if (uiState.hasBootstrapAttempted) {
+                if (viewModel.uiState.value.hasBootstrapAttempted) {
                     navigator.popTo(Destination.Apps)
                 } else {
                     navigator.goBack()
                 }
-            },
-            onStartBootstrap = { viewModel.onEvent(BootstrapUiEvent.StartBootstrap) },
-            onInstallClick = { viewModel.onEvent(BootstrapUiEvent.InstallBootstrappedApp) }
+            }
         )
     }
 }
