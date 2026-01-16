@@ -31,14 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.navi.phantom.components.LoadingState
+import com.navi.phantom.core.ui.LoadingState
 import com.navi.phantom.features.bootstrap.components.AppInfoHeader
 import com.navi.phantom.features.bootstrap.components.BootstrapActionButton
 import com.navi.phantom.features.bootstrap.components.BootstrapTimeline
 import com.navi.phantom.features.bootstrap.components.StatusBar
+import com.navi.phantom.features.bootstrap.components.UninstallRequiredDialog
 import com.navi.phantom.features.bootstrap.components.rememberBootstrapStatusColors
+import com.navi.phantom.features.bootstrap.logic.BootstrapPhase
 import com.navi.phantom.features.bootstrap.logic.BootstrapUiEvent
 import com.navi.phantom.features.bootstrap.logic.BootstrapViewModel
+import com.navi.phantom.features.bootstrap.logic.FailedPhase
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,16 +55,24 @@ fun BootstrapScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val app = uiState.app
-    val isLoadingAppDetails = uiState.isLoadingAppDetails
-    val statusMessage = uiState.errorMessage ?: uiState.statusMessage
-    val currentStep = uiState.currentStep
+    val isLoadingApp = uiState.isLoadingApp
+    val phase = uiState.phase
+
+    // Derive all UI state from phase
     val isBootstrapping = uiState.isBootstrapping
     val isBootstrapped = uiState.isBootstrapped
-    val hasFailed = uiState.errorMessage != null
-    val hasBootstrapAttempted = uiState.hasBootstrapAttempted
+    val isInstalling = uiState.isInstalling
+    val isInstalled = uiState.isInstalled
+    val isUninstalling = uiState.isUninstalling
+    val hasFailed = uiState.hasFailed
+    val showUninstallDialog = uiState.showUninstallDialog
     val hasCopyableError = uiState.hasCopyableError
 
-    val isReady = !isBootstrapping && !isBootstrapped && !hasFailed && !hasBootstrapAttempted
+    // For action button
+    val canStartBootstrap = uiState.canStartBootstrap
+    val canInstall = uiState.canInstall
+    val hasInstallError = phase is BootstrapPhase.Failed && 
+        phase.failedDuring == FailedPhase.INSTALL
 
     // Handle toast events
     LaunchedEffect(Unit) {
@@ -77,9 +88,10 @@ fun BootstrapScreen(
 
     val accentColor by animateColorAsState(
         targetValue = when {
-            isBootstrapped -> statusColors.success
+            isInstalled -> statusColors.success
+            isBootstrapped && !isInstalling -> statusColors.success
             hasFailed -> statusColors.error
-            isBootstrapping -> MaterialTheme.colorScheme.tertiary
+            isBootstrapping || isInstalling || isUninstalling -> MaterialTheme.colorScheme.tertiary
             else -> MaterialTheme.colorScheme.primary
         },
         animationSpec = tween(400),
@@ -102,15 +114,19 @@ fun BootstrapScreen(
             )
         },
         bottomBar = {
-            if (app != null && !isLoadingAppDetails) {
+            if (app != null && !isLoadingApp) {
                 BottomAppBar {
                     BootstrapActionButton(
-                        isReady = isReady,
-                        isBootstrapping = isBootstrapping,
-                        isBootstrapped = isBootstrapped,
+                        phase = phase,
+                        canStartBootstrap = canStartBootstrap,
+                        canInstall = canInstall,
                         onStartBootstrap = { viewModel.onEvent(BootstrapUiEvent.StartBootstrap) },
-                        onInstallClick = { viewModel.onEvent(BootstrapUiEvent.InstallBootstrappedApp) },
-                        onCancel = onNavigateBack,
+                        onInstall = { viewModel.onEvent(BootstrapUiEvent.Install) },
+                        onCancel = { viewModel.onEvent(BootstrapUiEvent.Cancel) },
+                        onRetry = { viewModel.onEvent(BootstrapUiEvent.Retry) },
+                        onLaunch = { viewModel.onEvent(BootstrapUiEvent.LaunchApp) },
+                        onNavigateBack = onNavigateBack,
+                        statusColors = statusColors,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .navigationBarsPadding()
@@ -120,7 +136,7 @@ fun BootstrapScreen(
         }
     ) { innerPadding ->
         when {
-            isLoadingAppDetails -> {
+            isLoadingApp -> {
                 LoadingState(
                     message = "Loading app details...",
                     modifier = Modifier
@@ -162,19 +178,22 @@ fun BootstrapScreen(
 
                     // Status Bar with optional Copy Error button
                     StatusBar(
-                        message = statusMessage,
+                        message = uiState.statusMessage,
                         isBootstrapping = isBootstrapping,
-                        isBootstrapped = isBootstrapped,
+                        isBootstrapped = isBootstrapped && !isInstalling && !isInstalled,
                         hasFailed = hasFailed,
                         accentColor = accentColor,
                         statusColors = statusColors,
                         showCopyButton = hasCopyableError,
-                        onCopyError = { viewModel.onEvent(BootstrapUiEvent.CopyErrorLog) }
+                        onCopyError = { viewModel.onEvent(BootstrapUiEvent.CopyError) },
+                        isInstalling = isInstalling,
+                        installationProgress = uiState.installationProgress,
+                        installationProgressMax = uiState.installationProgressMax
                     )
 
                     // Process Timeline - always visible
                     BootstrapTimeline(
-                        currentStep = currentStep,
+                        currentStep = uiState.currentStep,
                         isBootstrapping = isBootstrapping,
                         isBootstrapped = isBootstrapped,
                         hasFailed = hasFailed,
@@ -183,5 +202,15 @@ fun BootstrapScreen(
                 }
             }
         }
+    }
+
+    // Uninstall Required Dialog
+    if (showUninstallDialog) {
+        UninstallRequiredDialog(
+            packageName = uiState.conflictingPackageName,
+            errorMessage = uiState.error?.message,
+            onConfirmUninstall = { viewModel.onEvent(BootstrapUiEvent.ConfirmUninstall) },
+            onDismiss = { viewModel.onEvent(BootstrapUiEvent.DismissUninstallDialog) }
+        )
     }
 }

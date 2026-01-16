@@ -54,7 +54,11 @@ fun StatusBar(
     statusColors: BootstrapStatusColors,
     modifier: Modifier = Modifier,
     showCopyButton: Boolean = false,
-    onCopyError: () -> Unit = {}
+    onCopyError: () -> Unit = {},
+    // Installation progress
+    isInstalling: Boolean = false,
+    installationProgress: Int = 0,
+    installationProgressMax: Int = 100
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     val cursorAlpha by infiniteTransition.animateFloat(
@@ -169,22 +173,38 @@ fun StatusBar(
                 }
             }
 
-            // Progress indicator during bootstrapping
+            // Progress indicator during bootstrapping or installation
             AnimatedVisibility(
-                visible = isBootstrapping,
+                visible = isBootstrapping || isInstalling,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                LinearProgressIndicator(
-                    color = MaterialTheme.colorScheme.tertiary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    strokeCap = StrokeCap.Round,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                )
+                if (isInstalling && installationProgressMax > 0) {
+                    // Determinate progress for installation
+                    LinearProgressIndicator(
+                        progress = { installationProgress.toFloat() / installationProgressMax },
+                        color = MaterialTheme.colorScheme.tertiary,
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        strokeCap = StrokeCap.Round,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                    )
+                } else {
+                    // Indeterminate progress for bootstrapping
+                    LinearProgressIndicator(
+                        color = MaterialTheme.colorScheme.tertiary,
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        strokeCap = StrokeCap.Round,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                    )
+                }
             }
         }
     }

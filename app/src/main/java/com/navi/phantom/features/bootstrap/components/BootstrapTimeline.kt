@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.features.bootstrap.logic.BootstrapStep
+import com.navi.phantom.domain.model.BootstrapStep
 
 private val timelineSteps = BootstrapStep.entries
 
