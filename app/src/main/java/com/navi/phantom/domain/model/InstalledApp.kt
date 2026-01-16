@@ -1,4 +1,4 @@
-package com.navi.phantom.domain.models
+package com.navi.phantom.domain.model
 
 import android.graphics.drawable.Drawable
 
