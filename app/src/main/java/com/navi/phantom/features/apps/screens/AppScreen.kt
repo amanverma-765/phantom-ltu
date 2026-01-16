@@ -25,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.R
-import com.navi.phantom.components.EmptyStateScreen
+import com.navi.phantom.core.ui.EmptyStateScreen
 
 
 @OptIn(ExperimentalMaterial3Api::class)

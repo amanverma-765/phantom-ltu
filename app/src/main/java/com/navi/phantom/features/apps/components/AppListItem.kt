@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.domain.models.InstalledApp
+import com.navi.phantom.domain.model.InstalledApp
 
 @Composable
 internal fun AppListItem(

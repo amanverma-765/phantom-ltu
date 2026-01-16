@@ -24,10 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.navi.phantom.components.EmptyState
-import com.navi.phantom.components.ErrorState
-import com.navi.phantom.components.LoadingState
-import com.navi.phantom.domain.models.InstalledApp
+import com.navi.phantom.core.ui.EmptyState
+import com.navi.phantom.core.ui.ErrorState
+import com.navi.phantom.core.ui.LoadingState
+import com.navi.phantom.domain.model.InstalledApp
 import com.navi.phantom.features.apps.components.AppList
 import com.navi.phantom.features.apps.components.AppSearchBar
 import com.navi.phantom.features.apps.logic.AppUiEvent

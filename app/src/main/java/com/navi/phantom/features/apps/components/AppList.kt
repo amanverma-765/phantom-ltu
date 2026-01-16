@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.navi.phantom.domain.models.InstalledApp
+import com.navi.phantom.domain.model.InstalledApp
 
 @Composable
 internal fun AppList(

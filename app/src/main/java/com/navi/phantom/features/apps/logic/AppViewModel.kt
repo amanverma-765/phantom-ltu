@@ -2,17 +2,17 @@ package com.navi.phantom.features.apps.logic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.navi.phantom.domain.errors.AppError
-import com.navi.phantom.domain.models.InstalledApp
-import com.navi.phantom.domain.repository.InstalledAppRepository
+import co.touchlab.kermit.Logger
+import com.navi.phantom.domain.error.AppError
+import com.navi.phantom.domain.model.InstalledApp
+import com.navi.phantom.domain.usecase.InstalledAppUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import co.touchlab.kermit.Logger
 
-class AppViewModel(private val installedAppRepository: InstalledAppRepository) : ViewModel() {
+class AppViewModel(private val installedAppUseCase: InstalledAppUseCase) : ViewModel() {
     private val log = Logger.withTag("AppViewModel")
 
     private val _uiState = MutableStateFlow(AppUiState())
@@ -30,16 +30,8 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
         _uiState.update { state ->
             state.copy(
                 searchQuery = query,
-                filteredApps = filterApps(state.allInstalledApps, query)
+                filteredApps = installedAppUseCase.filterApps(state.allInstalledApps, query)
             )
-        }
-    }
-
-    private fun filterApps(apps: List<InstalledApp>, query: String): List<InstalledApp> {
-        return if (query.isBlank()) apps
-        else apps.filter {
-            it.appName.contains(query, ignoreCase = true) ||
-                    it.packageName.contains(query, ignoreCase = true)
         }
     }
 
@@ -50,14 +42,14 @@ class AppViewModel(private val installedAppRepository: InstalledAppRepository) :
     private fun getAllInstalledApps() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingApps = true, errorMessage = null) }
-            installedAppRepository.getAllInstalledApps()
+            installedAppUseCase.getAllInstalledApps()
                 .onSuccess { apps ->
                     _uiState.update { state ->
                         state.copy(
                             isLoadingApps = false,
                             errorMessage = null,
                             allInstalledApps = apps,
-                            filteredApps = filterApps(apps, state.searchQuery)
+                            filteredApps = installedAppUseCase.filterApps(apps, state.searchQuery)
                         )
                     }
                 }

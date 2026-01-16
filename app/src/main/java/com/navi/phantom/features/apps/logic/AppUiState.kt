@@ -1,6 +1,6 @@
 package com.navi.phantom.features.apps.logic
 
-import com.navi.phantom.domain.models.InstalledApp
+import com.navi.phantom.domain.model.InstalledApp
 
 data class AppUiState(
     val isLoadingApps: Boolean = false,
