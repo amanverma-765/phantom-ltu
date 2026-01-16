@@ -19,10 +19,10 @@ import kotlin.coroutines.cancellation.CancellationException
 
 private fun getBaseName(fileName: String): String {
     val lastDot = fileName.lastIndexOf('.')
-    return if (lastDot > 0) fileName.substring(0, lastDot) else fileName
+    return if (lastDot > 0) fileName.take(lastDot) else fileName
 }
 
-class BootstrapEngine(private val context: Context) {
+class BootstrapEngine(context: Context) {
 
     private val log = Logger.withTag("BootstrapEngine")
     private val outputDir: File = context.filesDir.resolve("bootstrapped").apply { mkdirs() }
@@ -215,6 +215,9 @@ class BootstrapEngine(private val context: Context) {
         }
         if (options.overrideVersionCode) {
             args.add("-r")
+        }
+        if (options.injectDex) {
+            args.add("--injectdex")
         }
         args.add("-f") // Force overwrite
         args.add("placeholder") // PhantomPatcher expects at least one APK path in constructor
