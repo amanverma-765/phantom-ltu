@@ -2,8 +2,8 @@ package com.navi.phantom.data.apps.mapper
 
 import com.navi.phantom.data.apps.dto.DetailedAppInfoDto
 import com.navi.phantom.data.apps.dto.InstalledAppDto
-import com.navi.phantom.domain.models.DetailedAppInfo
-import com.navi.phantom.domain.models.InstalledApp
+import com.navi.phantom.domain.model.DetailedAppInfo
+import com.navi.phantom.domain.model.InstalledApp
 
 object InstalledAppMapper {
     fun InstalledAppDto.toInstalledApp() =

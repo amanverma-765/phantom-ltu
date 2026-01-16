@@ -2,8 +2,11 @@ package com.navi.phantom.data.bootstrap
 
 import android.content.Context
 import co.touchlab.kermit.Logger
-import com.navi.phantom.domain.errors.BootstrapError
-import com.navi.phantom.features.bootstrap.logic.BootstrapStep
+import com.navi.phantom.domain.error.BootstrapError
+import com.navi.phantom.domain.model.BootstrapOptions
+import com.navi.phantom.domain.model.BootstrapProgress
+import com.navi.phantom.domain.model.BootstrapStep
+import com.navi.phantom.domain.repository.BootstrapProvider
 import com.navi.phantom.patcher.PhantomPatcher
 import com.navi.phantom.shared.ApksBundleHelper
 import com.navi.phantom.shared.Constants
@@ -22,15 +25,15 @@ private fun getBaseName(fileName: String): String {
     return if (lastDot > 0) fileName.take(lastDot) else fileName
 }
 
-class BootstrapEngine(context: Context) {
+class BootstrapProviderImpl(context: Context) : BootstrapProvider {
 
-    private val log = Logger.withTag("BootstrapEngine")
+    private val log = Logger.withTag("BootstrapProviderImpl")
     private val outputDir: File = context.filesDir.resolve("bootstrapped").apply { mkdirs() }
 
     @Volatile
     private var isCancelled = false
 
-    fun bootstrap(
+    override fun bootstrap(
         packageName: String,
         versionCode: Long,
         apkPath: String,
@@ -45,38 +48,28 @@ class BootstrapEngine(context: Context) {
 
                 val outputPath = if (isSplitApk) {
                     bootstrapBundle(packageName, versionCode, apkPath, splitApkPaths, options) { step, message ->
-                        if (!isCancelled && isActive) {
-                            trySend(BootstrapProgress.Step(step, message))
-                        }
+                        if (!isCancelled && isActive) trySend(BootstrapProgress.Step(step, message))
                     }
                 } else {
                     bootstrapSingleApk(packageName, versionCode, apkPath, options) { step, message ->
-                        if (!isCancelled && isActive) {
-                            trySend(BootstrapProgress.Step(step, message))
-                        }
+                        if (!isCancelled && isActive) trySend(BootstrapProgress.Step(step, message))
                     }
                 }
 
-                // Send completion event
-                if (!isCancelled && isActive) {
-                    trySend(BootstrapProgress.Completed(outputPath))
-                }
+                if (!isCancelled && isActive) trySend(BootstrapProgress.Completed(outputPath))
             } catch (e: CancellationException) {
                 log.i { "Bootstrap cancelled" }
                 trySend(BootstrapProgress.Cancelled)
             } catch (e: Throwable) {
-                // Catch Throwable to handle both Exception and Error types
-                // (e.g., PatchError, OutOfMemoryError, etc.)
                 log.e(e) { "Bootstrap failed" }
-                val bootstrapError = BootstrapError.fromThrowable(e)
-                trySend(BootstrapProgress.Failed(bootstrapError))
+                trySend(BootstrapProgress.Failed(BootstrapError.from(e)))
             }
         }
 
         awaitClose { isCancelled = true }
     }
 
-    fun cancel() {
+    override fun cancel() {
         isCancelled = true
     }
 
@@ -103,29 +96,17 @@ class BootstrapEngine(context: Context) {
         val srcApkFile = File(apkPath)
         val outputFile = File(
             outputDir,
-            String.format(
-                Locale.getDefault(),
-                "%s-%d%s",
-                packageName,
-                versionCode,
-                Constants.PATCH_FILE_SUFFIX
-            )
+            String.format(Locale.getDefault(), "%s-%d%s", packageName, versionCode, Constants.PATCH_FILE_SUFFIX)
         )
 
         log.d { "Bootstrapping: $srcApkFile -> $outputFile" }
 
-        val patcher = createPatcher(options)
-        patcher.patch(srcApkFile, outputFile) { step, details ->
+        createPatcher(options).patch(srcApkFile, outputFile) { step, details ->
             checkCancelled()
-            val bootstrapStep = mapPatcherStepToBootstrapStep(step)
-            if (bootstrapStep != null) {
-                onStep(bootstrapStep, details)
-            }
+            mapPatcherStepToBootstrapStep(step)?.let { onStep(it, details) }
         }
 
-        // Cleanup old versions only after successful patching
         cleanupExistingPatchedFiles(packageName, outputFile)
-
         return outputFile.absolutePath
     }
 
@@ -140,7 +121,6 @@ class BootstrapEngine(context: Context) {
         val allApkPaths = listOf(baseApkPath) + splitApkPaths
         val patchedFiles = mutableListOf<File>()
         val originalNames = mutableMapOf<File, String>()
-
         val patcher = createPatcher(options)
 
         for ((index, apkPath) in allApkPaths.withIndex()) {
@@ -149,31 +129,18 @@ class BootstrapEngine(context: Context) {
             val srcApkFile = File(apkPath)
             val apkFileName = srcApkFile.name
             val baseName = getBaseName(apkFileName)
-
-            // Use package name for base APK, original name for splits
-            // Keep .apk extension for files inside bundle (needed for extraction/installation)
             val outputName = if (apkFileName.startsWith("split_")) baseName else packageName
             val outputFile = File(
                 outputDir,
-                String.format(
-                    Locale.getDefault(),
-                    "%s-%d-phantom.apk",
-                    outputName,
-                    versionCode
-                )
+                String.format(Locale.getDefault(), "%s-%d-phantom.apk", outputName, versionCode)
             )
 
             log.d { "Bootstrapping APK ${index + 1}/${allApkPaths.size}: $srcApkFile" }
 
             patcher.patch(srcApkFile, outputFile) { step, details ->
                 checkCancelled()
-                val bootstrapStep = mapPatcherStepToBootstrapStep(step)
-                if (bootstrapStep != null) {
-                    val detailsWithProgress = if (allApkPaths.size > 1) {
-                        "$details (${index + 1}/${allApkPaths.size})"
-                    } else {
-                        details
-                    }
+                mapPatcherStepToBootstrapStep(step)?.let { bootstrapStep ->
+                    val detailsWithProgress = if (allApkPaths.size > 1) "$details (${index + 1}/${allApkPaths.size})" else details
                     onStep(bootstrapStep, detailsWithProgress)
                 }
             }
@@ -184,19 +151,11 @@ class BootstrapEngine(context: Context) {
 
         val bundleFile = File(
             outputDir,
-            String.format(
-                Locale.getDefault(),
-                "%s-%d%s",
-                packageName,
-                versionCode,
-                Constants.PATCH_BUNDLE_SUFFIX
-            )
+            String.format(Locale.getDefault(), "%s-%d%s", packageName, versionCode, Constants.PATCH_BUNDLE_SUFFIX)
         )
 
         log.d { "Creating bundle: ${bundleFile.name}" }
         ApksBundleHelper.createBundle(patchedFiles, bundleFile, originalNames, true)
-
-        // Cleanup old versions only after successful bundle creation
         cleanupExistingPatchedFiles(packageName, bundleFile)
 
         onStep(BootstrapStep.COMPLETE, bundleFile.name)
@@ -205,23 +164,15 @@ class BootstrapEngine(context: Context) {
 
     private fun createPatcher(options: BootstrapOptions): PhantomPatcher {
         val args = mutableListOf<String>()
-
-        if (options.debuggable) {
-            args.add("-d")
-        }
+        if (options.debuggable) args.add("-d")
         if (options.sigbypassLevel > 0) {
             args.add("-l")
             args.add(options.sigbypassLevel.toString())
         }
-        if (options.overrideVersionCode) {
-            args.add("-r")
-        }
-        if (options.injectDex) {
-            args.add("--injectdex")
-        }
-        args.add("-f") // Force overwrite
-        args.add("placeholder") // PhantomPatcher expects at least one APK path in constructor
-
+        if (options.overrideVersionCode) args.add("-r")
+        if (options.injectDex) args.add("--injectdex")
+        args.add("-f")
+        args.add("placeholder")
         return PhantomPatcher(args.toTypedArray())
     }
 

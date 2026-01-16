@@ -1,15 +1,15 @@
-package com.navi.phantom.data.apps.repository
+package com.navi.phantom.data.apps
 
 import com.navi.phantom.data.apps.datasource.InstalledAppDataSource
 import com.navi.phantom.data.apps.mapper.InstalledAppMapper.toDetailedAppInfo
 import com.navi.phantom.data.apps.mapper.InstalledAppMapper.toInstalledApp
-import com.navi.phantom.domain.models.DetailedAppInfo
-import com.navi.phantom.domain.models.InstalledApp
-import com.navi.phantom.domain.repository.InstalledAppRepository
+import com.navi.phantom.domain.model.DetailedAppInfo
+import com.navi.phantom.domain.model.InstalledApp
+import com.navi.phantom.domain.repository.InstalledAppProvider
 
-class InstalledAppRepoImpl(
+class InstalledAppProviderImpl(
     private val installedAppDataSource: InstalledAppDataSource
-) : InstalledAppRepository {
+) : InstalledAppProvider {
     override suspend fun getAllInstalledApps(): Result<List<InstalledApp>> =
         installedAppDataSource.getAllInstalledApps()
             .map { apps -> apps.map { it.toInstalledApp() } }
