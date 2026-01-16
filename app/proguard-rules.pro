@@ -21,3 +21,11 @@
 # Suppress warnings for compile-time only annotations from apkzlib
 -dontwarn com.google.auto.value.AutoValue$Builder
 -dontwarn com.google.auto.value.AutoValue
+
+# Ackpine package installer library
+-keep class ru.solrudev.ackpine.** { *; }
+-dontwarn ru.solrudev.ackpine.**
+
+# Ackpine optional compression dependencies (not used)
+-dontwarn com.github.luben.zstd.**
+-dontwarn org.tukaani.xz.**
