@@ -1,4 +1,4 @@
-package com.navi.phantom.components
+package com.navi.phantom.core.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
