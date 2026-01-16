@@ -17,10 +17,7 @@ sealed interface InstallResult {
     data class UserActionRequired(val intent: Intent) : InstallResult
 }
 
-/**
- * BroadcastReceiver for installation status from Android's PackageInstaller.
- * Results are forwarded to NativeApkInstaller via [resultChannel].
- */
+
 class InstallStatusReceiver : BroadcastReceiver() {
     
     private val log = Logger.withTag("InstallStatusReceiver")

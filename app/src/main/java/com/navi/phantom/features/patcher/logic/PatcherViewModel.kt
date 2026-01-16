@@ -376,9 +376,6 @@ class PatcherViewModel(
         }
     }
 
-    /**
-     * Save the patched app to the database for display on the home screen.
-     */
     private fun savePatchedApp(patchedApkPath: String, isSplitApk: Boolean) {
         val app = _uiState.value.app ?: return
 
@@ -398,7 +395,6 @@ class PatcherViewModel(
                 log.i { "Patched app saved to database: ${app.packageName}" }
             } catch (e: Exception) {
                 log.e(e) { "Failed to save patched app to database" }
-                // Don't fail the patching operation if DB save fails
             }
         }
     }
