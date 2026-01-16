@@ -39,18 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.features.bootstrap.logic.BootstrapStep
 
-// Ordered list of steps for timeline display
-private val timelineSteps = listOf(
-    BootstrapStep.PARSE_APK,
-    BootstrapStep.SETUP_SIGNING,
-    BootstrapStep.EXTRACT_SIGNATURE,
-    BootstrapStep.MODIFY_MANIFEST,
-    BootstrapStep.ADD_CONFIG,
-    BootstrapStep.ADD_METALOADER,
-    BootstrapStep.CREATE_LINKS,
-    BootstrapStep.WRITE_APK,
-    BootstrapStep.COMPLETE
-)
+private val timelineSteps = BootstrapStep.entries
 
 @Composable
 fun BootstrapTimeline(
@@ -138,11 +127,7 @@ fun BootstrapTimeline(
 
             // Steps list
             timelineSteps.forEachIndexed { index, step ->
-                val isCompleted = when {
-                    isBootstrapped -> true
-                    hasFailed -> index < currentStepIndex
-                    else -> index < currentStepIndex
-                }
+                val isCompleted = isBootstrapped || index < currentStepIndex
                 val isActive = index == currentStepIndex && isBootstrapping && !hasFailed
                 val isPending = !isCompleted && !isActive
 

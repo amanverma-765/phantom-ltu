@@ -222,18 +222,6 @@ class BootstrapEngine(private val context: Context) {
         return PhantomPatcher(args.toTypedArray())
     }
 
-    private fun mapPatcherStepToBootstrapStep(step: String): BootstrapStep? {
-        return when (step) {
-            "PARSE_APK" -> BootstrapStep.PARSE_APK
-            "SETUP_SIGNING" -> BootstrapStep.SETUP_SIGNING
-            "EXTRACT_SIGNATURE" -> BootstrapStep.EXTRACT_SIGNATURE
-            "MODIFY_MANIFEST" -> BootstrapStep.MODIFY_MANIFEST
-            "ADD_CONFIG" -> BootstrapStep.ADD_CONFIG
-            "ADD_METALOADER" -> BootstrapStep.ADD_METALOADER
-            "CREATE_LINKS" -> BootstrapStep.CREATE_LINKS
-            "WRITE_APK" -> BootstrapStep.WRITE_APK
-            "COMPLETE" -> BootstrapStep.COMPLETE
-            else -> null
-        }
-    }
+    private fun mapPatcherStepToBootstrapStep(step: String): BootstrapStep? =
+        runCatching { BootstrapStep.valueOf(step) }.getOrNull()
 }

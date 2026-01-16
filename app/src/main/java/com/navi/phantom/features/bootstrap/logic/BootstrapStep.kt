@@ -11,16 +11,3 @@ enum class BootstrapStep(val title: String, val description: String) {
     WRITE_APK("Writing APK", "Finalizing bootstrapped APK"),
     COMPLETE("Complete", "Bootstrap finished successfully")
 }
-
-enum class StepStatus {
-    PENDING,
-    RUNNING,
-    COMPLETED,
-    FAILED
-}
-
-data class BootstrapStepState(
-    val step: BootstrapStep,
-    val status: StepStatus = StepStatus.PENDING,
-    val details: List<String> = emptyList()
-)
