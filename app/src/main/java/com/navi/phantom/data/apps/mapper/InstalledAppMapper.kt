@@ -1,7 +1,7 @@
-package com.navi.phantom.data.local.mapper
+package com.navi.phantom.data.apps.mapper
 
-import com.navi.phantom.data.local.dto.DetailedAppInfoDto
-import com.navi.phantom.data.local.dto.InstalledAppDto
+import com.navi.phantom.data.apps.dto.DetailedAppInfoDto
+import com.navi.phantom.data.apps.dto.InstalledAppDto
 import com.navi.phantom.domain.models.DetailedAppInfo
 import com.navi.phantom.domain.models.InstalledApp
 

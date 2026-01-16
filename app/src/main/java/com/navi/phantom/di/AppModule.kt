@@ -2,8 +2,8 @@ package com.navi.phantom.di
 
 import com.navi.phantom.data.bootstrap.ApkInstaller
 import com.navi.phantom.data.bootstrap.BootstrapEngine
-import com.navi.phantom.data.local.datasource.InstalledAppDataSource
-import com.navi.phantom.data.local.repository.InstalledAppRepoImpl
+import com.navi.phantom.data.apps.datasource.InstalledAppDataSource
+import com.navi.phantom.data.apps.repository.InstalledAppRepoImpl
 import com.navi.phantom.domain.repository.InstalledAppRepository
 import com.navi.phantom.features.apps.logic.AppViewModel
 import com.navi.phantom.features.bootstrap.logic.BootstrapViewModel

@@ -1,4 +1,4 @@
-package com.navi.phantom.data.local.dto
+package com.navi.phantom.data.apps.dto
 
 import android.graphics.drawable.Drawable
 

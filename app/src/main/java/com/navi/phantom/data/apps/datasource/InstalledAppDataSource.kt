@@ -1,4 +1,4 @@
-package com.navi.phantom.data.local.datasource
+package com.navi.phantom.data.apps.datasource
 
 import android.Manifest
 import android.content.Context
@@ -6,8 +6,8 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import co.touchlab.kermit.Logger
-import com.navi.phantom.data.local.dto.DetailedAppInfoDto
-import com.navi.phantom.data.local.dto.InstalledAppDto
+import com.navi.phantom.data.apps.dto.DetailedAppInfoDto
+import com.navi.phantom.data.apps.dto.InstalledAppDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

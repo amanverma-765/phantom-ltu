@@ -1,8 +1,8 @@
-package com.navi.phantom.data.local.repository
+package com.navi.phantom.data.apps.repository
 
-import com.navi.phantom.data.local.datasource.InstalledAppDataSource
-import com.navi.phantom.data.local.mapper.InstalledAppMapper.toDetailedAppInfo
-import com.navi.phantom.data.local.mapper.InstalledAppMapper.toInstalledApp
+import com.navi.phantom.data.apps.datasource.InstalledAppDataSource
+import com.navi.phantom.data.apps.mapper.InstalledAppMapper.toDetailedAppInfo
+import com.navi.phantom.data.apps.mapper.InstalledAppMapper.toInstalledApp
 import com.navi.phantom.domain.models.DetailedAppInfo
 import com.navi.phantom.domain.models.InstalledApp
 import com.navi.phantom.domain.repository.InstalledAppRepository
