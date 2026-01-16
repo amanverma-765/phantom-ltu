@@ -42,7 +42,19 @@ class PhantomPatcher(args: Array<String>) {
 
     private val log = Logger.withTag("Phantom")
 
-    class PatchError : Error {
+    /**
+     * Callback interface for reporting patching progress.
+     */
+    fun interface ProgressCallback {
+        fun onProgress(step: String, details: String)
+    }
+
+    /**
+     * Represents a recoverable patching error.
+     * Extends Exception (not Error) because these are application-level errors
+     * that should be caught and displayed to the user, not JVM errors.
+     */
+    class PatchError : Exception {
         constructor(message: String, cause: Throwable) : super(message, cause)
         constructor(message: String) : super(message)
     }
@@ -135,9 +147,10 @@ class PhantomPatcher(args: Array<String>) {
                 outputDir,
                 String.format(
                     Locale.getDefault(),
-                    "%s-%d-phantom.apk",
+                    "%s-%d%s",
                     FilenameUtils.getBaseName(apkFileName),
-                    LSPConfig.instance.VERSION_CODE
+                    LSPConfig.instance.VERSION_CODE,
+                    Constants.PATCH_FILE_SUFFIX
                 )
             ).absoluteFile
 
@@ -175,9 +188,10 @@ class PhantomPatcher(args: Array<String>) {
                 outputDir,
                 String.format(
                     Locale.getDefault(),
-                    "%s-%d-phantom.apks",
+                    "%s-%d%s",
                     bundleName,
-                    LSPConfig.instance.VERSION_CODE
+                    LSPConfig.instance.VERSION_CODE,
+                    Constants.PATCH_BUNDLE_SUFFIX
                 )
             ).absoluteFile
 
@@ -195,7 +209,7 @@ class PhantomPatcher(args: Array<String>) {
     }
 
     @Throws(PatchError::class, IOException::class)
-    fun patch(srcApkFile: File, outputFile: File) {
+    fun patch(srcApkFile: File, outputFile: File, onProgress: ProgressCallback? = null) {
         if (!srcApkFile.exists()) {
             throw PatchError("The source apk file does not exist. Please provide a correct path.")
         }
@@ -204,12 +218,16 @@ class PhantomPatcher(args: Array<String>) {
 
         log.d { "apk path: $srcApkFile" }
         log.i { "Parsing original apk..." }
+        onProgress?.onProgress("PARSE_APK", srcApkFile.name)
 
         ZFile.openReadWrite(outputFile, Z_FILE_OPTIONS).use { dstZFile ->
             val srcZFile = dstZFile.addNestedZip({ ORIGINAL_APK_ASSET_PATH }, srcApkFile, false)
 
             try {
-                val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+                onProgress?.onProgress("SETUP_SIGNING", "Configuring APK signature")
+                // Use BKS (BouncyCastle KeyStore) format for Android
+                // The keystore file was created with: keytool -storetype BKS -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider
+                val keyStore = KeyStore.getInstance("BKS")
                 if (keystoreArgs[0] == null) {
                     log.i { "Register apk signer with default keystore..." }
                     val keystoreStream = javaClass.classLoader?.getResourceAsStream("assets/keystore")
@@ -242,6 +260,7 @@ class PhantomPatcher(args: Array<String>) {
 
             var originalSignature: String? = null
             if (sigbypassLevel > 0) {
+                onProgress?.onProgress("EXTRACT_SIGNATURE", "For signature bypass")
                 originalSignature = ApkSignatureHelper.getApkSignInfo(srcApkFile.absolutePath)
                 if (originalSignature.isNullOrEmpty()) {
                     throw PatchError("get original signature failed")
@@ -290,6 +309,7 @@ class PhantomPatcher(args: Array<String>) {
             }
 
             log.i { "Patching apk..." }
+            onProgress?.onProgress("MODIFY_MANIFEST", "Injecting component factory")
 
             val config = PatchConfig(
                 debuggableFlag,
@@ -310,6 +330,7 @@ class PhantomPatcher(args: Array<String>) {
             }
 
             log.i { "Adding config..." }
+            onProgress?.onProgress("ADD_CONFIG", "Embedding bootstrap configuration")
             try {
                 ByteArrayInputStream(configBytes).use { inputStream ->
                     dstZFile.add(CONFIG_ASSET_PATH, inputStream)
@@ -319,6 +340,7 @@ class PhantomPatcher(args: Array<String>) {
             }
 
             log.i { "Adding metaloader dex..." }
+            onProgress?.onProgress("ADD_METALOADER", "Injecting metaloader.dex")
             try {
                 val metaLoaderStream = javaClass.classLoader?.getResourceAsStream(Constants.META_LOADER_DEX_ASSET_PATH)
                     ?: throw PatchError("Meta loader dex resource not found")
@@ -338,6 +360,7 @@ class PhantomPatcher(args: Array<String>) {
             }
 
             log.d { "Creating nested apk link..." }
+            onProgress?.onProgress("CREATE_LINKS", "Linking original APK entries")
 
             for (entry in srcZFile.entries()) {
                 val name = entry.centralDirectoryHeader.name
@@ -351,7 +374,9 @@ class PhantomPatcher(args: Array<String>) {
             dstZFile.realign()
 
             log.i { "Writing apk..." }
+            onProgress?.onProgress("WRITE_APK", "Finalizing bootstrapped APK")
         }
+        onProgress?.onProgress("COMPLETE", outputFile.name)
         log.i { "Done. Output APK: ${outputFile.absolutePath}" }
     }
 
