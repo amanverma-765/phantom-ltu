@@ -1,6 +1,5 @@
 package com.navi.phantom.navigation
 
-import android.R.attr.label
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing

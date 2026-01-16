@@ -36,18 +36,56 @@ fun AppIcon(
                 .clip(shape)
         )
     } else {
-        Box(
+        AppIconPlaceholder(appName, size, modifier, cornerRadius)
+    }
+}
+
+/**
+ * AppIcon variant that loads from ByteArray stored in database.
+ */
+@Composable
+fun AppIcon(
+    iconBytes: ByteArray?,
+    appName: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = size * 0.25f
+) {
+    val shape = RoundedCornerShape(cornerRadius)
+
+    if (iconBytes != null) {
+        AsyncImage(
+            model = iconBytes,
+            contentDescription = "$appName icon",
+            contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(size)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = appName.firstOrNull()?.uppercase() ?: "?",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+        )
+    } else {
+        AppIconPlaceholder(appName, size, modifier, cornerRadius)
+    }
+}
+
+@Composable
+private fun AppIconPlaceholder(
+    appName: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = size * 0.25f
+) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = appName.firstOrNull()?.uppercase() ?: "?",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }

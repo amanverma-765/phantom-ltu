@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.navi.phantom.R
 import com.navi.phantom.core.ui.EmptyStateScreen
 import com.navi.phantom.domain.model.PatchedApp
-import com.navi.phantom.features.apps.components.PatchedAppListItem
+import com.navi.phantom.features.apps.components.PatchedAppCard
 import com.navi.phantom.features.apps.logic.AppUiEvent
 import com.navi.phantom.features.apps.logic.AppViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -36,7 +36,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppScreen(
+fun PatchedAppScreen(
     modifier: Modifier = Modifier,
     onAddAppClick: () -> Unit,
     onPatchedAppClick: (PatchedApp) -> Unit = {},
@@ -90,7 +90,7 @@ fun AppScreen(
                     items = patchedApps,
                     key = { it.id }
                 ) { patchedApp ->
-                    PatchedAppListItem(
+                    PatchedAppCard(
                         patchedApp = patchedApp,
                         onClick = { onPatchedAppClick(patchedApp) },
                         onInstallClick = { onInstallPatchedApp(patchedApp) },

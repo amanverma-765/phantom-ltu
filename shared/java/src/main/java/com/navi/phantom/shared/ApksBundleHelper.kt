@@ -19,12 +19,6 @@ object ApksBundleHelper {
         return lower.endsWith(Constants.APKS_EXTENSION) || lower.endsWith(Constants.BUNDLE_EXTENSION)
     }
 
-    @Deprecated("Use isBundle", ReplaceWith("isBundle(path)"))
-    fun isApksBundle(path: String?): Boolean = isBundle(path)
-
-    @Deprecated("Use isBundleAny", ReplaceWith("isBundleAny(path)"))
-    fun isApksBundleAny(path: String?): Boolean = isBundleAny(path)
-
     @Throws(IOException::class)
     fun extractBundle(bundleFile: File, destDir: File): List<String> {
         require(bundleFile.exists()) { "Bundle file does not exist: ${bundleFile.absolutePath}" }
@@ -85,7 +79,7 @@ object ApksBundleHelper {
         }
     }
 
-    fun File.crc32(): Long {
+    private fun File.crc32(): Long {
         val crc = CRC32()
         inputStream().use { input ->
             val buffer = ByteArray(8192)
@@ -96,8 +90,4 @@ object ApksBundleHelper {
         }
         return crc.value
     }
-
-    @JvmStatic
-    @Throws(IOException::class)
-    fun calculateCrc32(file: File): Long = file.crc32()
 }

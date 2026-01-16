@@ -8,12 +8,12 @@ object Constants {
     const val ORIGINAL_APK_ASSET_PATH = "assets/phantom/origin.apk"
 
     // File Naming - Patched output suffixes
-    const val PATCH_FILE_SUFFIX = "-phantom.phn"
-    const val PATCH_BUNDLE_SUFFIX = "-phantom.phnx"
+    const val PATCH_FILE_SUFFIX = "-phantom.apk"
+    const val PATCH_BUNDLE_SUFFIX = "-phantom.apks"
 
     // Pure extensions (for detection/checking)
-    const val PATCH_EXTENSION = ".phn"
-    const val BUNDLE_EXTENSION = ".phnx"
+    const val PATCH_EXTENSION = ".apk"
+    const val BUNDLE_EXTENSION = ".apks"
 
     // Input formats (users provide these)
     const val APK_EXTENSION = ".apk"

@@ -65,7 +65,7 @@ class ApkInstallationProviderImpl(private val context: Context) : ApkInstallatio
         val installFile = if (file.name.endsWith(Constants.PATCH_EXTENSION, ignoreCase = true)) {
             val tempApk = context.cacheDir.resolve("install-${System.currentTimeMillis()}.apk")
             file.copyTo(tempApk, overwrite = true)
-            log.d { "Copied .phn to temp .apk: ${tempApk.name}" }
+            log.d { "Copied patched APK to temp: ${tempApk.name}" }
             tempApk
         } else {
             file

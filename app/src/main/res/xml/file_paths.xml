@@ -2,8 +2,8 @@
 <paths>
     <!-- Cache directory for temporary APK files during installation -->
     <cache-path name="install_cache" path="." />
-    <!-- Files directory for bootstrapped APKs -->
-    <files-path name="bootstrapped" path="bootstrapped/" />
+    <!-- Files directory for patched APKs -->
+    <files-path name="patched" path="patched/" />
     <!-- External cache for any overflow -->
     <external-cache-path name="external_cache" path="." />
 </paths>

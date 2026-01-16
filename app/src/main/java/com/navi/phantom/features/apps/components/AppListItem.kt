@@ -17,11 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.domain.model.InstalledApp
+import com.navi.phantom.domain.model.DeviceApp
 
 @Composable
 internal fun AppListItem(
-    app: InstalledApp,
+    app: DeviceApp,
     onClick: () -> Unit,
     onUnsupportedClick: () -> Unit,
     modifier: Modifier = Modifier

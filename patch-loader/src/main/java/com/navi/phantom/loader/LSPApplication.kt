@@ -20,17 +20,14 @@ import hidden.HiddenApiBridge
 import org.json.JSONObject
 import org.lsposed.lspd.core.Startup
 import org.lsposed.lspd.service.ILSPApplicationService
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.function.BiConsumer
-import java.util.stream.Collectors
 import java.util.zip.ZipFile
 
 object LSPApplication {
@@ -93,8 +90,7 @@ object LSPApplication {
             val baseClassLoader = stubLoadedApk.classLoader
 
             baseClassLoader.getResourceAsStream(CONFIG_ASSET_PATH).use { inputStream ->
-                val streamReader = BufferedReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
-                config = JSONObject(streamReader.lines().collect(Collectors.joining()))
+                config = JSONObject(inputStream.bufferedReader(StandardCharsets.UTF_8).readText())
             }
 
             log.i { "Signature bypass level: ${config.optInt("sigBypassLevel")}" }

@@ -21,7 +21,7 @@ val tabItems = listOf(
         label = "Apps",
         icon = Icons.Outlined.Apps,
         selectedIcon = Icons.TwoTone.Apps,
-        destination = Destination.Apps
+        destination = Destination.PatchedApp
     ),
     BottomTab(
         label = "Places",

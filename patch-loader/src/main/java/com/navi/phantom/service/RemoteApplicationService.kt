@@ -42,7 +42,6 @@ class RemoteApplicationService @SuppressLint("DiscouragedPrivateApi") constructo
                 )
                 putExtra("packageName", context.packageName)
             }
-            // TODO: Authentication
             val latch = CountDownLatch(1)
             val conn = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName, binder: IBinder) {
