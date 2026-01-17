@@ -34,9 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.FailedPhase
 
-/**
- * Internal button state derived from PatcherPhase.
- */
+
 private enum class ButtonState {
     READY,
     PATCHING,
@@ -50,10 +48,7 @@ private enum class ButtonState {
     CANCELLED
 }
 
-/**
- * Action button for the patcher screen.
- * Derives its state from [PatcherPhase] for a single source of truth.
- */
+
 @Composable
 fun PatcherActionButton(
     phase: PatcherPhase,

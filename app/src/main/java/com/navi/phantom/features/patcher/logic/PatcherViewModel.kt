@@ -8,16 +8,14 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.navi.phantom.domain.error.AppError
 import com.navi.phantom.domain.error.InstallationError
 import com.navi.phantom.domain.model.PatchingOptions
 import com.navi.phantom.domain.model.PatchingProgress
-import com.navi.phantom.domain.model.PatchingStep
 import com.navi.phantom.domain.model.InstallationState
 import com.navi.phantom.domain.model.UninstallState
-import com.navi.phantom.domain.usecase.PatcherUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
 import com.navi.phantom.domain.usecase.InstallationUseCase
+import com.navi.phantom.domain.usecase.PatcherUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -64,30 +62,30 @@ class PatcherViewModel(
         currentJob?.cancel()
         currentJob = null
 
-        _uiState.update {
-            PatcherUiState(isLoadingApp = true)
-        }
+        _uiState.update { PatcherUiState(isLoadingApp = true) }
 
         viewModelScope.launch {
-            deviceAppUseCase.getAppDetails(packageName)
-                .onSuccess { appInfo ->
+            deviceAppUseCase.getAppByPackageName(packageName)
+                .onSuccess { app ->
                     _uiState.update {
-                        it.copy(
-                            app = appInfo,
+                        PatcherUiState(
+                            app = app,
                             isLoadingApp = false,
                             phase = PatcherPhase.Ready
                         )
                     }
                 }
-                .onFailure { e ->
-                    log.e(e) { "Failed to load app details" }
+                .onFailure { error ->
+                    log.e(error) { "Failed to load app: $packageName" }
                     _uiState.update {
                         it.copy(
                             isLoadingApp = false,
                             phase = PatcherPhase.Failed(
-                                error = PhaseError.Generic(AppError.AppDetailsLoadFailed.message),
-                                failedDuring = FailedPhase.PATCHING,
-                                canRetry = false
+                                error = PhaseError.Generic(
+                                    errorMessage = "Failed to load app: ${error.message}",
+                                    cause = error
+                                ),
+                                failedDuring = FailedPhase.PATCHING
                             )
                         )
                     }
@@ -99,7 +97,7 @@ class PatcherViewModel(
         val app = _uiState.value.app ?: return
 
         currentJob?.cancel()
-        setPhase(PatcherPhase.Patching(PatchingStep.PARSE_APK, "Initializing..."))
+        setPhase(PatcherPhase.Patching(com.navi.phantom.domain.model.PatchingStep.PARSE_APK, "Initializing..."))
 
         currentJob = viewModelScope.launch {
             val splitApkPaths = patcherUseCase.getSplitApkPaths(app.packageName)
@@ -110,7 +108,7 @@ class PatcherViewModel(
                 versionCode = app.versionCode,
                 apkPath = app.apkPath,
                 splitApkPaths = splitApkPaths,
-                options = PatchingOptions(sigbypassLevel = 1)
+                options = PatchingOptions()
             ).collect { progress ->
                 when (progress) {
                     is PatchingProgress.Step -> {

@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.domain.model.DeviceAppDetails
+import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.features.apps.components.AppIcon
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,7 +44,7 @@ import java.util.Locale
 
 @Composable
 fun AppInfoHeader(
-    app: DeviceAppDetails,
+    app: DeviceApp,
     isPatched: Boolean,
     hasFailed: Boolean,
     statusColors: PatcherStatusColors,

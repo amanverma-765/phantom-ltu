@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,7 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.R
 import com.navi.phantom.core.ui.EmptyStateScreen
-import com.navi.phantom.domain.model.PatchedApp
+import com.navi.phantom.core.ui.LoadingState
+import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.features.apps.components.PatchedAppCard
 import com.navi.phantom.features.apps.logic.AppUiEvent
 import com.navi.phantom.features.apps.logic.AppViewModel
@@ -39,13 +41,17 @@ import org.koin.compose.viewmodel.koinViewModel
 fun PatchedAppScreen(
     modifier: Modifier = Modifier,
     onAddAppClick: () -> Unit,
-    onPatchedAppClick: (PatchedApp) -> Unit = {},
-    onInstallPatchedApp: (PatchedApp) -> Unit = {},
+    onPatchedAppClick: (DeviceApp) -> Unit = {},
     viewModel: AppViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val patchedApps = uiState.patchedApps
+    val patchedApps = uiState.filteredPatchedApps
     val isScreenEmpty = patchedApps.isEmpty()
+    val isLoading = uiState.isLoadingApps && uiState.allDeviceApps.isEmpty()
+
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(AppUiEvent.GetAllDeviceApps)
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -55,7 +61,7 @@ fun PatchedAppScreen(
             )
         },
         floatingActionButton = {
-            if (!isScreenEmpty) {
+            if (!isScreenEmpty && !isLoading) {
                 FloatingActionButton(onClick = onAddAppClick) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -73,32 +79,39 @@ fun PatchedAppScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (isScreenEmpty) {
-                item {
-                    EmptyStateScreen(
-                        icon = Icons.Rounded.AppsOutage,
-                        title = "No Apps Yet",
-                        description = "Get started by adding an app.\nEach app gets its own virtual location.",
-                        buttonIcon = Icons.Outlined.AddCircleOutline,
-                        buttonText = "Add Your First App",
-                        onButtonClick = onAddAppClick,
-                        modifier = Modifier.fillParentMaxSize()
-                    )
+            when {
+                isLoading -> {
+                    item {
+                        LoadingState(
+                            message = "Loading apps...",
+                            modifier = Modifier.fillParentMaxSize()
+                        )
+                    }
                 }
-            } else {
-                items(
-                    items = patchedApps,
-                    key = { it.id }
-                ) { patchedApp ->
-                    PatchedAppCard(
-                        patchedApp = patchedApp,
-                        onClick = { onPatchedAppClick(patchedApp) },
-                        onInstallClick = { onInstallPatchedApp(patchedApp) },
-                        onDeleteClick = {
-                            viewModel.onEvent(AppUiEvent.DeletePatchedApp(patchedApp))
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                isScreenEmpty -> {
+                    item {
+                        EmptyStateScreen(
+                            icon = Icons.Rounded.AppsOutage,
+                            title = "No Apps Yet",
+                            description = "Get started by adding an app.\nEach app gets its own virtual location.",
+                            buttonIcon = Icons.Outlined.AddCircleOutline,
+                            buttonText = "Add Your First App",
+                            onButtonClick = onAddAppClick,
+                            modifier = Modifier.fillParentMaxSize()
+                        )
+                    }
+                }
+                else -> {
+                    items(
+                        items = patchedApps,
+                        key = { it.packageName }
+                    ) { patchedApp ->
+                        PatchedAppCard(
+                            app = patchedApp,
+                            onClick = { onPatchedAppClick(patchedApp) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

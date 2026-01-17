@@ -17,5 +17,5 @@ sealed class Destination(val showNavbar: Boolean = false) {
     data object SelectApp : Destination()
 
     @Serializable
-    data object Patcher : Destination()
+    data class Patcher(val packageName: String) : Destination()
 }

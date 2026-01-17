@@ -100,16 +100,7 @@ fun StatusBar(
         label = "textColor"
     )
 
-    val dotColor by animateColorAsState(
-        targetValue = when {
-            hasFailed -> statusColors.error
-            isPatched -> statusColors.success
-            isPatching -> MaterialTheme.colorScheme.tertiary
-            else -> MaterialTheme.colorScheme.outline
-        },
-        animationSpec = tween(400),
-        label = "dotColor"
-    )
+    val dotColor = accentColor
 
     Surface(
         color = backgroundColor,
@@ -174,7 +165,7 @@ fun StatusBar(
                 if (isInstalling && installationProgressMax > 0) {
                     LinearProgressIndicator(
                         progress = { installationProgress.toFloat() / installationProgressMax },
-                        color = MaterialTheme.colorScheme.tertiary,
+                        color = accentColor,
                         trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         strokeCap = StrokeCap.Round,
                         modifier = Modifier
@@ -185,7 +176,7 @@ fun StatusBar(
                     )
                 } else {
                     LinearProgressIndicator(
-                        color = MaterialTheme.colorScheme.tertiary,
+                        color = accentColor,
                         trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         strokeCap = StrokeCap.Round,
                         modifier = Modifier

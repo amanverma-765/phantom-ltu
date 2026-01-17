@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.Icon
@@ -15,18 +16,45 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.domain.model.DeviceApp
 
 @Composable
-internal fun AppListItem(
+internal fun SelectAppItem(
+    modifier: Modifier = Modifier,
     app: DeviceApp,
     onClick: () -> Unit,
-    onUnsupportedClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onUnsupportedClick: () -> Unit = {}
 ) {
-    val isSupported = app.usesLocation
+    val trailingIcon: TrailingIconConfig = when {
+        app.isPatched -> TrailingIconConfig(
+            icon = Icons.Filled.CheckCircle,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            tint = MaterialTheme.colorScheme.primary,
+            contentDescription = "Patched"
+        )
+        app.usesLocation -> TrailingIconConfig(
+            icon = Icons.Outlined.LocationOn,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            tint = MaterialTheme.colorScheme.primary,
+            contentDescription = "Uses location"
+        )
+        else -> TrailingIconConfig(
+            icon = Icons.Outlined.LocationOff,
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            tint = MaterialTheme.colorScheme.error,
+            contentDescription = "No location"
+        )
+    }
+
+    val clickAction = when {
+        app.isPatched -> onClick
+        app.usesLocation -> onClick
+        else -> onUnsupportedClick
+    }
 
     ListItem(
         headlineContent = {
@@ -47,25 +75,13 @@ internal fun AppListItem(
         },
         trailingContent = {
             Surface(
-                color = if (isSupported) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.errorContainer
-                },
+                color = trailingIcon.containerColor,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
-                    imageVector = if (isSupported) {
-                        Icons.Outlined.LocationOn
-                    } else {
-                        Icons.Outlined.LocationOff
-                    },
-                    contentDescription = if (isSupported) "Uses location" else "No location",
-                    tint = if (isSupported) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    },
+                    imageVector = trailingIcon.icon,
+                    contentDescription = trailingIcon.contentDescription,
+                    tint = trailingIcon.tint,
                     modifier = Modifier.size(28.dp).padding(4.dp)
                 )
             }
@@ -81,6 +97,13 @@ internal fun AppListItem(
         colors = ListItemDefaults.colors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        modifier = modifier.clickable(onClick = if (isSupported) onClick else onUnsupportedClick)
+        modifier = modifier.clickable(onClick = clickAction)
     )
 }
+
+private data class TrailingIconConfig(
+    val icon: ImageVector,
+    val containerColor: Color,
+    val tint: Color,
+    val contentDescription: String
+)

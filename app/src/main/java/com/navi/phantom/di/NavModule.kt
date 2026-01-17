@@ -4,13 +4,13 @@ import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.PatchedAppScreen
 import com.navi.phantom.features.apps.logic.AppViewModel
 import com.navi.phantom.features.patcher.screens.PatcherScreen
-import com.navi.phantom.features.patcher.logic.PatcherUiEvent
+import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.PatcherViewModel
 import com.navi.phantom.features.places.LocationScreen
 import com.navi.phantom.features.settings.SettingsScreen
 import com.navi.phantom.navigation.Navigator
 import com.navi.phantom.navigation.Destination
-import org.koin.compose.viewmodel.koinActivityViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.dsl.module
 import org.koin.dsl.navigation3.navigation
@@ -29,28 +29,27 @@ val navModule = module {
         SettingsScreen()
     }
     navigation<Destination.SelectApp> {
-        val appViewModel = get<AppViewModel>()
-        val patcherViewModel = koinActivityViewModel<PatcherViewModel>()
+        val viewModel = get<AppViewModel>()
         val navigator = get<Navigator>()
 
         SelectAppScreen(
-            viewModel = appViewModel,
+            viewModel = viewModel,
             onNavigateBack = { navigator.goBack() },
             onAppSelected = { app ->
-                patcherViewModel.onEvent(PatcherUiEvent.LoadApp(app.packageName))
-                navigator.navigateTo(Destination.Patcher)
+                navigator.navigateTo(Destination.Patcher(app.packageName))
             }
         )
     }
-    navigation<Destination.Patcher> {
-        val viewModel = koinActivityViewModel<PatcherViewModel>()
+    navigation<Destination.Patcher> { destination ->
+        val viewModel = koinViewModel<PatcherViewModel>()
         val navigator = get<Navigator>()
 
         PatcherScreen(
             viewModel = viewModel,
+            packageName = destination.packageName,
             onNavigateBack = {
                 val phase = viewModel.uiState.value.phase
-                if (phase !is com.navi.phantom.features.patcher.logic.PatcherPhase.Ready) {
+                if (phase !is PatcherPhase.Ready) {
                     navigator.popTo(Destination.PatchedApp)
                 } else {
                     navigator.goBack()

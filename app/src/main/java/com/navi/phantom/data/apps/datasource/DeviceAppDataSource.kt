@@ -5,11 +5,10 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Base64
 import co.touchlab.kermit.Logger
-import com.navi.phantom.core.ext.getApplicationInfoCompat
 import com.navi.phantom.core.ext.getInstalledApplicationsCompat
 import com.navi.phantom.core.ext.getPackageInfoCompat
-import com.navi.phantom.data.apps.dto.DeviceAppDetailsDto
 import com.navi.phantom.data.apps.dto.DeviceAppDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,9 +19,9 @@ class DeviceAppDataSource(private val context: Context) {
     private val log = Logger.withTag("DeviceAppDataSource")
     private val pm: PackageManager get() = context.packageManager
 
-    suspend fun getAllInstalledApps(): Result<List<DeviceAppDto>> = withContext(Dispatchers.IO) {
+    suspend fun getAllDeviceApps(): Result<List<DeviceAppDto>> = withContext(Dispatchers.IO) {
         runCatching {
-            pm.getInstalledApplicationsCompat()
+            pm.getInstalledApplicationsCompat(PackageManager.GET_META_DATA.toLong())
                 .asSequence()
                 .filter { it.isUserInstalled }
                 .mapNotNull { app ->
@@ -30,42 +29,54 @@ class DeviceAppDataSource(private val context: Context) {
                         .onFailure { log.w(it) { "Failed to load: ${app.packageName}" } }
                         .getOrNull()
                 }
-                .sortedBy { it.appName.lowercase() }
+                .sortedWith(
+                    // Patched apps first, then alphabetically by name
+                    compareByDescending<DeviceAppDto> { it.isPatched }
+                        .thenBy { it.appName.lowercase() }
+                )
                 .toList()
         }
     }
 
-    suspend fun getAppDetails(packageName: String): Result<DeviceAppDetailsDto> = withContext(Dispatchers.IO) {
+    suspend fun getAppByPackageName(packageName: String): Result<DeviceAppDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val appInfo = pm.getApplicationInfoCompat(packageName)
-            val pkgInfo = pm.getPackageInfoCompat(packageName, PackageManager.GET_PERMISSIONS.toLong())
-
-            DeviceAppDetailsDto(
-                packageName = packageName,
-                appName = appInfo.loadLabel(pm).toString(),
-                versionName = pkgInfo.versionName.orEmpty(),
-                versionCode = pkgInfo.longVersionCode,
-                icon = appInfo.loadIcon(pm),
-                apkPath = appInfo.sourceDir,
-                apkSizeBytes = File(appInfo.sourceDir).length(),
-                installTimeMillis = pkgInfo.firstInstallTime,
-                lastUpdateTimeMillis = pkgInfo.lastUpdateTime,
-                targetSdk = appInfo.targetSdkVersion,
-                minSdk = appInfo.minSdkVersion,
-                usesLocation = packageName.hasLocationPermission()
-            )
-        }
+            pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+        }.fold(
+            onSuccess = { appInfo -> appInfo.toDeviceAppDto() },
+            onFailure = { Result.failure(it) }
+        )
     }
 
     private fun ApplicationInfo.toDeviceAppDto(): Result<DeviceAppDto> = runCatching {
+        val pkgInfo = pm.getPackageInfoCompat(packageName, PackageManager.GET_PERMISSIONS.toLong())
+
         DeviceAppDto(
             packageName = packageName,
             appName = loadLabel(pm).toString(),
-            versionName = pm.getPackageInfoCompat(packageName).versionName.orEmpty(),
+            versionName = pkgInfo.versionName.orEmpty(),
+            versionCode = pkgInfo.longVersionCode,
             icon = loadIcon(pm),
             apkPath = sourceDir,
-            usesLocation = packageName.hasLocationPermission()
+            apkSizeBytes = File(sourceDir).length(),
+            installTimeMillis = pkgInfo.firstInstallTime,
+            lastUpdateTimeMillis = pkgInfo.lastUpdateTime,
+            targetSdk = targetSdkVersion,
+            minSdk = minSdkVersion,
+            usesLocation = packageName.hasLocationPermission(),
+            isPatched = hasValidPhantomMetadata()
         )
+    }
+
+    private fun ApplicationInfo.hasValidPhantomMetadata(): Boolean {
+        val metaValue = metaData?.getString("phantom") ?: return false
+        return try {
+            val decoded = Base64.decode(metaValue, Base64.DEFAULT)
+            val json = String(decoded, Charsets.UTF_8)
+            json.trimStart().startsWith("{") && json.trimEnd().endsWith("}")
+        } catch (e: Exception) {
+            log.i(e) {"Invalid metadata for $packageName"}
+            false
+        }
     }
 
     private fun String.hasLocationPermission(): Boolean = runCatching {

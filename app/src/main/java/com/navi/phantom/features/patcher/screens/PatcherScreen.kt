@@ -48,11 +48,16 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun PatcherScreen(
     viewModel: PatcherViewModel,
+    packageName: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(packageName) {
+        viewModel.onEvent(PatcherUiEvent.LoadApp(packageName))
+    }
 
     val app = uiState.app
     val isLoadingApp = uiState.isLoadingApp
@@ -206,7 +211,6 @@ fun PatcherScreen(
     if (showUninstallDialog) {
         UninstallRequiredDialog(
             packageName = uiState.conflictingPackageName,
-            errorMessage = uiState.error?.message,
             onConfirmUninstall = { viewModel.onEvent(PatcherUiEvent.ConfirmUninstall) },
             onDismiss = { viewModel.onEvent(PatcherUiEvent.DismissUninstallDialog) }
         )

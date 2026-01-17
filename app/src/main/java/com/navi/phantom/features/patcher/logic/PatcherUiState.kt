@@ -1,10 +1,10 @@
 package com.navi.phantom.features.patcher.logic
 
 import com.navi.phantom.domain.model.PatchingStep
-import com.navi.phantom.domain.model.DeviceAppDetails
+import com.navi.phantom.domain.model.DeviceApp
 
 data class PatcherUiState(
-    val app: DeviceAppDetails? = null,
+    val app: DeviceApp? = null,
     val isLoadingApp: Boolean = false,
     val phase: PatcherPhase = PatcherPhase.Ready,
     val patchedApkPath: String? = null
