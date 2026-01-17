@@ -1,7 +1,6 @@
 package com.navi.phantom.di
 
 import com.navi.phantom.data.apps.DeviceAppProviderImpl
-import com.navi.phantom.data.apps.datasource.DeviceAppDataSource
 import com.navi.phantom.data.patcher.PatcherProviderImpl
 import com.navi.phantom.data.installer.ApkInstallationProviderImpl
 import com.navi.phantom.domain.repository.ApkInstallationProvider
@@ -20,8 +19,6 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val appModule = module {
-    singleOf(::DeviceAppDataSource)
-
     singleOf(::DeviceAppProviderImpl) { bind<DeviceAppProvider>() }
     singleOf(::PatcherProviderImpl) { bind<PatcherProvider>() }
     singleOf(::ApkInstallationProviderImpl) { bind<ApkInstallationProvider>() }

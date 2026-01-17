@@ -34,21 +34,6 @@ import androidx.compose.ui.unit.dp
 import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.FailedPhase
 
-
-private enum class ButtonState {
-    READY,
-    PATCHING,
-    PATCHED,
-    INSTALLING,
-    INSTALLED,
-    FAILED_PATCHING,
-    FAILED_INSTALL,
-    UNINSTALLING,
-    AWAITING_UNINSTALL_CONFIRM,
-    CANCELLED
-}
-
-
 @Composable
 fun PatcherActionButton(
     phase: PatcherPhase,
@@ -63,34 +48,17 @@ fun PatcherActionButton(
     modifier: Modifier = Modifier,
     statusColors: PatcherStatusColors = rememberPatcherStatusColors()
 ) {
-    // Derive button state from phase
-    val buttonState = when (phase) {
-        is PatcherPhase.Ready -> ButtonState.READY
-        is PatcherPhase.Patching -> ButtonState.PATCHING
-        is PatcherPhase.Patched -> ButtonState.PATCHED
-        is PatcherPhase.Installing -> ButtonState.INSTALLING
-        is PatcherPhase.Installed -> ButtonState.INSTALLED
-        is PatcherPhase.AwaitingUninstallConfirm -> ButtonState.AWAITING_UNINSTALL_CONFIRM
-        is PatcherPhase.Uninstalling -> ButtonState.UNINSTALLING
-        is PatcherPhase.Cancelled -> ButtonState.CANCELLED
-        is PatcherPhase.Failed -> when (phase.failedDuring) {
-            FailedPhase.PATCHING -> ButtonState.FAILED_PATCHING
-            FailedPhase.INSTALL -> ButtonState.FAILED_INSTALL
-            FailedPhase.UNINSTALL -> ButtonState.FAILED_INSTALL // Treat as install failure for retry
-        }
-    }
-
     AnimatedContent(
-        targetState = buttonState,
+        targetState = phase,
         transitionSpec = {
             (fadeIn() + scaleIn(initialScale = 0.95f)) togetherWith
                     (fadeOut() + scaleOut(targetScale = 0.95f))
         },
         label = "buttonTransition",
         modifier = modifier.fillMaxWidth()
-    ) { state ->
-        when (state) {
-            ButtonState.READY -> {
+    ) { currentPhase ->
+        when (currentPhase) {
+            is PatcherPhase.Ready -> {
                 ActionButton(
                     onClick = onStartPatching,
                     icon = Icons.Outlined.PlayArrow,
@@ -102,7 +70,7 @@ fun PatcherActionButton(
                 )
             }
 
-            ButtonState.PATCHED -> {
+            is PatcherPhase.Patched -> {
                 ActionButton(
                     onClick = onInstall,
                     icon = Icons.Outlined.InstallMobile,
@@ -114,36 +82,24 @@ fun PatcherActionButton(
                 )
             }
 
-            ButtonState.PATCHING -> {
-                CancelButton(
-                    onClick = onCancel,
-                    text = "Cancel"
-                )
+            is PatcherPhase.Patching -> {
+                CancelButton(onClick = onCancel, text = "Cancel")
             }
 
-            ButtonState.INSTALLING -> {
-                CancelButton(
-                    onClick = onCancel,
-                    text = "Cancel Installation"
-                )
+            is PatcherPhase.Installing -> {
+                CancelButton(onClick = onCancel, text = "Cancel Installation")
             }
 
-            ButtonState.UNINSTALLING -> {
-                CancelButton(
-                    onClick = onCancel,
-                    text = "Cancel Uninstall"
-                )
+            is PatcherPhase.Uninstalling -> {
+                CancelButton(onClick = onCancel, text = "Cancel Uninstall")
             }
 
-            ButtonState.AWAITING_UNINSTALL_CONFIRM -> {
+            is PatcherPhase.AwaitingUninstallConfirm -> {
                 // Dialog handles this state, show cancel button as fallback
-                CancelButton(
-                    onClick = onCancel,
-                    text = "Cancel"
-                )
+                CancelButton(onClick = onCancel, text = "Cancel")
             }
 
-            ButtonState.INSTALLED -> {
+            is PatcherPhase.Installed -> {
                 ActionButton(
                     onClick = onLaunch,
                     icon = Icons.Outlined.PlayArrow,
@@ -155,9 +111,13 @@ fun PatcherActionButton(
                 )
             }
 
-            ButtonState.FAILED_PATCHING -> {
+            is PatcherPhase.Failed -> {
+                val (text, onClick) = when (currentPhase.failedDuring) {
+                    FailedPhase.PATCHING -> "Retry" to onRetry
+                    FailedPhase.INSTALL, FailedPhase.UNINSTALL -> "Retry Installation" to onRetry
+                }
                 Button(
-                    onClick = onRetry,
+                    onClick = onClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -168,35 +128,16 @@ fun PatcherActionButton(
                 ) {
                     ButtonContent(
                         icon = Icons.Default.Refresh,
-                        text = "Retry",
+                        text = text,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
-            ButtonState.FAILED_INSTALL -> {
-                Button(
-                    onClick = onRetry,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    ButtonContent(
-                        icon = Icons.Default.Refresh,
-                        text = "Retry Installation",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            ButtonState.CANCELLED -> {
+            is PatcherPhase.Cancelled -> {
                 // Can restart patching or install depending on what we have
-                if (canInstall) {
-                    ActionButton(
+                when {
+                    canInstall -> ActionButton(
                         onClick = onInstall,
                         icon = Icons.Outlined.InstallMobile,
                         text = "Install",
@@ -205,8 +146,7 @@ fun PatcherActionButton(
                             contentColor = MaterialTheme.colorScheme.onTertiary
                         )
                     )
-                } else if (canStartPatching) {
-                    ActionButton(
+                    canStartPatching -> ActionButton(
                         onClick = onStartPatching,
                         icon = Icons.Outlined.PlayArrow,
                         text = "Patch",
@@ -215,12 +155,7 @@ fun PatcherActionButton(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
-                } else {
-                    // Fallback - go back
-                    CancelButton(
-                        onClick = onNavigateBack,
-                        text = "Go Back"
-                    )
+                    else -> CancelButton(onClick = onNavigateBack, text = "Go Back")
                 }
             }
         }

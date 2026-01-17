@@ -38,10 +38,8 @@ import com.navi.phantom.features.patcher.components.PatcherTimeline
 import com.navi.phantom.features.patcher.components.StatusBar
 import com.navi.phantom.features.patcher.components.UninstallRequiredDialog
 import com.navi.phantom.features.patcher.components.rememberPatcherStatusColors
-import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.PatcherUiEvent
 import com.navi.phantom.features.patcher.logic.PatcherViewModel
-import com.navi.phantom.features.patcher.logic.FailedPhase
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,8 +72,6 @@ fun PatcherScreen(
 
     val canStartPatching = uiState.canStartPatching
     val canInstall = uiState.canInstall
-    val hasInstallError = phase is PatcherPhase.Failed &&
-        phase.failedDuring == FailedPhase.INSTALL
 
     // Handle toast events
     LaunchedEffect(Unit) {

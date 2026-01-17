@@ -3,6 +3,7 @@ package com.navi.phantom.domain.usecase
 import android.content.Context
 import android.content.pm.PackageManager
 import co.touchlab.kermit.Logger
+import com.navi.phantom.core.ext.getApplicationInfoCompat
 import com.navi.phantom.domain.model.PatchingOptions
 import com.navi.phantom.domain.model.PatchingProgress
 import com.navi.phantom.domain.repository.PatcherProvider
@@ -35,7 +36,7 @@ class PatcherUseCase(
 
     suspend fun getSplitApkPaths(packageName: String): List<String> = withContext(Dispatchers.IO) {
         try {
-            pm.getApplicationInfo(packageName, 0).splitSourceDirs?.toList() ?: emptyList()
+            pm.getApplicationInfoCompat(packageName).splitSourceDirs?.toList() ?: emptyList()
         } catch (e: PackageManager.NameNotFoundException) {
             log.d(e) { "Package not found when getting split APKs: $packageName" }
             emptyList()
