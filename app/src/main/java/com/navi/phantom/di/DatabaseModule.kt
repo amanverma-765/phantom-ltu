@@ -10,7 +10,7 @@ import org.koin.dsl.module
  *
  * Provides:
  * - PhantomDatabase singleton instance
- * - All DAO instances
+ * - All DAO instances (when added)
  */
 val databaseModule = module {
     single {
@@ -18,10 +18,6 @@ val databaseModule = module {
             androidContext(),
             PhantomDatabase::class.java,
             PhantomDatabase.DATABASE_NAME
-        )
-            .addMigrations(PhantomDatabase.MIGRATION_1_2)
-            .build()
+        ).build()
     }
-
-    single { get<PhantomDatabase>().patchedAppDao() }
 }

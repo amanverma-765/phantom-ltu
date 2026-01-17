@@ -28,16 +28,7 @@ private fun getBaseName(fileName: String): String {
 class PatcherProviderImpl(context: Context) : PatcherProvider {
 
     private val log = Logger.withTag("PatcherProviderImpl")
-    private val outputDir: File
-
-    init {
-        val oldDir = context.filesDir.resolve("bootstrapped")
-        val newDir = context.filesDir.resolve("patched")
-        if (oldDir.exists() && !newDir.exists()) {
-            oldDir.renameTo(newDir)
-        }
-        outputDir = newDir.apply { mkdirs() }
-    }
+    private val outputDir: File = context.cacheDir.resolve(Constants.PATCHED_DIR).apply { mkdirs() }
 
     @Volatile
     private var isCancelled = false
@@ -53,6 +44,7 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
 
         withContext(Dispatchers.IO) {
             try {
+                cleanupAllPatchedFiles()
                 val isSplitApk = splitApkPaths.isNotEmpty()
 
                 val outputPath = if (isSplitApk) {
@@ -67,7 +59,7 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
 
                 if (!isCancelled && isActive) trySend(PatchingProgress.Completed(outputPath))
             } catch (e: CancellationException) {
-                log.i { "Patching cancelled" }
+                log.i(e) { "Patching cancelled" }
                 trySend(PatchingProgress.Cancelled)
             } catch (e: Throwable) {
                 log.e(e) { "Patching failed" }
@@ -86,9 +78,12 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
         if (isCancelled) throw CancellationException("Patching cancelled")
     }
 
-    private fun cleanupExistingPatchedFiles(packageName: String, exceptFile: File) {
+    private fun cleanupAllPatchedFiles() {
         outputDir.listFiles()
-            ?.filter { it.name.startsWith(packageName) && it.absolutePath != exceptFile.absolutePath }
+            ?.filter {
+                it.name.endsWith(Constants.PATCH_FILE_SUFFIX) ||
+                it.name.endsWith(Constants.PATCH_BUNDLE_SUFFIX)
+            }
             ?.forEach { file ->
                 log.d { "Deleting old patched file: ${file.name}" }
                 file.delete()
@@ -115,7 +110,6 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
             mapPatcherStepToPatchingStep(step)?.let { onStep(it, details) }
         }
 
-        cleanupExistingPatchedFiles(packageName, outputFile)
         return outputFile.absolutePath
     }
 
@@ -165,7 +159,6 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
 
         log.d { "Creating bundle: ${bundleFile.name}" }
         ApksBundleHelper.createBundle(patchedFiles, bundleFile, originalNames, true)
-        cleanupExistingPatchedFiles(packageName, bundleFile)
 
         onStep(PatchingStep.COMPLETE, bundleFile.name)
         return bundleFile.absolutePath

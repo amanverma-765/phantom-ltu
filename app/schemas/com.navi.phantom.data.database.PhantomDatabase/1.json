@@ -2,94 +2,30 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "2d0f4de10059ebae28431e8f73e56fb5",
+    "identityHash": "b24da4886f50906bd13bf9b0443b5e8d",
     "entities": [
       {
-        "tableName": "patched_apps",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `packageName` TEXT NOT NULL, `appName` TEXT NOT NULL, `versionName` TEXT NOT NULL, `versionCode` INTEGER NOT NULL, `patchedApkPath` TEXT NOT NULL, `originalApkSizeBytes` INTEGER NOT NULL, `patchedAtMillis` INTEGER NOT NULL, `isSplitApk` INTEGER NOT NULL, `iconPath` TEXT)",
+        "tableName": "placeholder",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
             "columnName": "id",
             "affinity": "INTEGER",
             "notNull": true
-          },
-          {
-            "fieldPath": "packageName",
-            "columnName": "packageName",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "appName",
-            "columnName": "appName",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "versionName",
-            "columnName": "versionName",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "versionCode",
-            "columnName": "versionCode",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "patchedApkPath",
-            "columnName": "patchedApkPath",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "originalApkSizeBytes",
-            "columnName": "originalApkSizeBytes",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "patchedAtMillis",
-            "columnName": "patchedAtMillis",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "isSplitApk",
-            "columnName": "isSplitApk",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "iconPath",
-            "columnName": "iconPath",
-            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [
-          {
-            "name": "index_patched_apps_packageName",
-            "unique": true,
-            "columnNames": [
-              "packageName"
-            ],
-            "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_patched_apps_packageName` ON `${TABLE_NAME}` (`packageName`)"
-          }
-        ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2d0f4de10059ebae28431e8f73e56fb5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b24da4886f50906bd13bf9b0443b5e8d')"
     ]
   }
 }
