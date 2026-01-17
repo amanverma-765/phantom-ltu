@@ -2,9 +2,6 @@ package com.navi.phantom.domain.model
 
 import com.navi.phantom.domain.error.InstallationError
 
-/**
- * Represents the state of an installation operation.
- */
 sealed interface InstallationState {
     data object Idle : InstallationState
     data object Preparing : InstallationState

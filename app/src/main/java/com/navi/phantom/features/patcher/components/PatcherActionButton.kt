@@ -95,7 +95,6 @@ fun PatcherActionButton(
             }
 
             is PatcherPhase.AwaitingUninstallConfirm -> {
-                // Dialog handles this state, show cancel button as fallback
                 CancelButton(onClick = onCancel, text = "Cancel")
             }
 
@@ -135,7 +134,6 @@ fun PatcherActionButton(
             }
 
             is PatcherPhase.Cancelled -> {
-                // Can restart patching or install depending on what we have
                 when {
                     canInstall -> ActionButton(
                         onClick = onInstall,

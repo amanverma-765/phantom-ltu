@@ -35,7 +35,7 @@ object NavAnimations {
     private fun forwardEnter(): EnterTransition =
         slideInHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
-            initialOffsetX = { it }  // Full width slide from right
+            initialOffsetX = { it }
         ) + fadeIn(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
@@ -43,7 +43,7 @@ object NavAnimations {
     private fun forwardExit(): ExitTransition =
         slideOutHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
-            targetOffsetX = { -it / 4 }  // Parallax: slides left 25%
+            targetOffsetX = { -it / 4 }
         ) + fadeOut(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
@@ -51,7 +51,7 @@ object NavAnimations {
     private fun backwardEnter(): EnterTransition =
         slideInHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
-            initialOffsetX = { -it / 4 }  // Parallax: slides in from 25% left
+            initialOffsetX = { -it / 4 }
         ) + fadeIn(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
@@ -59,7 +59,7 @@ object NavAnimations {
     private fun backwardExit(): ExitTransition =
         slideOutHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
-            targetOffsetX = { it }  // Full width slide to right
+            targetOffsetX = { it }
         ) + fadeOut(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
@@ -75,7 +75,7 @@ object NavAnimations {
     private fun predictiveExit(): ExitTransition =
         slideOutHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
-            targetOffsetX = { it }  // Full width slide to right
+            targetOffsetX = { it }
         ) + scaleOut(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
             targetScale = 0.9f

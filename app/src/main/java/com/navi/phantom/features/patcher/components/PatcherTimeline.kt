@@ -50,7 +50,6 @@ fun PatcherTimeline(
     statusColors: PatcherStatusColors,
     modifier: Modifier = Modifier
 ) {
-    // Find current step index in the timeline
     val currentStepIndex = remember(currentStep) {
         if (currentStep != null) timelineSteps.indexOf(currentStep) else -1
     }
@@ -86,7 +85,6 @@ fun PatcherTimeline(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Progress header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -109,7 +107,6 @@ fun PatcherTimeline(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Progress bar
             LinearProgressIndicator(
                 progress = { progress },
                 color = if (isPatched) statusColors.success
@@ -125,7 +122,6 @@ fun PatcherTimeline(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Steps list
             timelineSteps.forEachIndexed { index, step ->
                 val isCompleted = isPatched || index < currentStepIndex
                 val isActive = index == currentStepIndex && isPatching && !hasFailed
@@ -185,14 +181,12 @@ private fun TimelineStep(
         verticalAlignment = Alignment.Top,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Indicator column (dot + connector)
         Box(
             modifier = Modifier.width(24.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Dot or checkmark
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -200,7 +194,6 @@ private fun TimelineStep(
                         .alpha(if (isActive) pulseAlpha else 1f)
                 ) {
                     if (isCompleted) {
-                        // Checkmark for completed
                         Canvas(modifier = Modifier.size(20.dp)) {
                             drawCircle(
                                 color = dotColor.copy(alpha = 0.15f),
@@ -214,10 +207,8 @@ private fun TimelineStep(
                             modifier = Modifier.size(14.dp)
                         )
                     } else {
-                        // Dot for active/pending
                         Canvas(modifier = Modifier.size(20.dp)) {
                             if (isActive) {
-                                // Outer ring for active
                                 drawCircle(
                                     color = dotColor.copy(alpha = 0.2f),
                                     radius = size.minDimension / 2
@@ -240,7 +231,6 @@ private fun TimelineStep(
                     }
                 }
 
-                // Connector line
                 if (showConnector) {
                     Canvas(
                         modifier = Modifier
@@ -261,7 +251,6 @@ private fun TimelineStep(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Label
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,

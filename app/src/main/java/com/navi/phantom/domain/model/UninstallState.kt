@@ -1,8 +1,5 @@
 package com.navi.phantom.domain.model
 
-/**
- * Represents the state of an uninstall operation.
- */
 sealed interface UninstallState {
     data object Idle : UninstallState
     data object Preparing : UninstallState

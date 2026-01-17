@@ -238,11 +238,6 @@ private fun DetailChip(
     }
 }
 
-private fun formatDate(millis: Long): String {
-    return try {
-        val sdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-        sdf.format(Date(millis))
-    } catch (e: Exception) {
-        "Unknown"
-    }
-}
+private fun formatDate(millis: Long): String = runCatching {
+    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(millis))
+}.getOrDefault("Unknown")

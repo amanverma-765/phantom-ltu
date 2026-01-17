@@ -5,13 +5,6 @@ import com.navi.phantom.data.database.PhantomDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
-/**
- * Koin module for database-related dependencies.
- *
- * Provides:
- * - PhantomDatabase singleton instance
- * - All DAO instances (when added)
- */
 val databaseModule = module {
     single {
         Room.databaseBuilder(

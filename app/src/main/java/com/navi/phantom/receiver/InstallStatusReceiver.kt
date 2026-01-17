@@ -8,9 +8,6 @@ import android.os.Build
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.channels.Channel
 
-/**
- * Result from an installation attempt.
- */
 sealed interface InstallResult {
     data object Success : InstallResult
     data class Failure(val status: Int, val message: String?) : InstallResult
@@ -60,8 +57,6 @@ class InstallStatusReceiver : BroadcastReceiver() {
     
     companion object {
         const val ACTION_INSTALL_STATUS = "com.navi.phantom.INSTALL_STATUS"
-        
-        /** Channel for installation results. Uses BUFFERED to avoid losing intermediate results. */
         val resultChannel = Channel<InstallResult>(Channel.BUFFERED)
     }
 }

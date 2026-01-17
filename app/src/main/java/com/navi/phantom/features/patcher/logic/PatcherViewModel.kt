@@ -148,7 +148,6 @@ class PatcherViewModel(
         setPhase(PatcherPhase.Installing(0, 100, "Checking installation..."))
 
         currentJob = viewModelScope.launch {
-            // Run preflight check
             when (val result = installationUseCase.runPreflightCheck(patchedPath)) {
                 is InstallationUseCase.PreflightResult.CanInstall -> {
                     performInstall(patchedPath, appName)
@@ -246,7 +245,6 @@ class PatcherViewModel(
                     }
                     is UninstallState.Cancelled -> {
                         log.i { "Uninstall cancelled" }
-                        // Go back to patched state since we still have the APK
                         val apkPath = _uiState.value.patchedApkPath
                         if (apkPath != null) {
                             setPhase(PatcherPhase.Patched(apkPath))
@@ -263,7 +261,6 @@ class PatcherViewModel(
         val patchedPath = _uiState.value.patchedApkPath ?: return
         val appName = _uiState.value.app?.appName ?: "Patched App"
 
-        // Wait for package to be fully uninstalled
         setPhase(PatcherPhase.Installing(0, 100, "Waiting for system..."))
 
         val uninstalled = installationUseCase.waitForUninstall(uninstalledPackage)
@@ -271,17 +268,14 @@ class PatcherViewModel(
             log.w { "Package may not be fully uninstalled" }
         }
 
-        // Cleanup orphaned sessions
         setPhase(PatcherPhase.Installing(0, 100, "Cleaning up..."))
         installationUseCase.cleanupSessions()
-        delay(300) // Brief delay for system to settle
+        delay(300)
 
-        // Perform installation
         performInstall(patchedPath, appName)
     }
 
     private fun dismissUninstallDialog() {
-        // Go back to patched state
         val apkPath = _uiState.value.patchedApkPath
         if (apkPath != null) {
             setPhase(PatcherPhase.Patched(apkPath))
@@ -294,14 +288,10 @@ class PatcherViewModel(
         log.d { "Cancelling current operation" }
         currentJob?.cancel()
         currentJob = null
-
-        // Also cancel the patcher use case in case it's running
         patcherUseCase.cancel()
 
-        // Determine what state to go back to
         val apkPath = _uiState.value.patchedApkPath
         if (apkPath != null && _uiState.value.phase !is PatcherPhase.Patching) {
-            // We have a patched APK, go back to that state
             setPhase(PatcherPhase.Patched(apkPath))
         } else {
             setPhase(PatcherPhase.Cancelled)
@@ -314,13 +304,9 @@ class PatcherViewModel(
             when (phase.failedDuring) {
                 FailedPhase.PATCHING -> startPatching()
                 FailedPhase.INSTALL -> install()
-                FailedPhase.UNINSTALL -> {
-                    // Try to install directly since uninstall may have succeeded
-                    install()
-                }
+                FailedPhase.UNINSTALL -> install()
             }
         } else if (phase is PatcherPhase.Cancelled) {
-            // Retry from beginning or install if we have an APK
             if (_uiState.value.patchedApkPath != null) {
                 install()
             } else {

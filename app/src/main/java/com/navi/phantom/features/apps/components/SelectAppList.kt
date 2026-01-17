@@ -23,7 +23,6 @@ fun SelectAppList(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier, state = listState) {
-        // Patched apps section
         if (patchedApps.isNotEmpty()) {
             item(key = "patched_header") {
                 Text(
@@ -48,7 +47,6 @@ fun SelectAppList(
                 }
             }
 
-            // Separator between patched and installed apps
             if (unpatchedApps.isNotEmpty()) {
                 item(key = "separator") {
                     HorizontalDivider(
@@ -66,7 +64,6 @@ fun SelectAppList(
             }
         }
 
-        // Device apps section
         itemsIndexed(
             items = unpatchedApps,
             key = { _, app -> "installed_${app.packageName}" }

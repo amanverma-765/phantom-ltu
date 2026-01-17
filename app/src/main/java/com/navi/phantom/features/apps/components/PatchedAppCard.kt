@@ -79,7 +79,6 @@ fun PatchedAppCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Patched badge
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(6.dp)
