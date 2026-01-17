@@ -15,11 +15,9 @@ import com.navi.phantom.domain.model.PatchingProgress
 import com.navi.phantom.domain.model.PatchingStep
 import com.navi.phantom.domain.model.InstallationState
 import com.navi.phantom.domain.model.UninstallState
-import com.navi.phantom.core.ext.toByteArray
 import com.navi.phantom.domain.usecase.PatcherUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
 import com.navi.phantom.domain.usecase.InstallationUseCase
-import com.navi.phantom.domain.usecase.PatchedAppUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,8 +33,7 @@ class PatcherViewModel(
     private val application: Application,
     private val deviceAppUseCase: DeviceAppUseCase,
     private val patcherUseCase: PatcherUseCase,
-    private val installationUseCase: InstallationUseCase,
-    private val patchedAppUseCase: PatchedAppUseCase
+    private val installationUseCase: InstallationUseCase
 ) : ViewModel() {
 
     private val log = Logger.withTag("PatcherViewModel")
@@ -121,8 +118,6 @@ class PatcherViewModel(
                     }
                     is PatchingProgress.Completed -> {
                         log.i { "Patching completed: ${progress.outputPath}" }
-                        // Save patched app to database
-                        savePatchedApp(progress.outputPath, splitApkPaths.isNotEmpty())
                         _uiState.update {
                             it.copy(
                                 phase = PatcherPhase.Patched(progress.outputPath),
@@ -372,29 +367,6 @@ class PatcherViewModel(
             log.e(e) { "Failed to launch app" }
             viewModelScope.launch {
                 _toastEvent.emit("Failed to launch app")
-            }
-        }
-    }
-
-    private fun savePatchedApp(patchedApkPath: String, isSplitApk: Boolean) {
-        val app = _uiState.value.app ?: return
-
-        viewModelScope.launch {
-            try {
-                val iconBytes = app.icon?.toByteArray()
-                patchedAppUseCase.savePatchedApp(
-                    packageName = app.packageName,
-                    appName = app.appName,
-                    versionName = app.versionName,
-                    versionCode = app.versionCode,
-                    patchedApkPath = patchedApkPath,
-                    originalApkSizeBytes = app.apkSizeBytes,
-                    isSplitApk = isSplitApk,
-                    iconBytes = iconBytes
-                )
-                log.i { "Patched app saved to database: ${app.packageName}" }
-            } catch (e: Exception) {
-                log.e(e) { "Failed to save patched app to database" }
             }
         }
     }

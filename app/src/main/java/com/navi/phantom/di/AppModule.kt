@@ -37,5 +37,5 @@ val appModule = module {
     single { InstallationUseCase(androidContext(), get()) }
 
     viewModel { AppViewModel(get(), get()) }
-    viewModel { PatcherViewModel(androidApplication(), get(), get(), get(), get()) }
+    viewModel { PatcherViewModel(androidApplication(), get(), get(), get()) }
 }
