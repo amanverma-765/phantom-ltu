@@ -19,7 +19,7 @@
 
 #include <jni.h>
 
-#include "../../../../../core/magisk-loader/src/main/jni/src/config_impl.h"
+#include "../src/config_impl.h"
 #include "../src/patch_loader.h"
 
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {

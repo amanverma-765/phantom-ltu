@@ -12,6 +12,8 @@ add_library(${PROJECT_NAME} SHARED ${SRC_LIST})
 
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE src)
+# Add core's private src directory for native_api.h access
+target_include_directories(${PROJECT_NAME} PRIVATE ${CORE_ROOT}/src)
 
 target_link_libraries(${PROJECT_NAME} core log)
 

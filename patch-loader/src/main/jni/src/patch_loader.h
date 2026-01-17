@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../../../../../core/core/src/main/jni/include/context.h"
+#include "context.h"
 
 namespace lspd {
 

@@ -5,7 +5,7 @@
 #ifndef PHANTOM_PROFILE_SAVER_H
 #define PHANTOM_PROFILE_SAVER_H
 
-#include "../../../../../../../../core/external/lsplant/lsplant/src/main/jni/include/utils/hook_helper.hpp"
+#include "utils/hook_helper.hpp"
 
 using namespace lsplant;
 

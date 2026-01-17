@@ -1,22 +1,12 @@
 #include "bypass_sig.h"
 
-#include "../../../../../../core/core/src/main/jni/src/native_api.h"
-#include "../../../../../../core/core/src/main/jni/include/elf_util.h"
-#include "../../../../../../core/dex2oat/src/main/cpp/include/logging.h"
-
-// Override JNI macros to use Phantom package name before including native_util.h
-#define LSP_NATIVE_METHOD(className, functionName, signature)                                      \
-    {#functionName, signature,                                                                     \
-     reinterpret_cast<void *>(Java_com_navi_phantom_lspd_nativebridge_##className##_##functionName)}
-
-#define LSP_DEF_NATIVE_METHOD(ret, className, functionName, ...)                                   \
-    extern "C" ret Java_com_navi_phantom_lspd_nativebridge_##className##_##functionName(           \
-        [[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass clazz, ##__VA_ARGS__)
-
-#include "../../../../../../core/core/src/main/jni/include/native_util.h"
+#include "native_api.h"
+#include "elf_util.h"
+#include "logging.h"
+#include "native_util.h"
 #include "../patch_loader.h"
-#include "../../../../../../core/external/lsplant/lsplant/src/main/jni/include/utils/hook_helper.hpp"
-#include "../../../../../../core/external/lsplant/lsplant/src/main/jni/include/utils/jni_helper.hpp"
+#include "utils/hook_helper.hpp"
+#include "utils/jni_helper.hpp"
 
 using lsplant::operator""_sym;
 

@@ -24,7 +24,7 @@
 #pragma once
 
 #include <string>
-#include "../../../../../core/core/src/main/jni/include/config_bridge.h"
+#include "config_bridge.h"
 
 namespace lspd {
 
@@ -49,7 +49,7 @@ namespace lspd {
                 { "android.content.res.XRes", "android.content.res.XRes"},
                 { "android.content.res.XModule", "android.content.res.XModule"},
                 { "org.lsposed.lspd.core.", "org.lsposed.lspd.core."},
-                { "org.lsposed.lspd.nativebridge.", "com.navi.phantom.lspd.nativebridge."},
+                { "org.lsposed.lspd.nativebridge.", "org.lsposed.lspd.nativebridge."},
                 { "org.lsposed.lspd.service.", "org.lsposed.lspd.service."},
         };
     };

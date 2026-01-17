@@ -22,8 +22,8 @@
 
 #include <vector>
 
-#include "../../../../../../../core/core/src/main/jni/include/context.h"
-#include "../../../../../../../core/external/lsplant/lsplant/src/main/jni/include/utils/hook_helper.hpp"
+#include "context.h"
+#include "utils/hook_helper.hpp"
 
 using namespace lsplant;
 

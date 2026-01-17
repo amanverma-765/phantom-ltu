@@ -9,7 +9,6 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.Base64
 import co.touchlab.kermit.Logger
-import com.navi.phantom.lspd.nativebridge.SigBypass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
@@ -125,7 +124,7 @@ object SigBypass {
                     ?: throw IOException("Original APK asset not found in patched APK")
                 "${context.cacheDir}/phantom/origin/${entry.crc}.apk"
             }
-            SigBypass.enableOpenatHook(context.packageResourcePath, cacheApkPath)
+            org.lsposed.lspd.nativebridge.SigBypass.enableOpenatHook(context.packageResourcePath, cacheApkPath)
         }
     }
 }
