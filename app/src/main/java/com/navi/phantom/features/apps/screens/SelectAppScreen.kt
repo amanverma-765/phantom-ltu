@@ -98,7 +98,9 @@ fun SelectAppScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                uiState.filteredApps.isEmpty() && uiState.searchQuery.isNotBlank() -> {
+                uiState.filteredPatchedApps.isEmpty() &&
+                    uiState.filteredDeviceApps.isEmpty() &&
+                    uiState.searchQuery.isNotBlank() -> {
                     EmptyState(
                         message = "No apps found for \"${uiState.searchQuery}\"",
                         modifier = Modifier.fillMaxSize()
@@ -109,27 +111,9 @@ fun SelectAppScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 else -> {
-                    // Filter patched apps based on search query
-                    val filteredPatchedApps = if (uiState.searchQuery.isBlank()) {
-                        uiState.patchedApps
-                    } else {
-                        uiState.patchedApps.filter { patchedApp ->
-                            patchedApp.appName.contains(uiState.searchQuery, ignoreCase = true) ||
-                                patchedApp.packageName.contains(uiState.searchQuery, ignoreCase = true)
-                        }
-                    }
-
-                    // Get package names of patched apps to exclude from installed apps list
-                    val patchedPackageNames = uiState.patchedApps.map { it.packageName }.toSet()
-
-                    // Filter out patched apps from installed apps list
-                    val nonPatchedInstalledApps = uiState.filteredApps.filter { installedApp ->
-                        installedApp.packageName !in patchedPackageNames
-                    }
-
                     SelectAppList(
-                        patchedApps = filteredPatchedApps,
-                        unpatchedApps = nonPatchedInstalledApps,
+                        patchedApps = uiState.filteredPatchedApps,
+                        unpatchedApps = uiState.filteredDeviceApps,
                         onPatchedAppClick = { },
                         onUnPatchedAppClick = { installedApp ->
                             onAppSelected(installedApp)

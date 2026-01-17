@@ -39,7 +39,9 @@ class AppViewModel(
         viewModelScope.launch {
             patchedAppUseCase.observeAll().collect { patchedApps ->
                 log.d { "Patched apps updated: ${patchedApps.size} apps" }
-                _uiState.update { it.copy(patchedApps = patchedApps) }
+                _uiState.update { state ->
+                    state.copy(patchedApps = patchedApps).recomputeFilteredLists()
+                }
             }
         }
     }
@@ -57,10 +59,7 @@ class AppViewModel(
 
     private fun updateSearchQuery(query: String) {
         _uiState.update { state ->
-            state.copy(
-                searchQuery = query,
-                filteredApps = deviceAppUseCase.filterApps(state.allDeviceApps, query)
-            )
+            state.copy(searchQuery = query).recomputeFilteredLists()
         }
     }
 
@@ -73,9 +72,8 @@ class AppViewModel(
                         state.copy(
                             isLoadingApps = false,
                             errorMessage = null,
-                            allDeviceApps = apps,
-                            filteredApps = deviceAppUseCase.filterApps(apps, state.searchQuery)
-                        )
+                            allDeviceApps = apps
+                        ).recomputeFilteredLists()
                     }
                 }
                 .onFailure { throwable ->
@@ -92,5 +90,31 @@ class AppViewModel(
                     }
                 }
         }
+    }
+
+    /**
+     * Recomputes both filtered lists based on current state.
+     * - filteredPatchedApps: patched apps filtered by search query
+     * - filteredDeviceApps: device apps filtered by search query, excluding patched packages
+     */
+    private fun AppUiState.recomputeFilteredLists(): AppUiState {
+        val patchedPackageNames = patchedApps.map { it.packageName }.toSet()
+
+        val filteredPatched = if (searchQuery.isBlank()) {
+            patchedApps
+        } else {
+            patchedApps.filter { app ->
+                app.appName.contains(searchQuery, ignoreCase = true) ||
+                    app.packageName.contains(searchQuery, ignoreCase = true)
+            }
+        }
+
+        val filteredDevice = deviceAppUseCase.filterApps(allDeviceApps, searchQuery)
+            .filter { it.packageName !in patchedPackageNames }
+
+        return copy(
+            filteredPatchedApps = filteredPatched,
+            filteredDeviceApps = filteredDevice
+        )
     }
 }
