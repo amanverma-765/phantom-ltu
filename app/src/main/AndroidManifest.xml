@@ -52,6 +52,11 @@
                 <action android:name="com.navi.phantom.UNINSTALL_STATUS" />
             </intent-filter>
         </receiver>
+
+        <!-- Service for IPC with patched apps -->
+        <service
+            android:name=".manager.ModuleService"
+            android:exported="true" />
     </application>
 
 </manifest>
