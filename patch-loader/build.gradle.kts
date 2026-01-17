@@ -40,11 +40,25 @@ androidComponents.onVariants { variant ->
         into(rootProject.layout.projectDirectory.dir("out/assets/${variant.name}/phantom"))
     }
 
+    val copySoTask = tasks.register<Copy>("copySo$variantCapped") {
+        dependsOn("assemble$variantCapped")
+        dependsOn("strip${variantCapped}DebugSymbols")
+        val libDir = "$variantLowered/strip${variantCapped}DebugSymbols"
+        from(
+            fileTree(
+                "dir" to layout.buildDirectory.dir("intermediates/stripped_native_libs/$libDir/out/lib"),
+                "include" to listOf("**/libphantom.so")
+            )
+        )
+        into(rootProject.layout.projectDirectory.dir("out/assets/${variant.name}/phantom/so"))
+    }
+
     tasks.register("copy$variantCapped") {
         dependsOn(copyDexTask)
+        dependsOn(copySoTask)
 
         doLast {
-            println("Dex file has been copied to ${rootProject.layout.projectDirectory.dir("out")}")
+            println("Dex and so files have been copied to ${rootProject.layout.projectDirectory.dir("out")}")
         }
     }
 }

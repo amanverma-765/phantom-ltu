@@ -128,7 +128,7 @@ fun Project.configureBaseExtension() {
                         "-Wno-unused-value",
                         "-D__FILE__=__FILE_NAME__",
                     )
-                    cppFlags("-std=c++20", *flags)
+                    cppFlags("-std=c++23", *flags)
                     cFlags("-std=c18", *flags)
                     arguments(
                         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
