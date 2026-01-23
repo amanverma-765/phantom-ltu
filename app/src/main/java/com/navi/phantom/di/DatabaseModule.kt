@@ -11,6 +11,8 @@ val databaseModule = module {
             androidContext(),
             PhantomDatabase::class.java,
             PhantomDatabase.DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
+
+    single { get<PhantomDatabase>().placeDao() }
 }
