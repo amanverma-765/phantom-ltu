@@ -1,6 +1,15 @@
+import java.util.Properties
+
 val defaultManagerPackageName: String by rootProject.extra
 val verCode: Int by rootProject.extra
 val verName: String by rootProject.extra
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
+}
 
 plugins {
     alias(libs.plugins.agp.app)
@@ -17,6 +26,7 @@ android {
     defaultConfig {
         applicationId = defaultManagerPackageName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "MAPTILER_API_KEY", "\"${localProperties.getProperty("MAPTILER_API_KEY", "")}\"")
     }
 
     androidResources {
@@ -105,6 +115,7 @@ dependencies {
     // Core
     implementation(phantom.androidx.core.ktx)
     implementation(phantom.androidx.lifecycle.runtime.ktx)
+    implementation(phantom.androidx.lifecycle.runtime.compose)
     implementation(phantom.androidx.activity.compose)
 
     // Compose
@@ -112,7 +123,7 @@ dependencies {
     implementation(phantom.androidx.compose.ui)
     implementation(phantom.androidx.compose.ui.graphics)
     implementation(phantom.androidx.compose.ui.tooling.preview)
-    implementation(phantom.androidx.compose.material3)
+    implementation(phantom.androidx.compose.material3.expressive)
     implementation(phantom.androidx.compose.material.icons.extended)
     implementation(phantom.androidx.compose.material3.adaptive.navigation.suite)
 
@@ -163,4 +174,11 @@ dependencies {
 
     // Logging
     implementation(phantom.kermit)
+
+    // MapLibre
+    implementation(phantom.maplibre.android.sdk)
+    implementation(phantom.maplibre.android.plugin.annotation)
+
+    // Google Play Services Location
+    implementation(phantom.play.services.location)
 }

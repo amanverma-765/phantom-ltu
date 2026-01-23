@@ -11,6 +11,10 @@
     <!-- Required for uninstalling APKs -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
+    <!-- Location permissions for map feature -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
         android:name=".PhantomApp"
         android:allowBackup="true"
