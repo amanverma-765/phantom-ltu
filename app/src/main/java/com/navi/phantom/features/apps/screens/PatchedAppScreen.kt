@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.rounded.AppsOutage
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,7 +22,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -49,12 +52,17 @@ fun PatchedAppScreen(
     val isScreenEmpty = patchedApps.isEmpty()
     val isLoading = uiState.isLoadingApps && uiState.allDeviceApps.isEmpty()
 
+    val listState = rememberLazyListState()
+    val isFabExpanded by remember {
+        derivedStateOf { listState.firstVisibleItemIndex == 0 }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.onEvent(AppUiEvent.GetAllDeviceApps)
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) }
@@ -62,19 +70,30 @@ fun PatchedAppScreen(
         },
         floatingActionButton = {
             if (!isScreenEmpty && !isLoading) {
-                FloatingActionButton(onClick = onAddAppClick) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Apps"
-                    )
-                }
+                ExtendedFloatingActionButton(
+                    onClick = onAddAppClick,
+                    expanded = isFabExpanded,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = { Text("Add App") }
+                )
             }
         }
     ) { innerPadding ->
         LazyColumn(
+            state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 8.dp,
+                bottom = 88.dp
+            ),
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)

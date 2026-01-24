@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Settings") }

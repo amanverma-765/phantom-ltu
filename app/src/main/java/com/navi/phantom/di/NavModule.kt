@@ -3,10 +3,11 @@ package com.navi.phantom.di
 import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.PatchedAppScreen
 import com.navi.phantom.features.apps.logic.AppViewModel
+import com.navi.phantom.features.map.screens.MapPickerScreen
 import com.navi.phantom.features.patcher.screens.PatcherScreen
 import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.PatcherViewModel
-import com.navi.phantom.features.places.LocationScreen
+import com.navi.phantom.features.places.screens.PlacesScreen
 import com.navi.phantom.features.settings.SettingsScreen
 import com.navi.phantom.navigation.Navigator
 import com.navi.phantom.navigation.Destination
@@ -23,13 +24,15 @@ val navModule = module {
         PatchedAppScreen(onAddAppClick = { get<Navigator>().navigateTo(Destination.SelectApp) })
     }
     navigation<Destination.Places> {
-        LocationScreen(onAddPlaceClick = {})
+        PlacesScreen(
+            onAddPlaceClick = { get<Navigator>().navigateTo(Destination.MapPicker) }
+        )
     }
     navigation<Destination.Setting> {
         SettingsScreen()
     }
     navigation<Destination.SelectApp> {
-        val viewModel = get<AppViewModel>()
+        val viewModel = koinViewModel<AppViewModel>()
         val navigator = get<Navigator>()
 
         SelectAppScreen(
@@ -55,6 +58,12 @@ val navModule = module {
                     navigator.goBack()
                 }
             }
+        )
+    }
+    navigation<Destination.MapPicker> {
+        val navigator = get<Navigator>()
+        MapPickerScreen(
+            onNavigateBack = { navigator.goBack() }
         )
     }
 }
