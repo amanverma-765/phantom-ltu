@@ -11,8 +11,12 @@ val databaseModule = module {
             androidContext(),
             PhantomDatabase::class.java,
             PhantomDatabase.DATABASE_NAME
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(PhantomDatabase.MIGRATION_1_2)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     single { get<PhantomDatabase>().placeDao() }
+    single { get<PhantomDatabase>().activeLocationDao() }
 }
