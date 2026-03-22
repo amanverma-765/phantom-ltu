@@ -128,7 +128,8 @@ fun PatchedAppScreen(
                         PatchedAppCard(
                             app = patchedApp,
                             onClick = { onPatchedAppClick(patchedApp) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            activeLocation = uiState.activeLocations[patchedApp.packageName]
                         )
                     }
                 }

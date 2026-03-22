@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.navi.phantom.domain.error.AppError
 import com.navi.phantom.domain.model.DeviceApp
+import com.navi.phantom.domain.usecase.ActiveLocationUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,12 +14,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AppViewModel(
-    private val deviceAppUseCase: DeviceAppUseCase
+    private val deviceAppUseCase: DeviceAppUseCase,
+    private val activeLocationUseCase: ActiveLocationUseCase
 ) : ViewModel() {
     private val log = Logger.withTag("AppViewModel")
 
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            activeLocationUseCase.getAllActiveLocations().collect { locations ->
+                _uiState.update { state ->
+                    state.copy(activeLocations = locations.associateBy { it.packageName })
+                }
+            }
+        }
+    }
 
     fun onEvent(event: AppUiEvent) {
         when (event) {
