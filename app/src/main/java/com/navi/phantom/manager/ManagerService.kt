@@ -6,7 +6,9 @@ import android.os.Environment
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import co.touchlab.kermit.Logger
+import com.navi.phantom.data.database.dao.ActiveLocationDao
 import com.navi.phantom.shared.ModuleLoader
+import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.lsposed.lspd.models.Module
@@ -16,35 +18,31 @@ import java.io.File
 /**
  * AIDL stub implementation of [ILSPApplicationService].
  * Patched apps use this to request their assigned Xposed modules.
- *
- * TODO: Implement module lookup logic based on your database/scope management.
  */
 object ManagerService : ILSPApplicationService.Stub(), KoinComponent {
 
     private val log = Logger.withTag("ManagerService")
     private val context: Context by inject()
+    private val activeLocationDao: ActiveLocationDao by inject()
 
     override fun isLogMuted(): Boolean = false
 
-    /**
-     * Returns the list of modules assigned to the calling app.
-     *
-     * TODO: Implement your module lookup logic here.
-     * 1. Get calling app's package name via getCallerPackageName()
-     * 2. Query your database for modules assigned to this app
-     * 3. Load each module using ModuleLoader.loadModule(apkPath)
-     * 4. Return the Module list
-     */
     override fun getLegacyModulesList(): List<Module> {
         val callerPackage = getCallerPackageName()
         log.i { "$callerPackage calls getLegacyModulesList" }
 
-        // TODO: Replace this stub with your actual module lookup logic
-        // Example:
-        // val assignedModules = moduleRepository.getModulesForApp(callerPackage)
-        // return assignedModules.mapNotNull { moduleInfo ->
-        //     loadModule(moduleInfo.apkPath, moduleInfo.packageName)
-        // }
+        val activeLocation = runBlocking {
+            activeLocationDao.getActiveLocationSync(callerPackage)
+        }
+
+        if (activeLocation != null) {
+            log.i {
+                "$callerPackage has active location: " +
+                    "${activeLocation.placeName} (${activeLocation.latitude}, ${activeLocation.longitude})"
+            }
+        } else {
+            log.i { "$callerPackage has no active location assigned" }
+        }
 
         return emptyList()
     }
