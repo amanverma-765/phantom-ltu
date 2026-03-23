@@ -7,6 +7,9 @@ import com.navi.phantom.domain.error.AppError
 import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.domain.usecase.ActiveLocationUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +24,8 @@ class AppViewModel(
 
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -40,14 +45,16 @@ class AppViewModel(
     }
 
     private fun updateSearchQuery(query: String) {
-        _uiState.update { state ->
+        _uiState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch(Dispatchers.Default) {
+            delay(200)
+            val state = _uiState.value
             val filtered = filterApps(state.allDeviceApps, query)
             val (patched, unpatched) = filtered.partition { it.isPatched }
-            state.copy(
-                searchQuery = query,
-                filteredPatchedApps = patched,
-                filteredUnpatchedApps = unpatched
-            )
+            _uiState.update {
+                it.copy(filteredPatchedApps = patched, filteredUnpatchedApps = unpatched)
+            }
         }
     }
 

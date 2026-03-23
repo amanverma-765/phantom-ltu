@@ -51,20 +51,20 @@ class DeviceAppProviderImpl(private val context: Context) : DeviceAppProvider {
 
     private fun ApplicationInfo.toDeviceApp(): Result<DeviceApp> = runCatching {
         val pkgInfo = pm.getPackageInfoCompat(packageName, PackageManager.GET_PERMISSIONS.toLong())
+        val permissions = pkgInfo.requestedPermissions.orEmpty()
 
         DeviceApp(
             packageName = packageName,
             appName = loadLabel(pm).toString(),
             versionName = pkgInfo.versionName.orEmpty(),
             versionCode = pkgInfo.longVersionCode,
-            icon = loadIcon(pm),
             apkPath = sourceDir,
             apkSizeBytes = File(sourceDir).length(),
             installTimeMillis = pkgInfo.firstInstallTime,
             lastUpdateTimeMillis = pkgInfo.lastUpdateTime,
             targetSdk = targetSdkVersion,
             minSdk = minSdkVersion,
-            usesLocation = packageName.hasLocationPermission(),
+            usesLocation = permissions.any { it in LOCATION_PERMISSIONS },
             isPatched = hasValidPhantomMetadata()
         )
     }
@@ -80,14 +80,6 @@ class DeviceAppProviderImpl(private val context: Context) : DeviceAppProvider {
             false
         }
     }
-
-    private fun String.hasLocationPermission(): Boolean = runCatching {
-        val permissions = pm.getPackageInfoCompat(this, PackageManager.GET_PERMISSIONS.toLong())
-            .requestedPermissions
-            ?: return@runCatching false
-
-        permissions.any { it in LOCATION_PERMISSIONS }
-    }.getOrDefault(false)
 
     private val ApplicationInfo.isUserInstalled: Boolean
         get() = flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0

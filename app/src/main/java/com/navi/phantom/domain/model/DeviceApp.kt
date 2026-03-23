@@ -1,6 +1,5 @@
 package com.navi.phantom.domain.model
 
-import android.graphics.drawable.Drawable
 import java.util.Locale
 
 data class DeviceApp(
@@ -8,7 +7,6 @@ data class DeviceApp(
     val appName: String,
     val versionName: String,
     val versionCode: Long,
-    val icon: Drawable?,
     val apkPath: String,
     val apkSizeBytes: Long,
     val installTimeMillis: Long,

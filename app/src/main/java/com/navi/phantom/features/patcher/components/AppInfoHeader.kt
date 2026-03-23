@@ -78,7 +78,7 @@ fun AppInfoHeader(
             ) {
                 Box {
                     AppIcon(
-                        icon = app.icon,
+                        packageName = app.packageName,
                         appName = app.appName,
                         size = 56.dp,
                         cornerRadius = 14.dp

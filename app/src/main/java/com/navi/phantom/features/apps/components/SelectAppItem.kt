@@ -88,7 +88,7 @@ internal fun SelectAppItem(
         },
         leadingContent = {
             AppIcon(
-                icon = app.icon,
+                packageName = app.packageName,
                 appName = app.appName,
                 size = 48.dp,
                 cornerRadius = 12.dp
