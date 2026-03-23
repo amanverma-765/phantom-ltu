@@ -86,6 +86,9 @@ class PhantomPatcher(args: Array<String>) {
     @Parameter(names = ["-r", "--allowdown"], description = "Allow downgrade installation by overriding versionCode to 1 (In most cases, the app can still get the correct versionCode)")
     private var overrideVersionCode = false
 
+    @Parameter(names = ["--manager-apk"], description = "Manager APK path to embed in config")
+    private var managerApkPath: String? = null
+
     @Parameter(names = ["-v", "--verbose"], description = "Verbose output")
     private var verbose = false
 
@@ -316,7 +319,8 @@ class PhantomPatcher(args: Array<String>) {
                 overrideVersionCode,
                 sigbypassLevel,
                 originalSignature,
-                appComponentFactory
+                appComponentFactory,
+                managerApkPath
             )
             val configBytes = Json.encodeToString(config).toByteArray(StandardCharsets.UTF_8)
             val metadata = Base64.getEncoder().encodeToString(configBytes)

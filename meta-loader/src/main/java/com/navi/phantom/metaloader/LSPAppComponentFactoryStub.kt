@@ -10,9 +10,11 @@ import android.os.Process
 import android.os.ServiceManager
 import co.touchlab.kermit.Logger
 import com.navi.phantom.shared.Constants
+import org.json.JSONObject
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.zip.ZipFile
 
 @SuppressLint("UnsafeDynamicallyLoadedCode", "DiscouragedPrivateApi")
@@ -44,15 +46,7 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
             try {
                 bootstrapInternal()
             } catch (e: Throwable) {
-                // First attempt may fail on fresh install due to AppsFilter
-                // not yet recognizing QUERY_ALL_PACKAGES permission
-                log.w { "First bootstrap attempt failed, retrying..." }
-                try {
-                    Thread.sleep(500)
-                    bootstrapInternal()
-                } catch (e2: Throwable) {
-                    throw ExceptionInInitializerError(e2)
-                }
+                throw ExceptionInInitializerError(e)
             }
         }
 
@@ -64,16 +58,10 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
             val libName = archToLib[arch]
 
             log.i { "Bootstrap loader from manager" }
-            val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
-            val manager: ApplicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                HiddenApiBypass.invoke(
-                    IPackageManager::class.java, ipm, "getApplicationInfo",
-                    Constants.MANAGER_PACKAGE_NAME, 0L, Process.myUid() / 100000
-                ) as ApplicationInfo
-            } else {
-                ipm.getApplicationInfo(Constants.MANAGER_PACKAGE_NAME, 0, Process.myUid() / 100000)
-            }
-            ZipFile(File(manager.sourceDir)).use { zip ->
+            val managerApkPath = findManagerApk()
+            log.d { "Manager APK: $managerApkPath" }
+
+            ZipFile(File(managerApkPath)).use { zip ->
                 val entry = requireNotNull(zip.getEntry(Constants.LOADER_DEX_ASSET_PATH)) {
                     "Loader DEX not found in manager APK"
                 }
@@ -84,8 +72,88 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
                     }
                 }
             }
-            val soPath = "${manager.sourceDir}!/assets/phantom/so/$libName/libphantom.so"
+            val soPath = "$managerApkPath!/assets/phantom/so/$libName/libphantom.so"
             System.load(soPath)
+        }
+
+        /**
+         * Find the manager APK path using a 3-tier fallback:
+         * 1. Embedded path from patch config (fastest, works on all OEMs)
+         * 2. Filesystem scan of /data/app/ (bypasses AppsFilter)
+         * 3. IPackageManager query (may fail on first launch)
+         */
+        private fun findManagerApk(): String {
+            // 1. Try embedded path from config
+            readManagerApkPathFromConfig()?.let { path ->
+                if (File(path).exists()) {
+                    log.d { "Found manager APK via config" }
+                    return path
+                }
+                log.d { "Config path exists but file not found: $path" }
+            }
+
+            // 2. Try filesystem scan
+            findManagerApkFromFilesystem()?.let { path ->
+                log.d { "Found manager APK via filesystem" }
+                return path
+            }
+
+            // 3. Fallback to IPackageManager
+            log.d { "Trying IPackageManager fallback" }
+            return getManagerApkFromPackageManager()
+        }
+
+        /**
+         * Read managerApkPath from the embedded config.json in the patched APK.
+         */
+        private fun readManagerApkPathFromConfig(): String? {
+            return try {
+                val cl = LSPAppComponentFactoryStub::class.java.classLoader ?: return null
+                cl.getResourceAsStream(Constants.CONFIG_ASSET_PATH)?.use { stream ->
+                    val json = JSONObject(stream.bufferedReader(StandardCharsets.UTF_8).readText())
+                    json.optString("managerApkPath", null as String?)
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        /**
+         * Scan /data/app/ for the manager package directory.
+         */
+        private fun findManagerApkFromFilesystem(): String? {
+            return try {
+                val dataApp = File("/data/app")
+                if (!dataApp.exists()) return null
+
+                dataApp.listFiles()?.forEach { randomDir ->
+                    randomDir.listFiles()?.forEach { pkgDir ->
+                        if (pkgDir.name.startsWith(Constants.MANAGER_PACKAGE_NAME)) {
+                            val baseApk = File(pkgDir, "base.apk")
+                            if (baseApk.exists()) return baseApk.absolutePath
+                        }
+                    }
+                }
+                null
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        /**
+         * Query IPackageManager for the manager's ApplicationInfo.
+         */
+        private fun getManagerApkFromPackageManager(): String {
+            val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
+            val manager: ApplicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                HiddenApiBypass.invoke(
+                    IPackageManager::class.java, ipm, "getApplicationInfo",
+                    Constants.MANAGER_PACKAGE_NAME, 0L, Process.myUid() / 100000
+                ) as ApplicationInfo
+            } else {
+                ipm.getApplicationInfo(Constants.MANAGER_PACKAGE_NAME, 0, Process.myUid() / 100000)
+            }
+            return manager.sourceDir
         }
     }
 }

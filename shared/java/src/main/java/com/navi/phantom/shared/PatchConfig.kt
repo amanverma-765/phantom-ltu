@@ -10,6 +10,7 @@ data class PatchConfig(
     val sigBypassLevel: Int,
     val originalSignature: String?,
     val appComponentFactory: String?,
+    val managerApkPath: String? = null,
     @Transient
     val lspConfig: LSPConfig = LSPConfig.instance
 )

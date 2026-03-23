@@ -29,6 +29,7 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
 
     private val log = Logger.withTag("PatcherProviderImpl")
     private val outputDir: File = context.cacheDir.resolve(Constants.PATCHED_DIR).apply { mkdirs() }
+    private val managerApkPath: String = context.applicationInfo.sourceDir
 
     @Volatile
     private var isCancelled = false
@@ -173,6 +174,7 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
         }
         if (options.overrideVersionCode) args.add("-r")
         if (options.injectDex) args.add("--injectdex")
+        args.addAll(listOf("--manager-apk", managerApkPath))
         args.add("-f")
         args.add("placeholder")
         return PhantomPatcher(args.toTypedArray())
