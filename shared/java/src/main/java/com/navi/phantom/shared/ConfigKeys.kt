@@ -6,4 +6,6 @@ object ConfigKeys {
     const val LONGITUDE = "longitude"
     const val ACCURACY = "accuracy"
     const val PLACE_NAME = "place_name"
+    const val SPEED = "speed"
+    const val BEARING = "bearing"
 }
