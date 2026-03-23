@@ -11,6 +11,7 @@ import com.navi.phantom.core.ext.getApplicationInfoCompat
 import com.navi.phantom.core.ext.getInstalledApplicationsCompat
 import com.navi.phantom.core.ext.getPackageInfoCompat
 import com.navi.phantom.domain.model.DeviceApp
+import com.navi.phantom.shared.Constants
 import com.navi.phantom.domain.repository.DeviceAppProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,13 +27,14 @@ class DeviceAppProviderImpl(private val context: Context) : DeviceAppProvider {
             pm.getInstalledApplicationsCompat(PackageManager.GET_META_DATA.toLong())
                 .asSequence()
                 .filter { it.isUserInstalled }
+                .filter { it.packageName != Constants.MANAGER_PACKAGE_NAME }
                 .mapNotNull { app ->
                     app.toDeviceApp()
                         .onFailure { log.w(it) { "Failed to load: ${app.packageName}" } }
                         .getOrNull()
                 }
+                .filter { it.usesLocation || it.isPatched }
                 .sortedWith(
-                    // Patched apps first, then alphabetically by name
                     compareByDescending<DeviceApp> { it.isPatched }
                         .thenBy { it.appName.lowercase() }
                 )

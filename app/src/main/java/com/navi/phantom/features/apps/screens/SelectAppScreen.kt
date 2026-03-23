@@ -1,6 +1,5 @@
 package com.navi.phantom.features.apps.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.core.ui.EmptyState
@@ -40,7 +38,6 @@ fun SelectAppScreen(
     onAppSelected: (DeviceApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
@@ -68,6 +65,7 @@ fun SelectAppScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .padding(bottom = 8.dp)
                 .imePadding()
         ) {
             AppSearchBar(
@@ -103,17 +101,8 @@ fun SelectAppScreen(
                     SelectAppList(
                         patchedApps = uiState.filteredPatchedApps,
                         unpatchedApps = uiState.filteredUnpatchedApps,
-                        onPatchedAppClick = { },
-                        onUnpatchedAppClick = { installedApp ->
-                            onAppSelected(installedApp)
-                        },
-                        onUnsupportedAppClick = { installedApp ->
-                            Toast.makeText(
-                                context,
-                                "${installedApp.appName} is not supported",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
+                        onPatchedAppClick = { onAppSelected(it) },
+                        onUnpatchedAppClick = { onAppSelected(it) },
                         listState = listState,
                         modifier = Modifier.fillMaxSize()
                     )

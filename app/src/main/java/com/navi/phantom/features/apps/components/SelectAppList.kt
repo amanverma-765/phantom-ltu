@@ -18,7 +18,6 @@ fun SelectAppList(
     unpatchedApps: List<DeviceApp>,
     onPatchedAppClick: (DeviceApp) -> Unit,
     onUnpatchedAppClick: (DeviceApp) -> Unit,
-    onUnsupportedAppClick: (DeviceApp) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -71,7 +70,6 @@ fun SelectAppList(
             SelectAppItem(
                 app = app,
                 onClick = { onUnpatchedAppClick(app) },
-                onUnsupportedClick = { onUnsupportedAppClick(app) },
                 modifier = Modifier.animateItem()
             )
             if (index < unpatchedApps.lastIndex) {
