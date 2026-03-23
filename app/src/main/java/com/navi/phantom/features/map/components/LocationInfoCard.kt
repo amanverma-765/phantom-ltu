@@ -37,6 +37,7 @@ import java.util.Locale
 fun LocationInfoCard(
     latitude: Double,
     longitude: Double,
+    accuracy: Float?,
     address: String?,
     isLoadingAddress: Boolean,
     onSelectLocation: () -> Unit,
@@ -102,13 +103,16 @@ fun LocationInfoCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Coordinates
+            // Coordinates + altitude
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(start = 30.dp)
             ) {
                 CoordLabel(label = "LAT", value = formatCoord(latitude))
                 CoordLabel(label = "LNG", value = formatCoord(longitude))
+                if (accuracy != null) {
+                    CoordLabel(label = "ACC", value = "±${accuracy.toInt()}m")
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

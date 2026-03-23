@@ -123,9 +123,11 @@ fun MapPickerScreen(
             context = context,
             onLocationReceived = { location ->
                 isLoadingLocation = false
+                viewModel.setAccuracyFromGps(location.accuracy)
                 val target = LatLng(location.latitude, location.longitude)
+                val zoom = accuracyToZoom(location.accuracy, location.latitude)
                 mapRef?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(target, 17.0),
+                    CameraUpdateFactory.newLatLngZoom(target, zoom),
                     1000
                 )
             },
@@ -148,6 +150,7 @@ fun MapPickerScreen(
             LocationInfoCard(
                 latitude = uiState.currentLatitude,
                 longitude = uiState.currentLongitude,
+                accuracy = uiState.accuracy,
                 address = uiState.address,
                 isLoadingAddress = uiState.isLoadingAddress,
                 onSelectLocation = {
@@ -184,7 +187,7 @@ fun MapPickerScreen(
             )
 
             // Crosshair overlay - full screen lines + red center dot
-            CrosshairOverlay(isMapMoving = isMapMoving)
+            CrosshairOverlay(isMapMoving = isMapMoving, isDarkTheme = isDarkTheme)
 
             // Top bar - floating search bar
             MapTopBar(
@@ -218,6 +221,7 @@ fun MapPickerScreen(
             sheetState = sheetState,
             latitude = uiState.currentLatitude,
             longitude = uiState.currentLongitude,
+            accuracy = uiState.accuracy,
             address = uiState.address,
             placeName = uiState.placeName,
             onPlaceNameChange = { viewModel.onEvent(MapPickerUiEvent.UpdatePlaceName(it)) },
@@ -339,9 +343,10 @@ private fun MapContent(
 @Composable
 private fun CrosshairOverlay(
     isMapMoving: Boolean,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = Color.White.copy(alpha = 0.25f)
+    val lineColor = if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)
     val dotColor = Color.Red
 
     // Animate dot scale: grows when dragging, settles with bounce
@@ -397,7 +402,7 @@ private fun CrosshairOverlay(
         val dashLength = 8.dp.toPx()
         val gapLength = 6.dp.toPx()
         drawCircle(
-            color = Color.White.copy(alpha = circleAlpha),
+            color = if (isDarkTheme) Color.White.copy(alpha = circleAlpha) else Color.Black.copy(alpha = circleAlpha * 0.5f),
             radius = circleRadius,
             center = center,
             style = androidx.compose.ui.graphics.drawscope.Stroke(
@@ -417,4 +422,25 @@ private fun CrosshairOverlay(
             center = center
         )
     }
+}
+
+/**
+ * Convert GPS accuracy (meters) to a MapLibre zoom level.
+ * Zooms in tight for high accuracy (small radius) and zooms out for low accuracy.
+ * At zoom z, 1 pixel ≈ (earthCircumference * cos(lat)) / (256 * 2^z) meters.
+ * We want the accuracy circle to fit comfortably on screen (~200px radius).
+ */
+private fun accuracyToZoom(accuracyMeters: Float?, latitudeDeg: Double): Double {
+    if (accuracyMeters == null || accuracyMeters <= 0f) return 17.0
+
+    val latRad = Math.toRadians(latitudeDeg)
+    val earthCircumference = 40_075_016.686
+    val tileSize = 256.0
+    val metersPerPixelAtZoom0 = earthCircumference * kotlin.math.cos(latRad) / tileSize
+
+    // We want accuracyMeters to span ~200 pixels on screen
+    val targetPixels = 200.0
+    val zoom = kotlin.math.ln(metersPerPixelAtZoom0 * targetPixels / accuracyMeters) / kotlin.math.ln(2.0)
+
+    return zoom.coerceIn(14.0, 20.0)
 }

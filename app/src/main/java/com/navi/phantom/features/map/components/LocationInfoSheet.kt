@@ -45,6 +45,7 @@ fun LocationInfoSheet(
     sheetState: SheetState,
     latitude: Double?,
     longitude: Double?,
+    accuracy: Float?,
     address: String?,
     placeName: String,
     onPlaceNameChange: (String) -> Unit,
@@ -136,6 +137,9 @@ fun LocationInfoSheet(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CoordinateChip(label = "Lat", value = "%.4f".format(latitude))
                             CoordinateChip(label = "Lng", value = "%.4f".format(longitude))
+                            if (accuracy != null) {
+                                CoordinateChip(label = "Acc", value = "±${accuracy.toInt()}m")
+                            }
                         }
                     }
                     if (address != null) {
