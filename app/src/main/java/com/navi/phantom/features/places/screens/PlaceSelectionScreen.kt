@@ -1,5 +1,6 @@
 package com.navi.phantom.features.places.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -193,13 +194,20 @@ private fun SelectablePlaceCard(
     val containerColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
     } else {
-        MaterialTheme.colorScheme.surfaceContainerLow
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     }
 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor),
         onClick = onClick
     ) {
         Row(
