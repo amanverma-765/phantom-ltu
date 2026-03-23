@@ -80,7 +80,11 @@ object LSPApplication {
         // 1. Exit protection first — prevents System.exit() during subsequent hook setup
         ExitBypass.apply()
 
-        // 2. Signature bypass — must be correct before any integrity check
+        // 2. Developer options and debuggable flag hiding
+        DeveloperOptionsBypass.apply()
+        DebuggableBypass.apply(context)
+
+        // 3. Signature bypass — must be correct before any integrity check
         SigBypass.doSigBypass(context, config.optInt("sigBypassLevel"))
 
         // 3. Installer source spoofing — needed before PairIP's local installer check
