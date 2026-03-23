@@ -42,40 +42,50 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
 
         private fun bootstrap() {
             try {
-                val cl = requireNotNull(LSPAppComponentFactoryStub::class.java.classLoader)
-                val vmRuntime = Class.forName("dalvik.system.VMRuntime")
-                val getRuntime = vmRuntime.getDeclaredMethod("getRuntime").apply { isAccessible = true }
-                val vmInstructionSet = vmRuntime.getDeclaredMethod("vmInstructionSet").apply { isAccessible = true }
-                val arch = vmInstructionSet.invoke(getRuntime.invoke(null)) as String
-                val libName = archToLib[arch]
-
-                log.i { "Bootstrap loader from manager" }
-                val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
-                val manager: ApplicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    HiddenApiBypass.invoke(
-                        IPackageManager::class.java, ipm, "getApplicationInfo",
-                        Constants.MANAGER_PACKAGE_NAME, 0L, Process.myUid() / 100000
-                    ) as ApplicationInfo
-                } else {
-                    ipm.getApplicationInfo(Constants.MANAGER_PACKAGE_NAME, 0, Process.myUid() / 100000)
-                }
-                ZipFile(File(manager.sourceDir)).use { zip ->
-                    val entry = requireNotNull(zip.getEntry(Constants.LOADER_DEX_ASSET_PATH)) {
-                        "Loader DEX not found in manager APK"
-                    }
-                    zip.getInputStream(entry).use { input ->
-                        ByteArrayOutputStream().use { output ->
-                            input.copyTo(output)
-                            dex = output.toByteArray()
-                        }
-                    }
-                }
-                val soPath = "${manager.sourceDir}!/assets/phantom/so/$libName/libphantom.so"
-
-                System.load(soPath)
+                bootstrapInternal()
             } catch (e: Throwable) {
-                throw ExceptionInInitializerError(e)
+                // First attempt may fail on fresh install due to AppsFilter
+                // not yet recognizing QUERY_ALL_PACKAGES permission
+                log.w { "First bootstrap attempt failed, retrying..." }
+                try {
+                    Thread.sleep(500)
+                    bootstrapInternal()
+                } catch (e2: Throwable) {
+                    throw ExceptionInInitializerError(e2)
+                }
             }
+        }
+
+        private fun bootstrapInternal() {
+            val vmRuntime = Class.forName("dalvik.system.VMRuntime")
+            val getRuntime = vmRuntime.getDeclaredMethod("getRuntime").apply { isAccessible = true }
+            val vmInstructionSet = vmRuntime.getDeclaredMethod("vmInstructionSet").apply { isAccessible = true }
+            val arch = vmInstructionSet.invoke(getRuntime.invoke(null)) as String
+            val libName = archToLib[arch]
+
+            log.i { "Bootstrap loader from manager" }
+            val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
+            val manager: ApplicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                HiddenApiBypass.invoke(
+                    IPackageManager::class.java, ipm, "getApplicationInfo",
+                    Constants.MANAGER_PACKAGE_NAME, 0L, Process.myUid() / 100000
+                ) as ApplicationInfo
+            } else {
+                ipm.getApplicationInfo(Constants.MANAGER_PACKAGE_NAME, 0, Process.myUid() / 100000)
+            }
+            ZipFile(File(manager.sourceDir)).use { zip ->
+                val entry = requireNotNull(zip.getEntry(Constants.LOADER_DEX_ASSET_PATH)) {
+                    "Loader DEX not found in manager APK"
+                }
+                zip.getInputStream(entry).use { input ->
+                    ByteArrayOutputStream().use { output ->
+                        input.copyTo(output)
+                        dex = output.toByteArray()
+                    }
+                }
+            }
+            val soPath = "${manager.sourceDir}!/assets/phantom/so/$libName/libphantom.so"
+            System.load(soPath)
         }
     }
 }
