@@ -102,4 +102,6 @@ class RemoteApplicationService @SuppressLint("DiscouragedPrivateApi") constructo
     override fun asBinder(): IBinder? = service?.asBinder()
 
     override fun requestInjectedManagerBinder(binder: MutableList<IBinder>?): ParcelFileDescriptor? = null
+
+    override fun getConfigBundle(): android.os.Bundle = service?.configBundle ?: android.os.Bundle.EMPTY
 }

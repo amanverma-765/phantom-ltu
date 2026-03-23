@@ -37,6 +37,11 @@ object LSPApplication {
     private const val FIRST_APP_ZYGOTE_ISOLATED_UID = 90000
     private const val PER_USER_RANGE = 100000
 
+    /** Exposed so hooks can query the manager for runtime config (location, flags, etc.) */
+    @JvmStatic
+    var applicationService: ILSPApplicationService? = null
+        private set
+
     private lateinit var activityThread: ActivityThread
     private lateinit var stubLoadedApk: LoadedApk
     private lateinit var appLoadedApk: LoadedApk
@@ -63,6 +68,7 @@ object LSPApplication {
 
         log.d { "Initialize service client" }
         val service: ILSPApplicationService = RemoteApplicationService(context)
+        applicationService = service
 
         disableProfile(context)
         Startup.initXposed(false, ActivityThread.currentProcessName(), context.applicationInfo.dataDir, service)

@@ -2,11 +2,13 @@ package com.navi.phantom.manager
 
 import android.content.Context
 import android.os.Binder
+import android.os.Bundle
 import android.os.Environment
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import co.touchlab.kermit.Logger
 import com.navi.phantom.data.database.dao.ActiveLocationDao
+import com.navi.phantom.shared.ConfigKeys
 import com.navi.phantom.shared.ModuleLoader
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
@@ -59,6 +61,28 @@ object ManagerService : ILSPApplicationService.Stub(), KoinComponent {
 
     override fun requestInjectedManagerBinder(binder: MutableList<IBinder>?): ParcelFileDescriptor? {
         return null
+    }
+
+    override fun getConfigBundle(): Bundle {
+        val callerPackage = getCallerPackageName()
+        log.d { "$callerPackage requests config bundle" }
+
+        val bundle = Bundle()
+        val activeLocation = runBlocking {
+            activeLocationDao.getActiveLocationSync(callerPackage)
+        }
+
+        if (activeLocation != null) {
+            bundle.putBoolean(ConfigKeys.HAS_LOCATION, true)
+            bundle.putDouble(ConfigKeys.LATITUDE, activeLocation.latitude)
+            bundle.putDouble(ConfigKeys.LONGITUDE, activeLocation.longitude)
+            activeLocation.accuracy?.let { bundle.putFloat(ConfigKeys.ACCURACY, it) }
+            activeLocation.placeName?.let { bundle.putString(ConfigKeys.PLACE_NAME, it) }
+        } else {
+            bundle.putBoolean(ConfigKeys.HAS_LOCATION, false)
+        }
+
+        return bundle
     }
 
     /**
