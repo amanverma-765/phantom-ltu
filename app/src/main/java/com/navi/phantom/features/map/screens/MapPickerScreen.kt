@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,11 +35,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.navi.phantom.BuildConfig
 import com.navi.phantom.R
+import com.navi.phantom.features.map.components.LocationInfoCard
 import com.navi.phantom.features.map.components.LocationInfoSheet
 import com.navi.phantom.features.map.components.MapControlCluster
 import com.navi.phantom.features.map.components.MapLoadingSkeleton
 import com.navi.phantom.features.map.components.MapTopBar
-import com.navi.phantom.features.map.components.SelectLocationPill
 import com.navi.phantom.features.map.logic.MapPickerUiEvent
 import com.navi.phantom.features.map.logic.MapPickerViewModel
 import com.navi.phantom.features.map.logic.requestCurrentLocation
@@ -85,7 +87,6 @@ fun MapPickerScreen(
     val context = LocalContext.current
 
     var showBottomSheet by remember { mutableStateOf(false) }
-    var currentCenter by remember { mutableStateOf(LatLng(DEFAULT_LAT, DEFAULT_LNG)) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
     var isLoadingLocation by remember { mutableStateOf(false) }
@@ -97,7 +98,6 @@ fun MapPickerScreen(
     var isMapLoaded by remember { mutableStateOf(false) }
 
     val locationPermissionState = rememberLocationPermissionState()
-    val isGpsEnabled = rememberGpsEnabled()
 
     RequestLocationAccess(
         onReady = { hasLocationPermission = true },
@@ -141,93 +141,84 @@ fun MapPickerScreen(
         }
     }
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // Map layer
-        if (!isMapLoaded) {
-            MapLoadingSkeleton()
-        }
-
-        MapContent(
-            isDarkTheme = isDarkTheme,
-            isSatelliteMode = isSatelliteMode,
-            onCameraMove = { center -> currentCenter = center },
-            onCameraMoving = { moving -> isMapMoving = moving },
-            onMapReady = { map ->
-                mapRef = map
-                isMapLoaded = true
-            }
-        )
-
-        // Crosshair overlay - centered
-        val crosshairScale by animateFloatAsState(
-            targetValue = if (isMapMoving) 1.15f else 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            ),
-            label = "crosshairScale"
-        )
-        Icon(
-            painter = painterResource(id = R.drawable.ic_scope),
-            contentDescription = "Location crosshair",
-            tint = Color.Unspecified,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(64.dp)
-                .scale(crosshairScale)
-        )
-
-        // Top bar - floating glass panel
-        MapTopBar(
-            latitude = currentCenter.latitude,
-            longitude = currentCenter.longitude,
-            onBackClick = onNavigateBack,
-            onSearch = { query ->
-                // TODO: Implement search
-            },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 8.dp)
-        )
-
-        // Control cluster - right side
-        MapControlCluster(
-            isSatelliteMode = isSatelliteMode,
-            isLoadingLocation = isLoadingLocation,
-            onLayerToggle = { isSatelliteMode = !isSatelliteMode },
-            onMyLocation = { goToMyLocation() },
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 16.dp)
-        )
-
-        // Select location pill - bottom center
-        SelectLocationPill(
-            onClick = {
-                viewModel.onEvent(
-                    MapPickerUiEvent.SelectLocation(
-                        currentCenter.latitude,
-                        currentCenter.longitude
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
+        bottomBar = {
+            LocationInfoCard(
+                latitude = uiState.currentLatitude,
+                longitude = uiState.currentLongitude,
+                address = uiState.address,
+                isLoadingAddress = uiState.isLoadingAddress,
+                onSelectLocation = {
+                    viewModel.onEvent(
+                        MapPickerUiEvent.SelectLocation(
+                            uiState.currentLatitude,
+                            uiState.currentLongitude
+                        )
                     )
-                )
-                showBottomSheet = true
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 24.dp)
-        )
+                    showBottomSheet = true
+                }
+            )
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Map layer
+            if (!isMapLoaded) {
+                MapLoadingSkeleton()
+            }
+
+            MapContent(
+                isDarkTheme = isDarkTheme,
+                isSatelliteMode = isSatelliteMode,
+                onCameraMove = { center ->
+                    viewModel.onEvent(
+                        MapPickerUiEvent.UpdateCameraPosition(center.latitude, center.longitude)
+                    )
+                },
+                onCameraMoving = { moving -> isMapMoving = moving },
+                onMapReady = { map ->
+                    mapRef = map
+                    isMapLoaded = true
+                }
+            )
+
+            // Crosshair overlay - full screen lines + red center dot
+            CrosshairOverlay(isMapMoving = isMapMoving)
+
+            // Top bar - floating search bar
+            MapTopBar(
+                onBackClick = onNavigateBack,
+                onSearch = { query ->
+                    // TODO: Implement search
+                },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 8.dp)
+            )
+
+            // Control cluster - right side, above bottom bar
+            MapControlCluster(
+                isSatelliteMode = isSatelliteMode,
+                isLoadingLocation = isLoadingLocation,
+                onLayerToggle = { isSatelliteMode = !isSatelliteMode },
+                onMyLocation = { goToMyLocation() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp)
+                    .padding(bottom = innerPadding.calculateBottomPadding() + 12.dp)
+            )
+        }
     }
 
-    // Bottom sheet for location details
+    // Bottom sheet for saving location
     if (showBottomSheet) {
         LocationInfoSheet(
             sheetState = sheetState,
-            latitude = currentCenter.latitude,
-            longitude = currentCenter.longitude,
+            latitude = uiState.currentLatitude,
+            longitude = uiState.currentLongitude,
+            address = uiState.address,
             placeName = uiState.placeName,
             onPlaceNameChange = { viewModel.onEvent(MapPickerUiEvent.UpdatePlaceName(it)) },
             onSave = { viewModel.onEvent(MapPickerUiEvent.SavePlace) },
@@ -343,4 +334,87 @@ private fun MapContent(
         },
         modifier = Modifier.fillMaxSize()
     )
+}
+
+@Composable
+private fun CrosshairOverlay(
+    isMapMoving: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val lineColor = Color.White.copy(alpha = 0.25f)
+    val dotColor = Color.Red
+
+    // Animate dot scale: grows when dragging, settles with bounce
+    val dotScale by animateFloatAsState(
+        targetValue = if (isMapMoving) 1.5f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dotScale"
+    )
+
+    // Animate dashed circle: expands when dragging, shrinks on settle
+    val circleScale by animateFloatAsState(
+        targetValue = if (isMapMoving) 1.3f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "circleScale"
+    )
+
+    // Animate circle opacity: more visible when dragging
+    val circleAlpha by animateFloatAsState(
+        targetValue = if (isMapMoving) 0.8f else 0.45f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "circleAlpha"
+    )
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val centerX = size.width / 2f
+        val centerY = size.height / 2f
+        val center = androidx.compose.ui.geometry.Offset(centerX, centerY)
+
+        // Horizontal line — full width
+        drawLine(
+            color = lineColor,
+            start = androidx.compose.ui.geometry.Offset(0f, centerY),
+            end = androidx.compose.ui.geometry.Offset(size.width, centerY),
+            strokeWidth = 1.dp.toPx()
+        )
+
+        // Vertical line — full height
+        drawLine(
+            color = lineColor,
+            start = androidx.compose.ui.geometry.Offset(centerX, 0f),
+            end = androidx.compose.ui.geometry.Offset(centerX, size.height),
+            strokeWidth = 1.dp.toPx()
+        )
+
+        // Dashed circle around the dot
+        val circleRadius = 18.dp.toPx() * circleScale
+        val dashLength = 8.dp.toPx()
+        val gapLength = 6.dp.toPx()
+        drawCircle(
+            color = Color.White.copy(alpha = circleAlpha),
+            radius = circleRadius,
+            center = center,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 1.5.dp.toPx(),
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                    floatArrayOf(dashLength, gapLength),
+                    0f
+                )
+            )
+        )
+
+        // Red center dot — animated scale
+        val dotRadiusPx = 5.dp.toPx() * dotScale
+        drawCircle(
+            color = dotColor,
+            radius = dotRadiusPx,
+            center = center
+        )
+    }
 }

@@ -45,6 +45,7 @@ fun LocationInfoSheet(
     sheetState: SheetState,
     latitude: Double?,
     longitude: Double?,
+    address: String?,
     placeName: String,
     onPlaceNameChange: (String) -> Unit,
     onSave: () -> Unit,
@@ -136,6 +137,16 @@ fun LocationInfoSheet(
                             CoordinateChip(label = "Lat", value = "%.4f".format(latitude))
                             CoordinateChip(label = "Lng", value = "%.4f".format(longitude))
                         }
+                    }
+                    if (address != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = address,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
