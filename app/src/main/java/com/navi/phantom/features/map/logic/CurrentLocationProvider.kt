@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 data class LatLngResult(
     val latitude: Double,
     val longitude: Double,
+    val altitude: Double? = null,
     val accuracy: Float? = null,
     val timestamp: Long? = null
 )
@@ -63,6 +64,7 @@ fun requestCurrentLocation(
                     LatLngResult(
                         latitude = location.latitude,
                         longitude = location.longitude,
+                        altitude = if (location.hasAltitude()) location.altitude else null,
                         accuracy = location.accuracy,
                         timestamp = location.time
                     )

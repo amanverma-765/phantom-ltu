@@ -29,6 +29,7 @@ class ActiveLocationRepositoryImpl(
                 placeName = place.name,
                 latitude = place.latitude,
                 longitude = place.longitude,
+                accuracy = place.accuracy,
                 assignedAt = System.currentTimeMillis()
             )
         )
@@ -44,6 +45,7 @@ class ActiveLocationRepositoryImpl(
         placeName = placeName,
         latitude = latitude,
         longitude = longitude,
+        accuracy = accuracy,
         assignedAt = assignedAt
     )
 }

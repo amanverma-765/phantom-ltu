@@ -38,6 +38,10 @@ class MapPickerViewModel(
         }
     }
 
+    fun setAccuracyFromGps(accuracy: Float?) {
+        _uiState.update { it.copy(accuracy = accuracy) }
+    }
+
     private fun updateCameraPosition(latitude: Double, longitude: Double) {
         _uiState.update {
             it.copy(currentLatitude = latitude, currentLongitude = longitude)
@@ -57,9 +61,7 @@ class MapPickerViewModel(
                         .getFromLocation(latitude, longitude, 1)
                     results?.firstOrNull()?.getAddressLine(0)
                 }
-                _uiState.update {
-                    it.copy(address = address, isLoadingAddress = false)
-                }
+                _uiState.update { it.copy(address = address, isLoadingAddress = false) }
             } catch (e: Exception) {
                 log.d(e) { "Geocoding failed" }
                 _uiState.update { it.copy(address = null, isLoadingAddress = false) }
@@ -91,7 +93,8 @@ class MapPickerViewModel(
                 name = state.placeName,
                 latitude = latitude,
                 longitude = longitude,
-                address = state.address
+                address = state.address,
+                accuracy = state.accuracy
             ).onSuccess {
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             }.onFailure { error ->

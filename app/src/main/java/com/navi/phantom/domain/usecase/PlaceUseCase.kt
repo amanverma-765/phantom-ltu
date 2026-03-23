@@ -9,10 +9,10 @@ class PlaceUseCase(
 ) {
     fun getAllPlaces(): Flow<List<Place>> = placeRepository.getAllPlaces()
 
-    suspend fun savePlace(name: String, latitude: Double, longitude: Double, address: String? = null): Result<Long> =
+    suspend fun savePlace(name: String, latitude: Double, longitude: Double, address: String? = null, accuracy: Float? = null): Result<Long> =
         runCatching {
             placeRepository.insertPlace(
-                Place(name = name, latitude = latitude, longitude = longitude, address = address)
+                Place(name = name, latitude = latitude, longitude = longitude, address = address, accuracy = accuracy)
             )
         }
 

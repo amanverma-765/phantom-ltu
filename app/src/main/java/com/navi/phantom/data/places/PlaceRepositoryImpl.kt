@@ -32,6 +32,7 @@ class PlaceRepositoryImpl(
         latitude = latitude,
         longitude = longitude,
         address = address,
+        accuracy = accuracy,
         createdAt = createdAt
     )
 
@@ -41,6 +42,7 @@ class PlaceRepositoryImpl(
         latitude = latitude,
         longitude = longitude,
         address = address,
+        accuracy = accuracy,
         createdAt = createdAt
     )
 }

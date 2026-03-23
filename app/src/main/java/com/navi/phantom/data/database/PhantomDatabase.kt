@@ -11,7 +11,7 @@ import com.navi.phantom.data.database.entity.PlaceEntity
 
 @Database(
     entities = [PlaceEntity::class, ActiveLocationEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class PhantomDatabase : RoomDatabase() {
@@ -36,6 +36,13 @@ abstract class PhantomDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `places` ADD COLUMN `accuracy` REAL")
+                db.execSQL("ALTER TABLE `active_locations` ADD COLUMN `accuracy` REAL")
             }
         }
     }

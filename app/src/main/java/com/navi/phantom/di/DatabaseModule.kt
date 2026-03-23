@@ -12,7 +12,7 @@ val databaseModule = module {
             PhantomDatabase::class.java,
             PhantomDatabase.DATABASE_NAME
         )
-            .addMigrations(PhantomDatabase.MIGRATION_1_2)
+            .addMigrations(PhantomDatabase.MIGRATION_1_2, PhantomDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
     }

@@ -7,6 +7,7 @@ data class MapPickerUiState(
     val currentLongitude: Double = 77.2090,
     val placeName: String = "",
     val address: String? = null,
+    val accuracy: Float? = null,
     val isLoadingAddress: Boolean = false,
     val isSaving: Boolean = false,
     val saveError: String? = null,
