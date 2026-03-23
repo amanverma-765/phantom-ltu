@@ -1,5 +1,7 @@
 package com.navi.phantom.features.map.logic
 
+import com.navi.phantom.data.geocoding.SearchSuggestion
+
 data class MapPickerUiState(
     val editingPlaceId: Long? = null,
     val selectedLatitude: Double? = null,
@@ -10,6 +12,9 @@ data class MapPickerUiState(
     val address: String? = null,
     val accuracy: Float? = null,
     val isLoadingAddress: Boolean = false,
+    val searchSuggestions: List<SearchSuggestion> = emptyList(),
+    val isSearching: Boolean = false,
+    val navigateToSearchResult: Boolean = false,
     val isSaving: Boolean = false,
     val saveError: String? = null,
     val saveSuccess: Boolean = false

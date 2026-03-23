@@ -35,16 +35,19 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MapTopBar(
     onBackClick: () -> Unit,
-    onSearch: (String) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    isSearchMode: Boolean,
+    onSearchModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isSearchMode by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(isSearchMode) {
         if (isSearchMode) {
+            searchQuery = ""
             focusRequester.requestFocus()
         }
     }
@@ -68,7 +71,8 @@ fun MapTopBar(
             IconButton(onClick = {
                 if (isSearchMode) {
                     searchQuery = ""
-                    isSearchMode = false
+                    onSearchModeChange(false)
+                    onClearSearch()
                     focusManager.clearFocus()
                 } else {
                     onBackClick()
@@ -89,7 +93,10 @@ fun MapTopBar(
                 if (isSearchMode) {
                     BasicTextField(
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        onValueChange = {
+                            searchQuery = it
+                            onQueryChange(it)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester),
@@ -100,10 +107,7 @@ fun MapTopBar(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
-                            onSearch = {
-                                onSearch(searchQuery)
-                                focusManager.clearFocus()
-                            }
+                            onSearch = { focusManager.clearFocus() }
                         ),
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
@@ -130,7 +134,10 @@ fun MapTopBar(
             // Search/Close toggle
             if (isSearchMode) {
                 if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
+                    IconButton(onClick = {
+                        searchQuery = ""
+                        onQueryChange("")
+                    }) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
                             contentDescription = "Clear",
@@ -139,7 +146,7 @@ fun MapTopBar(
                     }
                 }
             } else {
-                IconButton(onClick = { isSearchMode = true }) {
+                IconButton(onClick = { onSearchModeChange(true) }) {
                     Icon(
                         imageVector = Icons.Rounded.Search,
                         contentDescription = "Search",

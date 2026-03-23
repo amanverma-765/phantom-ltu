@@ -5,6 +5,7 @@ import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.navi.phantom.data.geocoding.GeocodingService
 import com.navi.phantom.domain.model.Place
 import com.navi.phantom.domain.usecase.PlaceUseCase
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class MapPickerViewModel(
     val uiState: StateFlow<MapPickerUiState> = _uiState.asStateFlow()
 
     private var geocodeJob: Job? = null
+    private var searchJob: Job? = null
 
     fun onEvent(event: MapPickerUiEvent) {
         when (event) {
@@ -35,6 +37,9 @@ class MapPickerViewModel(
             is MapPickerUiEvent.UpdateCameraPosition -> updateCameraPosition(event.latitude, event.longitude)
             is MapPickerUiEvent.SelectLocation -> selectLocation(event.latitude, event.longitude)
             is MapPickerUiEvent.UpdatePlaceName -> updatePlaceName(event.name)
+            is MapPickerUiEvent.SearchLocation -> searchLocation(event.query)
+            is MapPickerUiEvent.SelectSearchResult -> selectSearchResult(event.placeId)
+            is MapPickerUiEvent.ClearSearch -> clearSearch()
             is MapPickerUiEvent.SavePlace -> savePlace()
             is MapPickerUiEvent.ResetSaveSuccess -> resetSaveSuccess()
         }
@@ -139,6 +144,50 @@ class MapPickerViewModel(
                 }
             }
         }
+    }
+
+    private fun searchLocation(query: String) {
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            _uiState.update { it.copy(searchSuggestions = emptyList(), isSearching = false) }
+            return
+        }
+        searchJob = viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true) }
+            delay(300) // debounce
+            val state = _uiState.value
+            val results = GeocodingService.searchLocation(
+                query = query,
+                lat = state.currentLatitude,
+                lng = state.currentLongitude
+            )
+            _uiState.update { it.copy(searchSuggestions = results, isSearching = false) }
+        }
+    }
+
+    private fun selectSearchResult(placeId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true, searchSuggestions = emptyList()) }
+            val details = GeocodingService.getPlaceDetails(placeId)
+            if (details != null) {
+                _uiState.update {
+                    it.copy(
+                        currentLatitude = details.latitude,
+                        currentLongitude = details.longitude,
+                        address = details.address,
+                        isSearching = false,
+                        navigateToSearchResult = true
+                    )
+                }
+            } else {
+                _uiState.update { it.copy(isSearching = false) }
+            }
+        }
+    }
+
+    private fun clearSearch() {
+        searchJob?.cancel()
+        _uiState.update { it.copy(searchSuggestions = emptyList(), isSearching = false, navigateToSearchResult = false) }
     }
 
     private fun resetSaveSuccess() {

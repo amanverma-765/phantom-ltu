@@ -39,6 +39,7 @@ import com.navi.phantom.features.map.components.LocationInfoCard
 import com.navi.phantom.features.map.components.LocationInfoSheet
 import com.navi.phantom.features.map.components.MapControlCluster
 import com.navi.phantom.features.map.components.MapLoadingSkeleton
+import com.navi.phantom.features.map.components.SearchSuggestionList
 import com.navi.phantom.features.map.components.MapTopBar
 import com.navi.phantom.features.map.logic.MapPickerUiEvent
 import com.navi.phantom.features.map.logic.MapPickerViewModel
@@ -95,6 +96,7 @@ fun MapPickerScreen(
     var showPreciseLocationDialog by remember { mutableStateOf(false) }
     var isSatelliteMode by remember { mutableStateOf(false) }
     var requestLocationPermission by remember { mutableStateOf(false) }
+    var isSearchMode by remember { mutableStateOf(false) }
     var isMapMoving by remember { mutableStateOf(false) }
     var isMapLoaded by remember { mutableStateOf(false) }
 
@@ -155,6 +157,18 @@ fun MapPickerScreen(
         }
     }
 
+    // Animate camera to search result
+    LaunchedEffect(uiState.navigateToSearchResult) {
+        if (uiState.navigateToSearchResult && mapRef != null) {
+            val target = LatLng(uiState.currentLatitude, uiState.currentLongitude)
+            mapRef?.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(target, 17.0),
+                1000
+            )
+            viewModel.onEvent(MapPickerUiEvent.ClearSearch)
+        }
+    }
+
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
             showBottomSheet = false
@@ -212,14 +226,32 @@ fun MapPickerScreen(
             // Top bar - floating search bar
             MapTopBar(
                 onBackClick = onNavigateBack,
-                onSearch = { query ->
-                    // TODO: Implement search
+                onQueryChange = { query ->
+                    viewModel.onEvent(MapPickerUiEvent.SearchLocation(query))
                 },
+                onClearSearch = { viewModel.onEvent(MapPickerUiEvent.ClearSearch) },
+                isSearchMode = isSearchMode,
+                onSearchModeChange = { isSearchMode = it },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 8.dp)
             )
+
+            // Search suggestions dropdown
+            if (isSearchMode && uiState.searchSuggestions.isNotEmpty()) {
+                SearchSuggestionList(
+                    suggestions = uiState.searchSuggestions,
+                    onSuggestionClick = { placeId ->
+                        viewModel.onEvent(MapPickerUiEvent.SelectSearchResult(placeId))
+                        isSearchMode = false
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 72.dp)
+                )
+            }
 
             // Control cluster - right side, above bottom bar
             MapControlCluster(
