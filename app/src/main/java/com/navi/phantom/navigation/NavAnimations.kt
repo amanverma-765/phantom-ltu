@@ -15,8 +15,8 @@ import androidx.compose.animation.togetherWith
 private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
 
-private const val DURATION_MEDIUM3 = 350
-private const val DURATION_SHORT4 = 200
+private const val DURATION_MEDIUM3 = 250
+private const val DURATION_SHORT4 = 150
 
 object NavAnimations {
 
@@ -35,31 +35,25 @@ object NavAnimations {
     private fun forwardEnter(): EnterTransition =
         slideInHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
-            initialOffsetX = { it }
+            initialOffsetX = { it / 3 }
         ) + fadeIn(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
 
     private fun forwardExit(): ExitTransition =
-        slideOutHorizontally(
-            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
-            targetOffsetX = { -it / 4 }
-        ) + fadeOut(
+        fadeOut(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
 
     private fun backwardEnter(): EnterTransition =
-        slideInHorizontally(
-            animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedDecelerate),
-            initialOffsetX = { -it / 4 }
-        ) + fadeIn(
+        fadeIn(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedDecelerate)
         )
 
     private fun backwardExit(): ExitTransition =
         slideOutHorizontally(
             animationSpec = tween(DURATION_MEDIUM3, easing = EmphasizedAccelerate),
-            targetOffsetX = { it }
+            targetOffsetX = { it / 3 }
         ) + fadeOut(
             animationSpec = tween(DURATION_SHORT4, easing = EmphasizedAccelerate)
         )
