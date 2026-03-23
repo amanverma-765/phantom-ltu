@@ -45,6 +45,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun PlacesScreen(
     onAddPlaceClick: () -> Unit,
+    onEditPlaceClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlacesViewModel = koinViewModel()
 ) {
@@ -134,7 +135,7 @@ fun PlacesScreen(
                         ) { place ->
                             PlaceCard(
                                 place = place,
-                                onClick = { /* TODO: Navigate to place detail or apply */ },
+                                onClick = { onEditPlaceClick(place.id) },
                                 onDeleteClick = {
                                     viewModel.onEvent(PlacesUiEvent.DeletePlace(place))
                                 },

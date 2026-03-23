@@ -32,8 +32,10 @@ val navModule = module {
         )
     }
     navigation<Destination.Places> {
+        val navigator = get<Navigator>()
         PlacesScreen(
-            onAddPlaceClick = { get<Navigator>().navigateTo(Destination.MapPicker) }
+            onAddPlaceClick = { navigator.navigateTo(Destination.MapPicker()) },
+            onEditPlaceClick = { placeId -> navigator.navigateTo(Destination.MapPicker(placeId = placeId)) }
         )
     }
     navigation<Destination.Setting> {
@@ -68,10 +70,11 @@ val navModule = module {
             }
         )
     }
-    navigation<Destination.MapPicker> {
+    navigation<Destination.MapPicker> { destination ->
         val navigator = get<Navigator>()
         MapPickerScreen(
-            onNavigateBack = { navigator.goBack() }
+            onNavigateBack = { navigator.goBack() },
+            placeId = destination.placeId
         )
     }
     navigation<Destination.SelectPlace> { destination ->

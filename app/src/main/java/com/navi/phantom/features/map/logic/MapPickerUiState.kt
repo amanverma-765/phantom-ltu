@@ -1,6 +1,7 @@
 package com.navi.phantom.features.map.logic
 
 data class MapPickerUiState(
+    val editingPlaceId: Long? = null,
     val selectedLatitude: Double? = null,
     val selectedLongitude: Double? = null,
     val currentLatitude: Double = 28.6139,
@@ -13,6 +14,7 @@ data class MapPickerUiState(
     val saveError: String? = null,
     val saveSuccess: Boolean = false
 ) {
+    val isEditing: Boolean get() = editingPlaceId != null
     val hasSelection: Boolean get() = selectedLatitude != null && selectedLongitude != null
     val canSave: Boolean get() = hasSelection && placeName.isNotBlank() && !isSaving
 }

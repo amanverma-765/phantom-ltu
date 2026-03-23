@@ -77,6 +77,7 @@ private const val DEFAULT_ZOOM = 10.0
 fun MapPickerScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    placeId: Long? = null,
     viewModel: MapPickerViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -133,6 +134,25 @@ fun MapPickerScreen(
             },
             onError = { isLoadingLocation = false }
         )
+    }
+
+    // Load existing place if editing
+    LaunchedEffect(placeId) {
+        if (placeId != null) {
+            viewModel.onEvent(MapPickerUiEvent.LoadPlace(placeId))
+        }
+    }
+
+    // Animate camera to loaded place
+    LaunchedEffect(uiState.editingPlaceId) {
+        if (uiState.editingPlaceId != null && mapRef != null) {
+            val target = LatLng(uiState.currentLatitude, uiState.currentLongitude)
+            val zoom = accuracyToZoom(uiState.accuracy, uiState.currentLatitude)
+            mapRef?.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(target, zoom),
+                1000
+            )
+        }
     }
 
     LaunchedEffect(uiState.saveSuccess) {
