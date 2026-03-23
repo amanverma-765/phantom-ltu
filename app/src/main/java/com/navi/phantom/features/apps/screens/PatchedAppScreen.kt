@@ -14,7 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.rounded.AppsOutage
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -70,17 +70,14 @@ fun PatchedAppScreen(
         },
         floatingActionButton = {
             if (!isScreenEmpty && !isLoading) {
-                ExtendedFloatingActionButton(
-                    onClick = onAddAppClick,
-                    expanded = isFabExpanded,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null
-                        )
-                    },
-                    text = { Text("Add App") }
-                )
+                FloatingActionButton(
+                    onClick = onAddAppClick
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add App"
+                    )
+                }
             }
         }
     ) { innerPadding ->
