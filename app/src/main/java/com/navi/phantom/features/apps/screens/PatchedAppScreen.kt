@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.R
 import com.navi.phantom.core.ui.EmptyStateScreen
-import com.navi.phantom.core.ui.LoadingState
 import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.features.apps.components.PatchedAppCard
 import com.navi.phantom.features.apps.logic.AppUiEvent
@@ -49,8 +48,7 @@ fun PatchedAppScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val patchedApps = uiState.filteredPatchedApps
-    val isScreenEmpty = patchedApps.isEmpty()
-    val isLoading = uiState.isLoadingApps && uiState.allDeviceApps.isEmpty()
+    val isScreenEmpty = patchedApps.isEmpty() && !uiState.isLoadingApps
 
     val listState = rememberLazyListState()
     val isFabExpanded by remember {
@@ -69,7 +67,7 @@ fun PatchedAppScreen(
             )
         },
         floatingActionButton = {
-            if (!isScreenEmpty && !isLoading) {
+            if (!isScreenEmpty) {
                 FloatingActionButton(
                     onClick = onAddAppClick
                 ) {
@@ -96,14 +94,6 @@ fun PatchedAppScreen(
                 .padding(innerPadding)
         ) {
             when {
-                isLoading -> {
-                    item {
-                        LoadingState(
-                            message = "Loading apps...",
-                            modifier = Modifier.fillParentMaxSize()
-                        )
-                    }
-                }
                 isScreenEmpty -> {
                     item {
                         EmptyStateScreen(

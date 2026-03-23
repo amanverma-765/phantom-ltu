@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.core.ui.EmptyStateScreen
-import com.navi.phantom.core.ui.LoadingState
 import com.navi.phantom.features.places.components.PlaceCard
 import com.navi.phantom.features.places.logic.PlacesUiEvent
 import com.navi.phantom.features.places.logic.PlacesViewModel
@@ -50,8 +49,7 @@ fun PlacesScreen(
     viewModel: PlacesViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isScreenEmpty = uiState.places.isEmpty()
-    val isLoading = uiState.isLoading
+    val isScreenEmpty = uiState.places.isEmpty() && !uiState.isLoading
 
     val listState = rememberLazyListState()
     val isFabExpanded by remember {
@@ -76,7 +74,7 @@ fun PlacesScreen(
             )
         },
         floatingActionButton = {
-            if (!isScreenEmpty && !isLoading) {
+            if (!isScreenEmpty) {
                 ExtendedFloatingActionButton(
                     onClick = onAddPlaceClick,
                     expanded = isFabExpanded,
@@ -97,13 +95,6 @@ fun PlacesScreen(
                 .padding(innerPadding)
         ) {
             when {
-                isLoading -> {
-                    LoadingState(
-                        message = "Loading places...",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-
                 isScreenEmpty -> {
                     EmptyStateScreen(
                         icon = Icons.Rounded.BookmarkBorder,
