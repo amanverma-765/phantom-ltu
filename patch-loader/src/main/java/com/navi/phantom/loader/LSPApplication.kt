@@ -75,7 +75,24 @@ object LSPApplication {
         log.i { "Modules initialized" }
 
         switchAllClassLoader()
+
+        // Apply bypasses in dependency order:
+        // 1. Exit protection first — prevents System.exit() during subsequent hook setup
+        ExitBypass.apply()
+
+        // 2. Signature bypass — must be correct before any integrity check
         SigBypass.doSigBypass(context, config.optInt("sigBypassLevel"))
+
+        // 3. Installer source spoofing — needed before PairIP's local installer check
+        if (config.optInt("sigBypassLevel") > 0) {
+            InstallerBypass.apply(context)
+        }
+
+        // 4. PairIP bypass — probing com.pairip.* may trigger class init
+        PairIpBypass.apply(appLoadedApk.classLoader)
+
+        // 5. Hide Xposed framework classes from app detection
+        XposedHidingBypass.apply(appLoadedApk.classLoader)
 
         log.i { "Phantom bootstrap completed" }
     }
