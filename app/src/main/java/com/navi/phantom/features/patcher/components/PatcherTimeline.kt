@@ -43,12 +43,12 @@ private val timelineSteps = PatchingStep.entries
 
 @Composable
 fun PatcherTimeline(
+    modifier: Modifier = Modifier,
     currentStep: PatchingStep?,
     isPatching: Boolean,
     isPatched: Boolean,
     hasFailed: Boolean,
-    statusColors: PatcherStatusColors,
-    modifier: Modifier = Modifier
+    statusColors: PatcherStatusColors
 ) {
     val currentStepIndex = remember(currentStep) {
         if (currentStep != null) timelineSteps.indexOf(currentStep) else -1

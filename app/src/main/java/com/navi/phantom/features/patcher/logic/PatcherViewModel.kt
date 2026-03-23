@@ -47,6 +47,7 @@ class PatcherViewModel(
     fun onEvent(event: PatcherUiEvent) {
         when (event) {
             is PatcherUiEvent.LoadApp -> loadApp(event.packageName)
+            is PatcherUiEvent.ToggleInjectDex -> _uiState.update { it.copy(injectDex = event.enabled) }
             is PatcherUiEvent.StartPatching -> startPatching()
             is PatcherUiEvent.Install -> install()
             is PatcherUiEvent.Cancel -> cancel()
@@ -108,7 +109,7 @@ class PatcherViewModel(
                 versionCode = app.versionCode,
                 apkPath = app.apkPath,
                 splitApkPaths = splitApkPaths,
-                options = PatchingOptions()
+                options = PatchingOptions(injectDex = _uiState.value.injectDex)
             ).collect { progress ->
                 when (progress) {
                     is PatchingProgress.Step -> {

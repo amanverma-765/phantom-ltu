@@ -2,6 +2,7 @@ package com.navi.phantom.features.patcher.logic
 
 sealed interface PatcherUiEvent {
     data class LoadApp(val packageName: String) : PatcherUiEvent
+    data class ToggleInjectDex(val enabled: Boolean) : PatcherUiEvent
     data object StartPatching : PatcherUiEvent
     data object Install : PatcherUiEvent
     data object Cancel : PatcherUiEvent

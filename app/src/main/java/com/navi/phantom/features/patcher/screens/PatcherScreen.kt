@@ -32,12 +32,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.core.ui.LoadingState
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import com.navi.phantom.features.patcher.components.AppInfoHeader
 import com.navi.phantom.features.patcher.components.PatcherActionButton
 import com.navi.phantom.features.patcher.components.PatcherTimeline
 import com.navi.phantom.features.patcher.components.StatusBar
 import com.navi.phantom.features.patcher.components.UninstallRequiredDialog
 import com.navi.phantom.features.patcher.components.rememberPatcherStatusColors
+import com.navi.phantom.features.patcher.logic.PatcherPhase
 import com.navi.phantom.features.patcher.logic.PatcherUiEvent
 import com.navi.phantom.features.patcher.logic.PatcherViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -175,6 +182,42 @@ fun PatcherScreen(
                         statusColors = statusColors
                     )
 
+                    // Patch options (only in Ready state)
+                    if (phase is PatcherPhase.Ready) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Inject DEX mode",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Use if the app crashes after patching",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = uiState.injectDex,
+                                    onCheckedChange = {
+                                        viewModel.onEvent(PatcherUiEvent.ToggleInjectDex(it))
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     // Status Bar with optional Copy Error button
                     StatusBar(
                         message = uiState.statusMessage,
@@ -196,7 +239,8 @@ fun PatcherScreen(
                         isPatching = isPatching,
                         isPatched = isPatched,
                         hasFailed = hasFailed,
-                        statusColors = statusColors
+                        statusColors = statusColors,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
             }

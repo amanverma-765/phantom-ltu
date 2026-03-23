@@ -7,7 +7,8 @@ data class PatcherUiState(
     val app: DeviceApp? = null,
     val isLoadingApp: Boolean = false,
     val phase: PatcherPhase = PatcherPhase.Ready,
-    val patchedApkPath: String? = null
+    val patchedApkPath: String? = null,
+    val injectDex: Boolean = false
 ) {
     val hasCopyableError: Boolean
         get() = phase is PatcherPhase.Failed
