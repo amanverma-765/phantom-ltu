@@ -1,6 +1,6 @@
 package com.navi.phantom.di
 
-import com.navi.phantom.features.apps.screens.LocationSetupScreen
+import com.navi.phantom.features.apps.screens.AppLocationScreen
 import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.PatchedAppScreen
 import com.navi.phantom.features.apps.logic.AppDetailViewModel
@@ -14,7 +14,7 @@ import com.navi.phantom.features.places.logic.PlaceSelectionViewModel
 import com.navi.phantom.features.places.screens.PlaceSelectionScreen
 import com.navi.phantom.features.places.screens.PlacesScreen
 import com.navi.phantom.features.settings.SettingsScreen
-import com.navi.phantom.features.settings.logic.ThemePreference
+import com.navi.phantom.features.settings.logic.SettingsViewModel
 import com.navi.phantom.navigation.Navigator
 import com.navi.phantom.navigation.Destination
 import org.koin.compose.viewmodel.koinViewModel
@@ -43,16 +43,17 @@ val navModule = module {
         )
     }
     navigation<Destination.Setting> {
+        val viewModel = koinViewModel<SettingsViewModel>()
         val navigator = get<Navigator>()
         SettingsScreen(
-            themePreference = get(),
+            viewModel = viewModel,
             onDisclaimerClick = { navigator.navigateTo(Destination.Disclaimer) }
         )
     }
     navigation<Destination.AppDetail> { destination ->
         val viewModel = koinViewModel<AppDetailViewModel>()
         val navigator = get<Navigator>()
-        LocationSetupScreen(
+        AppLocationScreen(
             packageName = destination.packageName,
             viewModel = viewModel,
             onNavigateBack = { navigator.goBack() }

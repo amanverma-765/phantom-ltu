@@ -26,8 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Place
-import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Check
@@ -54,16 +54,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.core.ui.LoadingState
-import com.navi.phantom.domain.model.ActiveLocation
-import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.domain.model.Place
-import com.navi.phantom.features.apps.components.AppIcon
 import com.navi.phantom.features.apps.logic.AppDetailUiEvent
 import com.navi.phantom.features.apps.logic.AppDetailViewModel
+import com.navi.phantom.features.patcher.components.AppInfoHeader
+import com.navi.phantom.features.patcher.components.rememberPatcherStatusColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LocationSetupScreen(
+fun AppLocationScreen(
     packageName: String,
     viewModel: AppDetailViewModel,
     onNavigateBack: () -> Unit,
@@ -80,7 +79,7 @@ fun LocationSetupScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text("Location Setup") },
+                title = { Text("App Location", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -90,21 +89,6 @@ fun LocationSetupScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        val intent =
-                            context.packageManager.getLaunchIntentForPackage(packageName)
-                        if (intent != null) {
-                            context.startActivity(intent)
-                        } else {
-                            Toast.makeText(context, "Cannot launch this app", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Outlined.RocketLaunch,
-                            contentDescription = "Launch app"
-                        )
-                    }
                     IconButton(onClick = {
                         val intent = Intent(
                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -175,12 +159,42 @@ fun LocationSetupScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    // ── App identity card ────────────────────────
                     item(key = "header") {
-                        AppIdentityCard(app = app)
+                        Box {
+                            AppInfoHeader(
+                                app = app,
+                                isPatched = false,
+                                hasFailed = false,
+                                statusColors = rememberPatcherStatusColors()
+                            )
+                            IconButton(
+                                onClick = {
+                                    val intent = context.packageManager
+                                        .getLaunchIntentForPackage(packageName)
+                                    if (intent != null) {
+                                        context.startActivity(intent)
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Cannot launch this app",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                                    contentDescription = "Open app",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
 
-                    // ── "Use Real Location" option ───────────────
                     item(key = "real-location") {
                         Spacer(modifier = Modifier.height(12.dp))
                         RealLocationCard(
@@ -195,7 +209,6 @@ fun LocationSetupScreen(
                         )
                     }
 
-                    // ── Section divider + label ──────────────────
                     item(key = "divider") {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(
@@ -211,7 +224,6 @@ fun LocationSetupScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // ── Place list or empty state ────────────────
                     if (uiState.places.isEmpty()) {
                         item(key = "empty") {
                             EmptyPlacesState()
@@ -239,59 +251,6 @@ fun LocationSetupScreen(
         }
     }
 }
-
-// ─── App Identity Card ──────────────────────────────────────────
-
-@Composable
-private fun AppIdentityCard(app: DeviceApp) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            AppIcon(
-                packageName = app.packageName,
-                appName = app.appName,
-                size = 44.dp,
-                cornerRadius = 11.dp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = app.appName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "v${app.versionName} · ${app.formattedSize}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = "Patched",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
-    }
-}
-
-// ─── Real Location Option ───────────────────────────────────────
 
 @Composable
 private fun RealLocationCard(
@@ -361,8 +320,6 @@ private fun RealLocationCard(
         }
     }
 }
-
-// ─── Place Selection ────────────────────────────────────────────
 
 @Composable
 private fun PlaceOptionCard(
