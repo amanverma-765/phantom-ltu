@@ -27,9 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.navi.phantom.R
 import com.navi.phantom.core.ui.EmptyStateScreen
 import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.features.apps.components.PatchedAppCard
@@ -63,7 +61,7 @@ fun PatchedAppScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) }
+                title = { Text("Phantom LTU") }
             )
         },
         floatingActionButton = {
