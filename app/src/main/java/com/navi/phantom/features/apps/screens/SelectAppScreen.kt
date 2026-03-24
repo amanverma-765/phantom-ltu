@@ -1,5 +1,6 @@
 package com.navi.phantom.features.apps.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.core.ui.EmptyState
@@ -38,6 +40,7 @@ fun SelectAppScreen(
     onAppSelected: (DeviceApp) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
@@ -101,7 +104,9 @@ fun SelectAppScreen(
                     SelectAppList(
                         patchedApps = uiState.filteredPatchedApps,
                         unpatchedApps = uiState.filteredUnpatchedApps,
-                        onPatchedAppClick = { onAppSelected(it) },
+                        onPatchedAppClick = { app ->
+                            Toast.makeText(context, "${app.appName} is already patched", Toast.LENGTH_SHORT).show()
+                        },
                         onUnpatchedAppClick = { onAppSelected(it) },
                         listState = listState,
                         modifier = Modifier.fillMaxSize()
