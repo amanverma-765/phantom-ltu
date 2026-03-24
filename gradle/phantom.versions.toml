@@ -27,6 +27,7 @@ beust-jcommander = "1.82"
 ackpine = "0.19.2"
 maplibre = "11.8.3"
 playServicesLocation = "21.3.0"
+materialKolor = "4.1.1"
 
 
 
@@ -110,3 +111,5 @@ maplibre-android-sdk = { module = "org.maplibre.gl:android-sdk", version.ref = "
 maplibre-android-plugin-annotation = { module = "org.maplibre.gl:android-plugin-annotation-v9", version = "3.0.1" }
 # Google Play Services Location
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+# MaterialKolor
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }

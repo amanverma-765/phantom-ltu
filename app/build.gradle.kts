@@ -181,4 +181,7 @@ dependencies {
 
     // Google Play Services Location
     implementation(phantom.play.services.location)
+
+    // MaterialKolor
+    implementation(phantom.material.kolor)
 }
