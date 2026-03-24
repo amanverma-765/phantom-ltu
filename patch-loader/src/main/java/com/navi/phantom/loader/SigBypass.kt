@@ -29,7 +29,7 @@ object SigBypass {
     private fun replaceSignature(context: Context, packageInfo: PackageInfo) {
         val signingInfo = packageInfo.signingInfo ?: return
 
-        val packageName = packageInfo.packageName ?: return
+        val packageName = packageInfo.packageName
         var replacement: String? = signatures[packageName]?.takeIf { it.isNotEmpty() }
 
         if (replacement == null && !signatures.containsKey(packageName)) {
@@ -226,7 +226,7 @@ object SigBypass {
             if (encoded != null) {
                 val json = String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8)
                 val patchConfig = JSONObject(json)
-                val sig: String? = patchConfig.optString("originalSignature", null as String?)
+                val sig: String? = patchConfig.optString("originalSignature").takeIf { it.isNotEmpty() }
                 signatures[packageName] = sig ?: NO_SIGNATURE
                 sig
             } else {

@@ -111,7 +111,7 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
                 val cl = LSPAppComponentFactoryStub::class.java.classLoader ?: return null
                 cl.getResourceAsStream(Constants.CONFIG_ASSET_PATH)?.use { stream ->
                     val json = JSONObject(stream.bufferedReader(StandardCharsets.UTF_8).readText())
-                    json.optString("managerApkPath", null as String?)
+                    json.optString("managerApkPath").takeIf { it.isNotEmpty() }
                 }
             } catch (_: Exception) {
                 null

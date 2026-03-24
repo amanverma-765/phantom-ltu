@@ -72,7 +72,7 @@ object GeocodingService {
             PlaceDetails(
                 latitude = data.getDouble("lat"),
                 longitude = data.getDouble("lng"),
-                address = data.optString("address", null as String?)
+                address = data.optString("address").takeIf { it.isNotEmpty() }
             )
         } catch (e: Exception) {
             log.d(e) { "Place details failed" }
