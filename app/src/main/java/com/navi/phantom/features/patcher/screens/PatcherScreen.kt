@@ -55,6 +55,7 @@ fun PatcherScreen(
     viewModel: PatcherViewModel,
     packageName: String,
     onNavigateBack: () -> Unit,
+    onShowDisclaimer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -126,7 +127,13 @@ fun PatcherScreen(
                         phase = phase,
                         canStartPatching = canStartPatching,
                         canInstall = canInstall,
-                        onStartPatching = { viewModel.onEvent(PatcherUiEvent.StartPatching) },
+                        onStartPatching = {
+                            if (onShowDisclaimer != null) {
+                                onShowDisclaimer()
+                            } else {
+                                viewModel.onEvent(PatcherUiEvent.StartPatching)
+                            }
+                        },
                         onInstall = { viewModel.onEvent(PatcherUiEvent.Install) },
                         onCancel = { viewModel.onEvent(PatcherUiEvent.Cancel) },
                         onRetry = { viewModel.onEvent(PatcherUiEvent.Retry) },
