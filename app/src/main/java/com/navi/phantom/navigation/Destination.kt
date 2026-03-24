@@ -23,5 +23,14 @@ sealed class Destination(val showNavbar: Boolean = false) {
     data class MapPicker(val placeId: Long? = null) : Destination()
 
     @Serializable
+    data class AppDetail(val packageName: String) : Destination()
+
+    @Serializable
     data class SelectPlace(val packageName: String) : Destination()
+
+    @Serializable
+    data object Disclaimer : Destination()
+
+    @Serializable
+    data object PatchDisclaimer : Destination()
 }

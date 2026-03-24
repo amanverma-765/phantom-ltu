@@ -15,7 +15,10 @@ import com.navi.phantom.domain.usecase.PatcherUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
 import com.navi.phantom.domain.usecase.InstallationUseCase
 import com.navi.phantom.domain.usecase.PlaceUseCase
+import com.navi.phantom.features.apps.logic.AppDetailViewModel
 import com.navi.phantom.features.apps.logic.AppViewModel
+import com.navi.phantom.features.settings.logic.ThemePreference
+import org.koin.android.ext.koin.androidContext
 import com.navi.phantom.features.map.logic.MapPickerViewModel
 import com.navi.phantom.features.patcher.logic.PatcherViewModel
 import com.navi.phantom.features.places.logic.PlaceSelectionViewModel
@@ -26,6 +29,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val appModule = module {
+    single { ThemePreference(androidContext()) }
     singleOf(::DeviceAppProviderImpl) { bind<DeviceAppProvider>() }
     singleOf(::PatcherProviderImpl) { bind<PatcherProvider>() }
     singleOf(::ApkInstallationProviderImpl) { bind<ApkInstallationProvider>() }
@@ -39,6 +43,7 @@ val appModule = module {
     singleOf(::ActiveLocationUseCase)
 
     viewModelOf(::AppViewModel)
+    viewModelOf(::AppDetailViewModel)
     viewModelOf(::PatcherViewModel)
     viewModelOf(::PlacesViewModel)
     viewModelOf(::MapPickerViewModel)

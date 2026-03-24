@@ -1,8 +1,11 @@
 package com.navi.phantom.di
 
+import com.navi.phantom.features.apps.screens.LocationSetupScreen
 import com.navi.phantom.features.apps.screens.SelectAppScreen
 import com.navi.phantom.features.apps.screens.PatchedAppScreen
+import com.navi.phantom.features.apps.logic.AppDetailViewModel
 import com.navi.phantom.features.apps.logic.AppViewModel
+import com.navi.phantom.features.disclaimer.DisclaimerScreen
 import com.navi.phantom.features.map.screens.MapPickerScreen
 import com.navi.phantom.features.patcher.screens.PatcherScreen
 import com.navi.phantom.features.patcher.logic.PatcherPhase
@@ -11,6 +14,7 @@ import com.navi.phantom.features.places.logic.PlaceSelectionViewModel
 import com.navi.phantom.features.places.screens.PlaceSelectionScreen
 import com.navi.phantom.features.places.screens.PlacesScreen
 import com.navi.phantom.features.settings.SettingsScreen
+import com.navi.phantom.features.settings.logic.ThemePreference
 import com.navi.phantom.navigation.Navigator
 import com.navi.phantom.navigation.Destination
 import org.koin.compose.viewmodel.koinViewModel
@@ -27,7 +31,7 @@ val navModule = module {
         PatchedAppScreen(
             onAddAppClick = { navigator.navigateTo(Destination.SelectApp) },
             onPatchedAppClick = { app ->
-                navigator.navigateTo(Destination.SelectPlace(app.packageName))
+                navigator.navigateTo(Destination.AppDetail(app.packageName))
             }
         )
     }
@@ -39,7 +43,20 @@ val navModule = module {
         )
     }
     navigation<Destination.Setting> {
-        SettingsScreen()
+        val navigator = get<Navigator>()
+        SettingsScreen(
+            themePreference = get(),
+            onDisclaimerClick = { navigator.navigateTo(Destination.Disclaimer) }
+        )
+    }
+    navigation<Destination.AppDetail> { destination ->
+        val viewModel = koinViewModel<AppDetailViewModel>()
+        val navigator = get<Navigator>()
+        LocationSetupScreen(
+            packageName = destination.packageName,
+            viewModel = viewModel,
+            onNavigateBack = { navigator.goBack() }
+        )
     }
     navigation<Destination.SelectApp> {
         val viewModel = koinViewModel<AppViewModel>()
@@ -67,6 +84,9 @@ val navModule = module {
                 } else {
                     navigator.goBack()
                 }
+            },
+            onShowDisclaimer = {
+                navigator.navigateTo(Destination.PatchDisclaimer)
             }
         )
     }
@@ -84,6 +104,27 @@ val navModule = module {
             packageName = destination.packageName,
             onNavigateBack = { navigator.goBack() },
             viewModel = viewModel
+        )
+    }
+    navigation<Destination.Disclaimer> {
+        val navigator = get<Navigator>()
+        DisclaimerScreen(
+            onAgree = { navigator.goBack() },
+            onNavigateBack = { navigator.goBack() },
+            showAgreeButton = false
+        )
+    }
+    navigation<Destination.PatchDisclaimer> {
+        val navigator = get<Navigator>()
+        // Get the PatcherViewModel from the previous screen's scope
+        val patcherViewModel = koinViewModel<PatcherViewModel>()
+        DisclaimerScreen(
+            onAgree = {
+                navigator.goBack()
+                patcherViewModel.onEvent(com.navi.phantom.features.patcher.logic.PatcherUiEvent.StartPatching)
+            },
+            onNavigateBack = { navigator.goBack() },
+            showAgreeButton = true
         )
     }
 }
