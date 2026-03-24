@@ -17,6 +17,7 @@ import com.navi.phantom.domain.usecase.InstallationUseCase
 import com.navi.phantom.domain.usecase.PlaceUseCase
 import com.navi.phantom.features.apps.logic.AppDetailViewModel
 import com.navi.phantom.features.apps.logic.AppViewModel
+import com.navi.phantom.features.settings.logic.SettingsViewModel
 import com.navi.phantom.features.settings.logic.ThemePreference
 import org.koin.android.ext.koin.androidContext
 import com.navi.phantom.features.map.logic.MapPickerViewModel
@@ -48,4 +49,5 @@ val appModule = module {
     viewModelOf(::PlacesViewModel)
     viewModelOf(::MapPickerViewModel)
     viewModelOf(::PlaceSelectionViewModel)
+    viewModelOf(::SettingsViewModel)
 }

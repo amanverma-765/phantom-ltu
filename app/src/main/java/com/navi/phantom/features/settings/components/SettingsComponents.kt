@@ -1,9 +1,10 @@
 package com.navi.phantom.features.settings.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +16,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -30,9 +37,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.navi.phantom.features.settings.logic.SeedColor
 import com.navi.phantom.features.settings.logic.ThemeMode
 
 @Composable
@@ -137,6 +146,7 @@ fun SettingsItemDivider() {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThemeModeSelector(
     selectedMode: ThemeMode,
@@ -145,80 +155,124 @@ fun ThemeModeSelector(
 ) {
     val modes = ThemeMode.entries
 
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(14.dp),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            modes.forEach { mode ->
-                val isSelected = mode == selectedMode
-                val bgColor by animateColorAsState(
-                    targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.primaryContainer
-                    else
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                    animationSpec = tween(250),
-                    label = "themeBg"
-                )
-                val textColor by animateColorAsState(
-                    targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                    animationSpec = tween(250),
-                    label = "themeText"
-                )
-                val elevation by animateDpAsState(
-                    targetValue = if (isSelected) 2.dp else 0.dp,
-                    animationSpec = tween(250),
-                    label = "themeElevation"
-                )
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        modes.forEachIndexed { index, mode ->
+            val label = when (mode) {
+                ThemeMode.SYSTEM -> "Auto"
+                ThemeMode.LIGHT -> "Light"
+                ThemeMode.DARK -> "Dark"
+            }
+            val icon = when (mode) {
+                ThemeMode.SYSTEM -> Icons.Outlined.PhoneAndroid
+                ThemeMode.LIGHT -> Icons.Outlined.LightMode
+                ThemeMode.DARK -> Icons.Outlined.DarkMode
+            }
 
-                Surface(
-                    color = bgColor,
-                    shape = RoundedCornerShape(10.dp),
-                    tonalElevation = elevation,
-                    shadowElevation = elevation,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { onModeSelected(mode) }
-                ) {
-                    val label = when (mode) {
-                        ThemeMode.SYSTEM -> "Auto"
-                        ThemeMode.LIGHT -> "Light"
-                        ThemeMode.DARK -> "Dark"
-                    }
-                    val icon = when (mode) {
-                        ThemeMode.SYSTEM -> Icons.Outlined.PhoneAndroid
-                        ThemeMode.LIGHT -> Icons.Outlined.LightMode
-                        ThemeMode.DARK -> Icons.Outlined.DarkMode
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp)
-                    ) {
+            SegmentedButton(
+                selected = mode == selectedMode,
+                onClick = { onModeSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                icon = {
+                    SegmentedButtonDefaults.Icon(active = mode == selectedMode) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = textColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = textColor,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    }
+                }
+            ) {
+                Text(text = label)
+            }
+        }
+    }
+}
+
+@Composable
+fun SeedColorSelector(
+    selectedColor: SeedColor,
+    onColorSelected: (SeedColor) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val rows = SeedColor.entries.chunked(4)
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Accent color",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = selectedColor.label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            rows.forEachIndexed { index, row ->
+                if (index > 0) Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    row.forEach { color ->
+                        SeedColorSwatch(
+                            color = color,
+                            isSelected = color == selectedColor,
+                            onClick = { onColorSelected(color) }
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SeedColorSwatch(
+    color: SeedColor,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderWidth by animateDpAsState(
+        targetValue = if (isSelected) 2.5.dp else 0.dp,
+        animationSpec = tween(200),
+        label = "border"
+    )
+    val checkScale by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = tween(200),
+        label = "check"
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(color.color)
+            .then(
+                if (isSelected) Modifier.border(
+                    borderWidth,
+                    MaterialTheme.colorScheme.onSurface,
+                    CircleShape
+                ) else Modifier
+            )
+            .clickable(onClick = onClick)
+    ) {
+        if (checkScale > 0f) {
+            Icon(
+                imageVector = Icons.Outlined.Check,
+                contentDescription = "${color.label} selected",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .scale(checkScale)
+            )
         }
     }
 }
