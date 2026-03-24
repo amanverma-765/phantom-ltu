@@ -11,7 +11,7 @@ import com.navi.phantom.data.database.entity.PlaceEntity
 
 @Database(
     entities = [PlaceEntity::class, ActiveLocationEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class PhantomDatabase : RoomDatabase() {
@@ -43,6 +43,36 @@ abstract class PhantomDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `places` ADD COLUMN `accuracy` REAL")
                 db.execSQL("ALTER TABLE `active_locations` ADD COLUMN `accuracy` REAL")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `active_locations_new` (
+                        `packageName` TEXT NOT NULL,
+                        `placeId` INTEGER,
+                        `placeName` TEXT,
+                        `latitude` REAL NOT NULL,
+                        `longitude` REAL NOT NULL,
+                        `accuracy` REAL,
+                        `assignedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`packageName`),
+                        FOREIGN KEY(`placeId`) REFERENCES `places`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `active_locations_new`
+                    SELECT * FROM `active_locations`
+                    WHERE `placeId` IS NULL OR `placeId` IN (SELECT `id` FROM `places`)
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE `active_locations`")
+                db.execSQL("ALTER TABLE `active_locations_new` RENAME TO `active_locations`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_active_locations_placeId` ON `active_locations` (`placeId`)")
             }
         }
     }
