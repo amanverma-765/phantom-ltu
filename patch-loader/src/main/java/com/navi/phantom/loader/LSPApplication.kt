@@ -104,9 +104,10 @@ object LSPApplication {
         // 5. Hide Xposed framework classes from app detection
         XposedHidingBypass.apply(appLoadedApk.classLoader)
 
-        // 6. Location spoofing hooks (source-level only, not Location getters)
+        // 6. Location spoofing hooks
         LocationManagerHook.apply()
         FusedLocationHook.apply(appLoadedApk.classLoader)
+        LocationHook.apply()
 
         // 7. Network location blocking
         GnssStatusHook.apply()
