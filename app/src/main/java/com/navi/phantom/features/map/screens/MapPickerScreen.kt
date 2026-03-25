@@ -231,6 +231,7 @@ fun MapPickerScreen(
                 },
                 onClearSearch = { viewModel.onEvent(MapPickerUiEvent.ClearSearch) },
                 isSearchMode = isSearchMode,
+                isSearching = uiState.isSearching,
                 onSearchModeChange = { isSearchMode = it },
                 modifier = Modifier
                     .align(Alignment.TopCenter)

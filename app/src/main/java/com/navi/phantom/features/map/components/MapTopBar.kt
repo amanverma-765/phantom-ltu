@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ fun MapTopBar(
     onQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
     isSearchMode: Boolean,
+    isSearching: Boolean,
     onSearchModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -131,9 +134,20 @@ fun MapTopBar(
                 }
             }
 
-            // Search/Close toggle
+            // Search/Close/Loading toggle
             if (isSearchMode) {
-                if (searchQuery.isNotEmpty()) {
+                if (isSearching) {
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = {
                         searchQuery = ""
                         onQueryChange("")

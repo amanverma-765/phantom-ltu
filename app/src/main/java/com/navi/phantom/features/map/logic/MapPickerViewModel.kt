@@ -5,7 +5,9 @@ import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.navi.phantom.data.geocoding.CoordinateParser
 import com.navi.phantom.data.geocoding.GeocodingService
+import com.navi.phantom.data.geocoding.SearchSuggestion
 import com.navi.phantom.domain.model.Place
 import com.navi.phantom.domain.usecase.PlaceUseCase
 import kotlinx.coroutines.Dispatchers
@@ -152,8 +154,50 @@ class MapPickerViewModel(
             _uiState.update { it.copy(searchSuggestions = emptyList(), isSearching = false) }
             return
         }
+
+        // Check for coordinates or Google Maps URL before hitting the API
+        val parsed = CoordinateParser.parse(query)
+        if (parsed != null && !parsed.needsResolve) {
+            val suggestion = SearchSuggestion(
+                placeId = "coord:${parsed.latitude},${parsed.longitude}",
+                name = "%.5f, %.5f".format(parsed.latitude, parsed.longitude),
+                description = "Go to coordinates"
+            )
+            _uiState.update { it.copy(searchSuggestions = listOf(suggestion), isSearching = false) }
+            return
+        }
+
         searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true) }
+            _uiState.update { it.copy(isSearching = true, searchSuggestions = emptyList()) }
+
+            // Short URL — resolve to coordinates inline, then show as suggestion
+            if (parsed != null && parsed.needsResolve) {
+                val geocoder = Geocoder(application, Locale.getDefault())
+                val resolved = CoordinateParser.resolveShortUrl(parsed.originalUrl!!, geocoder)
+                if (resolved != null) {
+                    val suggestion = SearchSuggestion(
+                        placeId = "coord:${resolved.latitude},${resolved.longitude}",
+                        name = "%.5f, %.5f".format(resolved.latitude, resolved.longitude),
+                        description = "From Google Maps link"
+                    )
+                    _uiState.update { it.copy(searchSuggestions = listOf(suggestion), isSearching = false) }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            searchSuggestions = listOf(
+                                SearchSuggestion(
+                                    placeId = "error",
+                                    name = "Could not resolve link",
+                                    description = "Try pasting the full Google Maps URL instead"
+                                )
+                            ),
+                            isSearching = false
+                        )
+                    }
+                }
+                return@launch
+            }
+
             delay(300) // debounce
             val state = _uiState.value
             val results = GeocodingService.searchLocation(
@@ -168,19 +212,42 @@ class MapPickerViewModel(
     private fun selectSearchResult(placeId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, searchSuggestions = emptyList()) }
-            val details = GeocodingService.getPlaceDetails(placeId)
-            if (details != null) {
-                _uiState.update {
-                    it.copy(
-                        currentLatitude = details.latitude,
-                        currentLongitude = details.longitude,
-                        address = details.address,
-                        isSearching = false,
-                        navigateToSearchResult = true
-                    )
+
+            when {
+                placeId.startsWith("coord:") -> {
+                    val parts = placeId.removePrefix("coord:").split(",")
+                    val lat = parts[0].toDouble()
+                    val lng = parts[1].toDouble()
+                    _uiState.update {
+                        it.copy(
+                            currentLatitude = lat,
+                            currentLongitude = lng,
+                            isSearching = false,
+                            navigateToSearchResult = true
+                        )
+                    }
                 }
-            } else {
-                _uiState.update { it.copy(isSearching = false) }
+
+                placeId == "error" -> {
+                    _uiState.update { it.copy(isSearching = false) }
+                }
+
+                else -> {
+                    val details = GeocodingService.getPlaceDetails(placeId)
+                    if (details != null) {
+                        _uiState.update {
+                            it.copy(
+                                currentLatitude = details.latitude,
+                                currentLongitude = details.longitude,
+                                address = details.address,
+                                isSearching = false,
+                                navigateToSearchResult = true
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(isSearching = false) }
+                    }
+                }
             }
         }
     }
