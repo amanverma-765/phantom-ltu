@@ -10,4 +10,5 @@ interface ActiveLocationRepository {
     suspend fun getActiveLocationSync(packageName: String): ActiveLocation?
     suspend fun setActiveLocation(packageName: String, place: Place)
     suspend fun clearActiveLocation(packageName: String)
+    suspend fun updateByPlaceId(place: Place)
 }

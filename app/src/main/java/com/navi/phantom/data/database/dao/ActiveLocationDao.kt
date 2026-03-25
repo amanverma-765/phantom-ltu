@@ -23,4 +23,11 @@ interface ActiveLocationDao {
 
     @Query("DELETE FROM active_locations WHERE packageName = :packageName")
     suspend fun clearActiveLocation(packageName: String)
+
+    @Query(
+        """UPDATE active_locations
+           SET placeName = :placeName, latitude = :latitude, longitude = :longitude, accuracy = :accuracy
+           WHERE placeId = :placeId"""
+    )
+    suspend fun updateByPlaceId(placeId: Long, placeName: String, latitude: Double, longitude: Double, accuracy: Float?)
 }

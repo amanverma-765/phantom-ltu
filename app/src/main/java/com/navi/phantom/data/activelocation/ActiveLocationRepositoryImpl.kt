@@ -39,6 +39,16 @@ class ActiveLocationRepositoryImpl(
         activeLocationDao.clearActiveLocation(packageName)
     }
 
+    override suspend fun updateByPlaceId(place: Place) {
+        activeLocationDao.updateByPlaceId(
+            placeId = place.id,
+            placeName = place.name,
+            latitude = place.latitude,
+            longitude = place.longitude,
+            accuracy = place.accuracy
+        )
+    }
+
     private fun ActiveLocationEntity.toDomain() = ActiveLocation(
         packageName = packageName,
         placeId = placeId,
