@@ -87,6 +87,9 @@ val navModule = module {
                 }
             },
             onShowDisclaimer = {
+                navigator.setPendingAction {
+                    viewModel.onEvent(com.navi.phantom.features.patcher.logic.PatcherUiEvent.StartPatching)
+                }
                 navigator.navigateTo(Destination.PatchDisclaimer)
             }
         )
@@ -117,14 +120,16 @@ val navModule = module {
     }
     navigation<Destination.PatchDisclaimer> {
         val navigator = get<Navigator>()
-        // Get the PatcherViewModel from the previous screen's scope
-        val patcherViewModel = koinViewModel<PatcherViewModel>()
         DisclaimerScreen(
             onAgree = {
+                val action = navigator.consumePendingAction()
                 navigator.goBack()
-                patcherViewModel.onEvent(com.navi.phantom.features.patcher.logic.PatcherUiEvent.StartPatching)
+                action?.invoke()
             },
-            onNavigateBack = { navigator.goBack() },
+            onNavigateBack = {
+                navigator.consumePendingAction() // discard if user backs out
+                navigator.goBack()
+            },
             showAgreeButton = true
         )
     }

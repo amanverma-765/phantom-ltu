@@ -60,6 +60,8 @@ class PatcherViewModel(
     }
 
     private fun loadApp(packageName: String) {
+        if (_uiState.value.app?.packageName == packageName && !_uiState.value.isLoadingApp) return
+
         currentJob?.cancel()
         currentJob = null
 

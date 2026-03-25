@@ -10,6 +10,19 @@ class Navigator(startDestination: Destination) {
     private val _currentTab = mutableStateOf(startDestination)
     private val _isTabSwitch = mutableStateOf(false)
 
+    /** One-shot action to execute after navigating back (e.g. post-disclaimer patching). */
+    private var pendingAction: (() -> Unit)? = null
+
+    fun setPendingAction(action: () -> Unit) {
+        pendingAction = action
+    }
+
+    fun consumePendingAction(): (() -> Unit)? {
+        val action = pendingAction
+        pendingAction = null
+        return action
+    }
+
     val isTabSwitch: Boolean
         get() = _isTabSwitch.value
 
