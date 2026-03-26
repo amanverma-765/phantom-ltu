@@ -5,7 +5,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import com.navi.phantom.shared.ConfigKeys
-import java.util.Random
+import java.util.Collections
+import java.util.WeakHashMap
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * Shared utility for creating realistic fake Location objects from the manager's config bundle.
@@ -14,23 +16,39 @@ import java.util.Random
  */
 object LocationHelper {
 
-    private val random = Random()
+    private val random: ThreadLocalRandom get() = ThreadLocalRandom.current()
+
+    /** Tracks Location objects we created, so LocationHook can skip them. */
+    private val phantomLocations: MutableSet<Location> = Collections.synchronizedSet(
+        Collections.newSetFromMap(WeakHashMap())
+    )
+
+    /** Check if a Location object was created by us (no hooked method calls — safe from recursion). */
+    fun isPhantom(location: Location): Boolean = phantomLocations.contains(location)
 
     // Short-lived cache to avoid repeated IPC calls when an app reads
     // multiple Location fields in quick succession
-    @Volatile private var cachedConfig: Bundle? = null
-    @Volatile private var cacheTimestamp = 0L
+    private var cachedConfig: Bundle? = null
+    private var cacheTimestamp = 0L
     private const val CACHE_TTL_MS = 1000L
+
+    /** Volatile fast-path flag — avoids lock acquisition when spoofing is inactive. */
+    @Volatile
+    var isActive: Boolean = false
+        private set
 
     /**
      * Get the active location config from the manager via IPC.
      * Returns null if no active location is assigned for this app.
      */
+    @Synchronized
     fun getConfig(): Bundle? {
         val now = System.currentTimeMillis()
         val cached = cachedConfig
         if (cached != null && now - cacheTimestamp < CACHE_TTL_MS) {
-            return if (cached.getBoolean(ConfigKeys.HAS_LOCATION, false)) cached else null
+            val active = cached.getBoolean(ConfigKeys.HAS_LOCATION, false)
+            isActive = active
+            return if (active) cached else null
         }
 
         val config = try {
@@ -41,9 +59,11 @@ object LocationHelper {
         cachedConfig = config
         cacheTimestamp = now
 
-        if (config == null || !config.getBoolean(ConfigKeys.HAS_LOCATION, false)) return null
-        return config
+        val active = config != null && config.getBoolean(ConfigKeys.HAS_LOCATION, false)
+        isActive = active
+        return if (active) config else null
     }
+
 
     /**
      * Create a realistic fake Location object from config data.
@@ -118,6 +138,6 @@ object LocationHelper {
                 putInt("maxCn0", 30 + random.nextInt(15))  // max signal strength
                 putInt("meanCn0", 20 + random.nextInt(10))  // mean signal strength
             }
-        }
+        }.also { phantomLocations.add(it) }
     }
 }
