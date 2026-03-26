@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" alt="PhantomLTU Logo" />
   <h1 align="center">PhantomLTU</h1>
   <p align="center">
     Location Testing Utility for Android — no root required.
