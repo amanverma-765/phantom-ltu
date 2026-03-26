@@ -20,6 +20,7 @@ object LocationManagerHook {
     fun apply() {
         hookGetLastKnownLocation()
         hookGetLastLocation()
+        hookGetCurrentLocation()
         hookRequestLocationUpdates()
         hookRequestSingleUpdate()
         hookProviderMethods()
@@ -63,6 +64,60 @@ object LocationManagerHook {
         }
     }
 
+    /**
+     * Hook getCurrentLocation (API 30+) — modern replacement for requestSingleUpdate.
+     * Intercepts the Consumer<Location> callback to deliver fake location.
+     */
+    private fun hookGetCurrentLocation() {
+        try {
+            XposedBridge.hookAllMethods(
+                LocationManager::class.java, "getCurrentLocation",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        // Find the Consumer<Location> arg and hook its accept()
+                        for (arg in param.args) {
+                            if (arg != null && isConsumer(arg)) {
+                                hookConsumerAccept(arg)
+                                break
+                            }
+                        }
+                    }
+                }
+            )
+            log.d { "Hooked getCurrentLocation" }
+        } catch (t: Throwable) {
+            log.d { "getCurrentLocation not available" }
+        }
+    }
+
+    private fun isConsumer(obj: Any): Boolean {
+        return obj.javaClass.interfaces.any { it.name == "java.util.function.Consumer" }
+    }
+
+    private val hookedConsumers = java.util.Collections.synchronizedSet(
+        java.util.Collections.newSetFromMap(
+            java.util.WeakHashMap<Any, Boolean>()
+        )
+    )
+
+    private fun hookConsumerAccept(consumer: Any) {
+        if (!hookedConsumers.add(consumer)) return
+        try {
+            XposedBridge.hookAllMethods(
+                consumer.javaClass, "accept",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam<*>) {
+                        if (param.thisObject !== consumer) return
+                        val fake = LocationHelper.createFakeLocation() ?: return
+                        if (param.args.isNotEmpty() && param.args[0] is Location) {
+                            param.args[0] = fake
+                        }
+                    }
+                }
+            )
+        } catch (_: Throwable) { }
+    }
+
     private fun hookRequestLocationUpdates() {
         // Hook all overloads of requestLocationUpdates
         try {
@@ -95,6 +150,7 @@ object LocationManagerHook {
                     override fun afterHookedMethod(param: MethodHookParam<*>) {
                         for (arg in param.args) {
                             if (arg is LocationListener) {
+                                hookLocationListener(arg)
                                 deliverFakeLocation(arg)
                                 break
                             }
@@ -145,6 +201,46 @@ object LocationManagerHook {
         } catch (t: Throwable) {
             log.w(t) { "Failed to hook getBestProvider" }
         }
+
+        // getProviders — ensure gps and network are in the list
+        try {
+            XposedBridge.hookAllMethods(
+                LocationManager::class.java, "getProviders",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        @Suppress("UNCHECKED_CAST")
+                        val providers = (param.result as? List<String>)?.toMutableList() ?: mutableListOf()
+                        if (LocationManager.GPS_PROVIDER !in providers) providers.add(LocationManager.GPS_PROVIDER)
+                        if (LocationManager.NETWORK_PROVIDER !in providers) providers.add(LocationManager.NETWORK_PROVIDER)
+                        param.result = providers
+                    }
+                }
+            )
+            log.d { "Hooked getProviders" }
+        } catch (t: Throwable) {
+            log.w(t) { "Failed to hook getProviders" }
+        }
+
+        // getAllProviders — same treatment
+        try {
+            XposedHelpers.findAndHookMethod(
+                LocationManager::class.java, "getAllProviders",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        @Suppress("UNCHECKED_CAST")
+                        val providers = (param.result as? List<String>)?.toMutableList() ?: mutableListOf()
+                        if (LocationManager.GPS_PROVIDER !in providers) providers.add(LocationManager.GPS_PROVIDER)
+                        if (LocationManager.NETWORK_PROVIDER !in providers) providers.add(LocationManager.NETWORK_PROVIDER)
+                        param.result = providers
+                    }
+                }
+            )
+            log.d { "Hooked getAllProviders" }
+        } catch (t: Throwable) {
+            log.w(t) { "Failed to hook getAllProviders" }
+        }
     }
 
     /**
@@ -165,8 +261,17 @@ object LocationManagerHook {
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam<*>) {
                         val fake = LocationHelper.createFakeLocation() ?: return
-                        if (param.args.isNotEmpty() && param.args[0] is Location) {
-                            param.args[0] = fake
+                        if (param.args.isEmpty()) return
+
+                        when (val arg = param.args[0]) {
+                            // Single Location overload
+                            is Location -> param.args[0] = fake
+                            // Batched List<Location> overload (Android 12+)
+                            is List<*> -> {
+                                if (arg.isNotEmpty() && arg[0] is Location) {
+                                    param.args[0] = listOf(fake)
+                                }
+                            }
                         }
                     }
                 }
