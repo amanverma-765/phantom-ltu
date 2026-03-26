@@ -43,6 +43,9 @@ import com.navi.phantom.features.permissions.logic.openLocationSettings
 import com.navi.phantom.features.permissions.rememberGpsEnabled
 import com.navi.phantom.features.permissions.rememberLocationPermissionState
 import kotlinx.coroutines.launch
+import com.navi.phantom.features.settings.logic.ThemeMode
+import com.navi.phantom.features.settings.logic.ThemePreference
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -61,7 +64,13 @@ fun MapPickerScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    val isDarkTheme = isSystemInDarkTheme()
+    val themePreference: ThemePreference = koinInject()
+    val themeMode by themePreference.themeMode.collectAsState()
+    val isDarkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     val context = LocalContext.current
 
     var showBottomSheet by remember { mutableStateOf(false) }
