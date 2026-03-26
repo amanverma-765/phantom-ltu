@@ -1,52 +1,74 @@
-# PhantomGPS
+<p align="center">
+  <h1 align="center">PhantomGPS</h1>
+  <p align="center">
+    GPS location spoofing for Android — no root required.
+    <br />
+    Patch any app to use custom coordinates with a single tap.
+  </p>
+</p>
 
-A modern Android app for GPS location spoofing. Patch installed apps to use custom GPS coordinates without requiring root access.
+<p align="center">
+  <img alt="Min SDK" src="https://img.shields.io/badge/min%20SDK-28-blue?style=flat-square" />
+  <img alt="Target SDK" src="https://img.shields.io/badge/target%20SDK-36-blue?style=flat-square" />
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.0-purple?style=flat-square&logo=kotlin&logoColor=white" />
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-green?style=flat-square&logo=jetpackcompose&logoColor=white" />
+</p>
 
-## How It Works
-
-PhantomGPS uses LSPatch/LSPosed technology to inject location hooks into target applications:
-
-1. **Discover** - Scans for installed apps with location permissions
-2. **Patch** - Modifies the target APK by injecting a custom loader
-3. **Install** - Reinstalls the patched APK with location interception enabled
-4. **Spoof** - The patched app now receives your custom GPS coordinates
-
-The patching process injects a metaloader that intercepts Android's Location APIs at runtime, allowing precise control over reported GPS coordinates.
+---
 
 ## Features
 
-- **App Discovery** - Automatically detects installed apps that use location permissions
-- **APK Patching** - Injects location hooks using LSPatch-based technology
-- **Timeline UI** - Visual progress tracking during the bootstrap/patching process
-- **Custom Locations** - Set any GPS coordinates for spoofed location
-- **Material You** - Modern UI with dynamic theming and Material 3 design
+**Patch & Spoof** — Select any installed app, patch it with location hooks, and assign custom GPS coordinates. The patched app sees your chosen location across all Android location APIs.
 
-## Tech Stack
+**Map Picker** — Interactive full-screen map (MapLibre) with search bar, satellite/street toggle, and crosshair targeting. Search by address, coordinates, or Google Maps URL. Tap to save locations with custom names.
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| Language | Kotlin | 2.3.0 |
-| UI | Jetpack Compose | BOM 2025.12.01 |
-| Design | Material 3 | Dynamic theming |
-| Navigation | Navigation3 | 1.1.0-alpha01 |
-| DI | Koin | 4.2.0 |
-| Networking | Ktor | 3.3.3 |
-| Database | Room | 2.8.4 |
-| Async | Kotlin Coroutines + Flow | - |
-| Image Loading | Coil | 3.3.0 |
-| Logging | Kermit | 2.0.8 |
-| Native | C++ (CMake) | NDK 29 |
+**Saved Places** — Build a library of GPS locations. Assign any saved place to any patched app instantly. Each place stores coordinates, accuracy radius, and reverse-geocoded address.
+
+**Per-App Control** — Each patched app gets its own location assignment. Switch between saved places or revert to real GPS on a per-app basis.
+
+**Visual Patching Timeline** — Watch the multi-step patching process (parse, patch, install) with a clear timeline UI and color-coded status updates.
+
+**Comprehensive Hooking** — Intercepts LocationManager, FusedLocationProviderClient, GNSS satellite data, WiFi scan results, and cell tower APIs. Includes realistic GPS jitter, satellite simulation, and anti-detection bypasses.
+
+**Material You** — Dynamic color theming with seed color picker, dark/light/system mode, and Material 3 Expressive components throughout.
+
+<!-- ## Screenshots -->
+<!-- Add screenshots here: patched apps list, map picker, patcher timeline, settings -->
+
+## How It Works
+
+PhantomGPS uses LSPatch technology to inject location hooks into target apps at the APK level:
+
+```
+ ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+ │  1. Select  │────>│  2. Patch   │────>│ 3. Install  │────>│  4. Spoof   │
+ │             │     │             │     │             │     │             │
+ │ Pick an app │     │ Inject hook │     │ Install the │     │ Assign any  │
+ │ from your   │     │ loader into │     │ patched APK │     │ saved place │
+ │ device      │     │ the APK     │     │ on device   │     │ to the app  │
+ └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+```
+
+Once patched, the app's location APIs are intercepted at runtime:
+
+- **`LocationManager`** — `getLastKnownLocation`, `requestLocationUpdates`, `getCurrentLocation`, provider queries
+- **`FusedLocationProviderClient`** — Google Play Services location (Tasks, LocationResult, LocationCallback)
+- **`GnssStatus`** — Simulated satellite constellation with realistic PRN, elevation, azimuth, and SNR data
+- **`TelephonyManager`** — Cell tower location queries blocked to prevent triangulation
+- **`WifiManager`** — Scan results cleared to prevent WiFi-based positioning
+
+All spoofed locations include micro-jitter, GPS noise, and realistic metadata to appear as genuine GPS fixes.
 
 ## Architecture
 
-Clean Architecture with MVVM pattern:
+Clean Architecture with MVVM. Three layers — presentation depends on domain, domain has no dependencies, data implements domain interfaces.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Presentation Layer                       │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
 │  │   Screens   │  │  ViewModels │  │    State    │         │
-│  │  (Compose)  │  │   (Logic)   │  │   (UiState) │         │
+│  │  (Compose)  │  │   (Logic)   │  │  (UiState)  │         │
 │  └─────────────┘  └─────────────┘  └─────────────┘         │
 ├─────────────────────────────────────────────────────────────┤
 │                      Domain Layer                           │
@@ -63,106 +85,134 @@ Clean Architecture with MVVM pattern:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Module Structure
+### Modules
 
-| Module | Purpose |
-|--------|---------|
-| `app` | Main Android application (UI, ViewModels, DI) |
-| `patcher` | APK patching logic (pure JVM library) |
-| `meta-loader` | Bootstrap loader injected into patched APKs |
-| `patch-loader` | Runtime loader with native code (libphantom.so) |
-| `shared/java` | Shared constants, configs, DTOs |
-| `shared/android` | Android-specific utilities |
-| `core` | LSPosed core library (Xposed hook framework) |
-| `apkzlib` | Google's APK manipulation library |
-| `axml` | Android binary XML parser/editor |
+| Module | Type | Purpose |
+|--------|------|---------|
+| `app` | Android App | UI (Compose), ViewModels, DI (Koin), Navigation |
+| `patcher` | Pure JVM | APK patching engine — modifies APKs to inject bootstrap loader |
+| `meta-loader` | Android Lib | Stub `AppComponentFactory` injected into patched APKs |
+| `patch-loader` | Android Lib | Runtime hooks (Kotlin + C++) that intercept location APIs |
+| `shared/java` | Pure JVM | Shared constants, config keys, DTOs |
+| `shared/android` | Android Lib | Android-specific shared utilities |
+| `core` | Android Lib | LSPosed core — Xposed method hooking framework |
+| `apkzlib` | Java Lib | Google's APK manipulation library |
 
-## Project Structure
+### Runtime Flow
 
 ```
-PhantomGPS/
-├── app/src/main/java/com/navi/phantom/
-│   ├── data/                   # Data layer
-│   │   └── local/
-│   │       ├── datasource/     # Data sources
-│   │       ├── dto/            # Data transfer objects
-│   │       ├── mapper/         # DTO to domain mappers
-│   │       └── repository/     # Repository implementations
-│   ├── domain/                 # Domain layer
-│   │   ├── models/             # Domain models
-│   │   ├── repository/         # Repository interfaces
-│   │   └── errors/             # Domain errors
-│   ├── features/               # Feature modules
-│   │   ├── apps/               # App listing & selection
-│   │   ├── bootstrap/          # Patching workflow UI
-│   │   ├── places/             # Saved locations
-│   │   └── setting/            # App settings
-│   ├── navigation/             # Navigation setup
-│   ├── components/             # Shared UI components
-│   ├── theme/                  # Material theme
-│   └── di/                     # Koin modules
-├── patcher/                    # APK patching engine
-├── meta-loader/                # Injected bootstrap loader
-├── patch-loader/               # Runtime hooks + native code
-├── shared/                     # Shared utilities
-│   ├── java/                   # Pure JVM shared code
-│   └── android/                # Android-specific shared code
-├── core/                       # LSPosed core framework
-├── apkzlib/                    # APK manipulation library
-└── axml/                       # Android XML parser
+App Launch (patched)
+  │
+  ├─ meta-loader (AppComponentFactory stub)
+  │    └─ Locates PhantomGPS manager APK
+  │    └─ Loads patch-loader DEX + libphantom.so
+  │
+  ├─ patch-loader (hooks + bypasses)
+  │    ├─ Security bypasses (signature, debuggable, Xposed hiding)
+  │    ├─ Location hooks (LocationManager, Fused, GNSS, WiFi, Telephony)
+  │    └─ IPC to manager app for config (coordinates, accuracy, etc.)
+  │
+  └─ Manager app (PhantomGPS)
+       └─ Serves location config via Binder IPC
 ```
 
-## Bootstrap Process
+## Tech Stack
 
-The patching workflow (called "bootstrap") transforms a regular APK into one that spoofs GPS:
-
-| Step | Description |
-|------|-------------|
-| Parse APK | Read manifest and extract metadata |
-| Setup Signing | Configure APK signature |
-| Extract Signature | For signature bypass (optional) |
-| Modify Manifest | Inject custom component factory |
-| Add Config | Embed bootstrap configuration |
-| Add Metaloader | Inject metaloader.dex |
-| Create Links | Link original APK entries |
-| Write APK | Finalize and sign patched APK |
+| Category | Technology | Version |
+|----------|------------|---------|
+| Language | Kotlin | 2.3.0 |
+| UI | Jetpack Compose | BOM 2025.12.01 |
+| Design | Material 3 Expressive | Dynamic theming |
+| Navigation | Navigation3 | 1.1.0-alpha01 |
+| DI | Koin | 4.2.0 |
+| Database | Room | 2.8.4 |
+| Networking | Ktor | 3.3.3 |
+| Maps | MapLibre Android | 11.8.3 |
+| Image Loading | Coil | 3.3.0 |
+| Logging | Kermit | 2.0.8 |
+| Serialization | kotlinx-serialization | 1.9.0 |
+| Native | C++23 / CMake | NDK 29 |
 
 ## Building
 
 ### Requirements
 
-- Android Studio Ladybug or newer
 - JDK 21+
 - Android SDK 36
 - NDK 29.0.13113456
+- MapTiler API key in `local.properties` as `MAPTILER_API_KEY`
 
-### Build Commands
+### Commands
 
 ```bash
-# Debug build
-./gradlew assembleDebug
-
-# Release build
-./gradlew assembleRelease
-
-# Run tests
-./gradlew test
+./gradlew assembleDebug       # Debug APK
+./gradlew assembleRelease     # Release APK
+./gradlew buildDebug          # Build + copy to out/debug/
+./gradlew buildRelease        # Build + copy to out/release/
+./gradlew test                # Unit tests
 ```
 
-### Min/Target SDK
+### Compatibility
 
 | Property | Value |
 |----------|-------|
-| Min SDK | 28 (Android 9.0) |
+| Min SDK | 28 (Android 9.0 Pie) |
 | Target SDK | 36 |
-| Compile SDK | 36 |
+| ABIs | arm64-v8a, armeabi-v7a, x86, x86_64 |
 
-## Supported ABIs
+<details>
+<summary><strong>Project Structure</strong></summary>
 
-- arm64-v8a
-- armeabi-v7a
-- x86
-- x86_64
+```
+PhantomGPS/
+├── app/src/main/java/com/navi/phantom/
+│   ├── data/                       # Data layer (Room, DTOs, mappers)
+│   ├── domain/                     # Domain layer (models, repo interfaces, errors)
+│   ├── features/
+│   │   ├── apps/                   # Patched app listing & selection
+│   │   ├── patcher/                # APK patching workflow & timeline
+│   │   ├── places/                 # Saved GPS locations
+│   │   ├── map/                    # Map picker with search
+│   │   ├── settings/               # Theme, about, feedback
+│   │   └── disclaimer/             # Terms of use
+│   ├── navigation/                 # Navigation3 destinations & routing
+│   ├── components/                 # Shared UI components
+│   ├── theme/                      # Material 3 theme
+│   └── di/                         # Koin DI modules
+├── patcher/                        # APK patching engine (pure JVM)
+├── meta-loader/                    # Bootstrap loader injected into APKs
+├── patch-loader/                   # Runtime hooks + native code (libphantom.so)
+│   └── src/main/jni/               # C++ (signature bypass, DEX loading)
+├── shared/
+│   ├── java/                       # Shared constants & config keys
+│   └── android/                    # Android-specific utilities
+├── core/                           # LSPosed core (Xposed framework)
+│   └── external/                   # Dobby, LSPlant, LSPatch, fmt
+└── apkzlib/                        # APK manipulation library
+```
+
+</details>
+
+## Disclaimer
+
+This application is provided strictly for **educational, software testing, and application development purposes only**.
+
+By using this software, you acknowledge and agree to the following:
+
+1. **Intended Use** — This software is designed exclusively for developers and testers who need to simulate GPS coordinates for testing location-based features in their own applications.
+
+2. **Prohibited Activities** — You shall NOT use this application to:
+   - Falsify your location for attendance or work verification systems
+   - Deceive any person, organization, or service
+   - Violate any applicable local, state, national, or international law
+   - Circumvent security measures of any third-party application
+   - Engage in any form of fraud or misrepresentation
+
+3. **No Warranty** — This software is provided "AS IS" without warranty of any kind. The developers make no guarantees regarding reliability, accuracy, or completeness.
+
+4. **Liability** — You are solely responsible for your use of this application. The developers shall not be held liable for any misuse or any direct, indirect, incidental, special, or consequential damages arising from its use.
+
+5. **Compliance** — You agree to comply with all applicable laws and regulations in your jurisdiction regarding the use of GPS spoofing software.
 
 ## License
 
