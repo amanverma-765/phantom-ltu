@@ -34,7 +34,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RootNavDisplay(modifier: Modifier = Modifier) {
-    val entryProvider = koinEntryProvider()
+    val entryProvider = koinEntryProvider<Destination>()
     val navigator = koinInject<Navigator>()
     val currentScreen = navigator.currentScreen()
     val showNavbar = currentScreen?.showNavbar == true
