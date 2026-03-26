@@ -1,23 +1,15 @@
 package com.navi.phantom.features.map.screens
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,20 +19,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.navi.phantom.BuildConfig
-import com.navi.phantom.R
+import com.navi.phantom.features.map.components.CrosshairOverlay
 import com.navi.phantom.features.map.components.LocationInfoCard
 import com.navi.phantom.features.map.components.LocationInfoSheet
+import com.navi.phantom.features.map.components.MapContent
 import com.navi.phantom.features.map.components.MapControlCluster
 import com.navi.phantom.features.map.components.MapLoadingSkeleton
-import com.navi.phantom.features.map.components.SearchSuggestionList
 import com.navi.phantom.features.map.components.MapTopBar
+import com.navi.phantom.features.map.components.SearchSuggestionList
 import com.navi.phantom.features.map.logic.MapPickerUiEvent
 import com.navi.phantom.features.map.logic.MapPickerViewModel
 import com.navi.phantom.features.map.logic.requestCurrentLocation
@@ -55,22 +44,9 @@ import com.navi.phantom.features.permissions.rememberGpsEnabled
 import com.navi.phantom.features.permissions.rememberLocationPermissionState
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapView
-
-private const val MAPTILER_STREETS_LIGHT_URL =
-    "https://api.maptiler.com/maps/streets-v2/style.json?key="
-private const val MAPTILER_STREETS_DARK_URL =
-    "https://api.maptiler.com/maps/streets-v2-dark/style.json?key="
-private const val MAPTILER_HYBRID_URL =
-    "https://api.maptiler.com/maps/hybrid/style.json?key="
-
-private const val DEFAULT_LAT = 28.6139
-private const val DEFAULT_LNG = 77.2090
-private const val DEFAULT_ZOOM = 10.0
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -322,157 +298,6 @@ fun MapPickerScreen(
             onDenied = { requestLocationPermission = false },
             onPermanentlyDenied = { requestLocationPermission = false },
             requestOnStart = true
-        )
-    }
-}
-
-@Composable
-private fun MapContent(
-    isDarkTheme: Boolean,
-    isSatelliteMode: Boolean,
-    onCameraMove: (LatLng) -> Unit,
-    onCameraMoving: (Boolean) -> Unit,
-    onMapReady: (MapLibreMap) -> Unit
-) {
-    val context = LocalContext.current
-    var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
-
-    val mapView = remember {
-        MapView(context).apply {
-            onCreate(null)
-        }
-    }
-
-    DisposableEffect(mapView) {
-        mapView.onStart()
-        mapView.onResume()
-        onDispose {
-            mapView.onPause()
-            mapView.onStop()
-            mapView.onDestroy()
-        }
-    }
-
-    val styleUrl = when {
-        isSatelliteMode -> MAPTILER_HYBRID_URL
-        isDarkTheme -> MAPTILER_STREETS_DARK_URL
-        else -> MAPTILER_STREETS_LIGHT_URL
-    } + BuildConfig.MAPTILER_API_KEY
-
-    LaunchedEffect(styleUrl) {
-        mapLibreMap?.setStyle(styleUrl)
-    }
-
-    AndroidView(
-        factory = { _ ->
-            mapView.apply {
-                getMapAsync { map ->
-                    mapLibreMap = map
-                    onMapReady(map)
-                    map.setStyle(styleUrl) {
-                        map.cameraPosition = CameraPosition.Builder()
-                            .target(LatLng(DEFAULT_LAT, DEFAULT_LNG))
-                            .zoom(DEFAULT_ZOOM)
-                            .build()
-
-                        map.addOnCameraMoveStartedListener {
-                            onCameraMoving(true)
-                        }
-
-                        map.addOnCameraIdleListener {
-                            onCameraMoving(false)
-                            map.cameraPosition.target?.let { target ->
-                                onCameraMove(target)
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
-@Composable
-private fun CrosshairOverlay(
-    isMapMoving: Boolean,
-    isDarkTheme: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val lineColor = if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)
-    val dotColor = Color.Red
-
-    // Animate dot scale: grows when dragging, settles with bounce
-    val dotScale by animateFloatAsState(
-        targetValue = if (isMapMoving) 1.5f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "dotScale"
-    )
-
-    // Animate dashed circle: expands when dragging, shrinks on settle
-    val circleScale by animateFloatAsState(
-        targetValue = if (isMapMoving) 1.3f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "circleScale"
-    )
-
-    // Animate circle opacity: more visible when dragging
-    val circleAlpha by animateFloatAsState(
-        targetValue = if (isMapMoving) 0.8f else 0.45f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "circleAlpha"
-    )
-
-    Canvas(modifier = modifier.fillMaxSize()) {
-        val centerX = size.width / 2f
-        val centerY = size.height / 2f
-        val center = androidx.compose.ui.geometry.Offset(centerX, centerY)
-
-        // Horizontal line — full width
-        drawLine(
-            color = lineColor,
-            start = androidx.compose.ui.geometry.Offset(0f, centerY),
-            end = androidx.compose.ui.geometry.Offset(size.width, centerY),
-            strokeWidth = 1.dp.toPx()
-        )
-
-        // Vertical line — full height
-        drawLine(
-            color = lineColor,
-            start = androidx.compose.ui.geometry.Offset(centerX, 0f),
-            end = androidx.compose.ui.geometry.Offset(centerX, size.height),
-            strokeWidth = 1.dp.toPx()
-        )
-
-        // Dashed circle around the dot
-        val circleRadius = 18.dp.toPx() * circleScale
-        val dashLength = 8.dp.toPx()
-        val gapLength = 6.dp.toPx()
-        drawCircle(
-            color = if (isDarkTheme) Color.White.copy(alpha = circleAlpha) else Color.Black.copy(alpha = circleAlpha * 0.5f),
-            radius = circleRadius,
-            center = center,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(
-                width = 1.5.dp.toPx(),
-                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
-                    floatArrayOf(dashLength, gapLength),
-                    0f
-                )
-            )
-        )
-
-        // Red center dot — animated scale
-        val dotRadiusPx = 5.dp.toPx() * dotScale
-        drawCircle(
-            color = dotColor,
-            radius = dotRadiusPx,
-            center = center
         )
     }
 }
