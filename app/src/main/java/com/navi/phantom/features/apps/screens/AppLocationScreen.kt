@@ -1,9 +1,12 @@
 package com.navi.phantom.features.apps.screens
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +61,18 @@ fun AppLocationScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    val uninstallLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        val isInstalled = try {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+        if (!isInstalled) onNavigateBack()
+    }
+
     LaunchedEffect(packageName) {
         viewModel.onEvent(AppDetailUiEvent.Load(packageName))
     }
@@ -92,7 +107,7 @@ fun AppLocationScreen(
                         val intent = Intent(Intent.ACTION_DELETE).apply {
                             data = Uri.fromParts("package", packageName, null)
                         }
-                        context.startActivity(intent)
+                        uninstallLauncher.launch(intent)
                     }) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
