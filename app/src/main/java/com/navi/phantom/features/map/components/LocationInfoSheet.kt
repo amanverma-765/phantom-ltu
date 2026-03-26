@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.navi.phantom.core.ui.CoordinateChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -135,10 +136,10 @@ fun LocationInfoSheet(
                     if (latitude != null && longitude != null) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            CoordinateChip(label = "Lat", value = "%.4f".format(latitude))
-                            CoordinateChip(label = "Lng", value = "%.4f".format(longitude))
+                            CoordinateChip(text = "Lat: ${"%.4f".format(latitude)}")
+                            CoordinateChip(text = "Lng: ${"%.4f".format(longitude)}")
                             if (accuracy != null) {
-                                CoordinateChip(label = "Acc", value = "±${accuracy.toInt()}m")
+                                CoordinateChip(text = "Acc: ±${accuracy.toInt()}m")
                             }
                         }
                     }
@@ -220,35 +221,6 @@ fun LocationInfoSheet(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CoordinateChip(
-    label: String,
-    value: String
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = RoundedCornerShape(6.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "$label:",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

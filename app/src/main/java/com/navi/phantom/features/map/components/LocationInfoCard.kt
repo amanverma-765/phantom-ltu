@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.navi.phantom.core.ui.CoordinateChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.rounded.Check
@@ -27,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -108,10 +108,10 @@ fun LocationInfoCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(start = 30.dp)
             ) {
-                CoordLabel(label = "LAT", value = formatCoord(latitude))
-                CoordLabel(label = "LNG", value = formatCoord(longitude))
+                CoordinateChip(text = "LAT ${formatCoord(latitude)}")
+                CoordinateChip(text = "LNG ${formatCoord(longitude)}")
                 if (accuracy != null) {
-                    CoordLabel(label = "ACC", value = "±${accuracy.toInt()}m")
+                    CoordinateChip(text = "ACC ±${accuracy.toInt()}m")
                 }
             }
 
@@ -142,27 +142,6 @@ fun LocationInfoCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun CoordLabel(label: String, value: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
