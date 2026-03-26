@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/src/main/ic_launcher-playstore.png" width="128" height="128" alt="PhantomLTU Logo" />
+  <img src=".github/logo.png" width="128" height="128" alt="PhantomLTU Logo" />
   <h1 align="center">PhantomLTU</h1>
   <p align="center">
     Location Testing Utility for Android — no root required.
@@ -217,4 +217,4 @@ By using this software, you acknowledge and agree to the following:
 
 ## License
 
-*TBD*
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
