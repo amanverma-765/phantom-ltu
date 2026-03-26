@@ -47,7 +47,7 @@ internal fun SelectAppItem(
                 color = if (app.isPatched)
                     MaterialTheme.colorScheme.primaryContainer
                 else
-                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
