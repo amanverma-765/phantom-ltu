@@ -1,9 +1,9 @@
 <p align="center">
-  <h1 align="center">PhantomGPS</h1>
+  <h1 align="center">PhantomLTU</h1>
   <p align="center">
-    GPS location spoofing for Android — no root required.
+    Location Testing Utility for Android — no root required.
     <br />
-    Patch any app to use custom coordinates with a single tap.
+    Patch any app to use custom GPS coordinates with a single tap.
   </p>
 </p>
 
@@ -37,7 +37,7 @@
 
 ## How It Works
 
-PhantomGPS uses LSPatch technology to inject location hooks into target apps at the APK level:
+PhantomLTU uses LSPatch technology to inject location hooks into target apps at the APK level:
 
 ```
  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -104,7 +104,7 @@ Clean Architecture with MVVM. Three layers — presentation depends on domain, d
 App Launch (patched)
   │
   ├─ meta-loader (AppComponentFactory stub)
-  │    └─ Locates PhantomGPS manager APK
+  │    └─ Locates PhantomLTU manager APK
   │    └─ Loads patch-loader DEX + libphantom.so
   │
   ├─ patch-loader (hooks + bypasses)
@@ -112,7 +112,7 @@ App Launch (patched)
   │    ├─ Location hooks (LocationManager, Fused, GNSS, WiFi, Telephony)
   │    └─ IPC to manager app for config (coordinates, accuracy, etc.)
   │
-  └─ Manager app (PhantomGPS)
+  └─ Manager app (PhantomLTU)
        └─ Serves location config via Binder IPC
 ```
 
@@ -164,7 +164,7 @@ App Launch (patched)
 <summary><strong>Project Structure</strong></summary>
 
 ```
-PhantomGPS/
+PhantomLTU/
 ├── app/src/main/java/com/navi/phantom/
 │   ├── data/                       # Data layer (Room, DTOs, mappers)
 │   ├── domain/                     # Domain layer (models, repo interfaces, errors)

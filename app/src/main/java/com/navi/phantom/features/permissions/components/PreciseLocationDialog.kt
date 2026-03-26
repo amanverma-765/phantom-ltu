@@ -20,7 +20,7 @@ fun PreciseLocationDialog(
         },
         text = {
             Text(
-                text = "PhantomGPS requires precise location for accurate GPS functionality. Please enable precise location in app settings.",
+                text = "Phantom LTU requires precise location for accurate GPS functionality. Please enable precise location in app settings.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },

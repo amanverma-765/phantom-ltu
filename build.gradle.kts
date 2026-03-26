@@ -73,7 +73,7 @@ tasks.register<Delete>("clean") {
 
 listOf("Debug", "Release").forEach { variant ->
     tasks.register("build$variant") {
-        description = "Build PhantomGPS $variant"
+        description = "Build PhantomLTU $variant"
         dependsOn(project(":app").tasks["assemble$variant"])
     }
 }

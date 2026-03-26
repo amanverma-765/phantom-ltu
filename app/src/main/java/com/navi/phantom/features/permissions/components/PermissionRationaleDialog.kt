@@ -20,7 +20,7 @@ internal fun PermissionRationaleDialog(
         },
         text = {
             Text(
-                text = "PhantomGPS needs access to your location to show your current position on the map and enable the mock location feature.",
+                text = "Phantom LTU needs access to your location to show your current position on the map and enable the location testing feature.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
