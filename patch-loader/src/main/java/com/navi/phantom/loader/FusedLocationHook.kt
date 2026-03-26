@@ -91,23 +91,22 @@ object FusedLocationHook {
     }
 
     /**
-     * Hook Task.addOnSuccessListener to intercept the location delivery.
+     * Hook Task listeners and getResult() to intercept location delivery.
      */
     private fun hookTaskResult(task: Any?) {
         if (task == null) return
+
+        // Hook addOnSuccessListener
         try {
             XposedBridge.hookAllMethods(
                 task.javaClass, "addOnSuccessListener",
                 object : XC_MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam<*>) {
                         val config = LocationHelper.getConfig() ?: return
-                        // Wrap the listener to deliver fake location
                         val originalListener = param.args.firstOrNull() ?: return
-                        val listenerClass = originalListener.javaClass
-
                         try {
                             XposedBridge.hookAllMethods(
-                                listenerClass, "onSuccess",
+                                originalListener.javaClass, "onSuccess",
                                 object : XC_MethodHook() {
                                     override fun beforeHookedMethod(innerParam: MethodHookParam<*>) {
                                         if (innerParam.thisObject !== originalListener) return
@@ -118,15 +117,48 @@ object FusedLocationHook {
                                     }
                                 }
                             )
-                        } catch (_: Throwable) {
-                            // Listener may use lambda or be unhookable
+                        } catch (_: Throwable) { }
+                    }
+                }
+            )
+        } catch (_: Throwable) { }
+
+        // Hook addOnCompleteListener — callback receives Task, so hook getResult()
+        try {
+            XposedBridge.hookAllMethods(
+                task.javaClass, "addOnCompleteListener",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        // Hook getResult on the task class to return fake location
+                        hookTaskGetResult(param.thisObject)
+                    }
+                }
+            )
+        } catch (_: Throwable) { }
+
+        // Also hook getResult directly for any code that calls task.getResult()
+        hookTaskGetResult(task)
+    }
+
+    private val hookedTaskClasses = java.util.Collections.synchronizedSet(mutableSetOf<Class<*>>())
+
+    private fun hookTaskGetResult(task: Any) {
+        val taskClass = task.javaClass
+        if (!hookedTaskClasses.add(taskClass)) return
+        try {
+            XposedBridge.hookAllMethods(
+                taskClass, "getResult",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        if (param.result is Location) {
+                            val fake = LocationHelper.createFakeLocation("fused") ?: return
+                            param.result = fake
                         }
                     }
                 }
             )
-        } catch (_: Throwable) {
-            // Task class may vary
-        }
+        } catch (_: Throwable) { }
     }
 
     /**
@@ -193,8 +225,8 @@ object FusedLocationHook {
                             if (param.args.isNotEmpty()) {
                                 param.args[0] = fakeResult
                             }
-                        } catch (_: Throwable) {
-                            // LocationResult.create() may not exist on all GMS versions
+                        } catch (t: Throwable) {
+                            log.w(t) { "LocationResult.create() failed — real location may leak" }
                         }
                     }
                 }
