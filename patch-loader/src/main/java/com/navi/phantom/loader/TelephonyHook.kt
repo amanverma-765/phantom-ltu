@@ -1,5 +1,6 @@
 package com.navi.phantom.loader
 
+import android.os.Build
 import android.telephony.TelephonyManager
 import co.touchlab.kermit.Logger
 import de.robv.android.xposed.XC_MethodHook
@@ -21,6 +22,7 @@ object TelephonyHook {
         hookGetAllCellInfo()
         hookGetNeighboringCellInfo()
         hookPhoneStateListener()
+        hookRegisterTelephonyCallback()
     }
 
     @Suppress("DEPRECATION")
@@ -74,6 +76,66 @@ object TelephonyHook {
         } catch (t: Throwable) {
             log.d { "getNeighboringCellInfo not available" }
         }
+    }
+
+    /**
+     * Hook registerTelephonyCallback (API 31+) — modern replacement for listen().
+     * Intercepts the callback and hooks its cell info methods to return empty data.
+     */
+    private fun hookRegisterTelephonyCallback() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+        try {
+            XposedBridge.hookAllMethods(
+                TelephonyManager::class.java, "registerTelephonyCallback",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        // The callback is the last argument
+                        val callback = param.args.lastOrNull() ?: return
+                        hookTelephonyCallbackMethods(callback)
+                    }
+                }
+            )
+            log.d { "Hooked registerTelephonyCallback" }
+        } catch (t: Throwable) {
+            log.d { "registerTelephonyCallback not available" }
+        }
+    }
+
+    private val hookedCallbackClasses = java.util.Collections.synchronizedSet(mutableSetOf<Class<*>>())
+
+    private fun hookTelephonyCallbackMethods(callback: Any) {
+        val cls = callback.javaClass
+        if (!hookedCallbackClasses.add(cls)) return
+
+        // Hook onCellInfoChanged to return empty list
+        try {
+            XposedBridge.hookAllMethods(cls, "onCellInfoChanged",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        if (param.args.isNotEmpty()) {
+                            param.args[0] = emptyList<Any>()
+                        }
+                    }
+                }
+            )
+        } catch (_: Throwable) { }
+
+        // Hook onCellLocationChanged to deliver null
+        try {
+            XposedBridge.hookAllMethods(cls, "onCellLocationChanged",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam<*>) {
+                        if (LocationHelper.getConfig() == null) return
+                        if (param.args.isNotEmpty()) {
+                            param.args[0] = null
+                        }
+                    }
+                }
+            )
+        } catch (_: Throwable) { }
     }
 
     /**
