@@ -3,8 +3,6 @@ package com.navi.phantom.features.apps.logic
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.navi.phantom.domain.model.ActiveLocation
-import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.domain.model.Place
 import com.navi.phantom.domain.usecase.ActiveLocationUseCase
 import com.navi.phantom.domain.usecase.DeviceAppUseCase
@@ -15,19 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class AppDetailUiState(
-    val app: DeviceApp? = null,
-    val activeLocation: ActiveLocation? = null,
-    val places: List<Place> = emptyList(),
-    val isLoading: Boolean = true
-)
-
-sealed interface AppDetailUiEvent {
-    data class Load(val packageName: String) : AppDetailUiEvent
-    data class AssignPlace(val packageName: String, val place: Place) : AppDetailUiEvent
-    data class ClearLocation(val packageName: String) : AppDetailUiEvent
-}
 
 class AppDetailViewModel(
     private val deviceAppUseCase: DeviceAppUseCase,
