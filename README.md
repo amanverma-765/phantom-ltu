@@ -33,8 +33,20 @@
 
 **Material You** — Dynamic color theming with seed color picker, dark/light/system mode, and Material 3 Expressive components throughout.
 
-<!-- ## Screenshots -->
-<!-- Add screenshots here: patched apps list, map picker, patcher timeline, settings -->
+## Screenshots
+
+<p align="center">
+  <img src=".github/screenshots/01-home.jpg" width="24%" />
+  <img src=".github/screenshots/02-select-app.jpg" width="24%" />
+  <img src=".github/screenshots/03-ready-to-patch.jpg" width="24%" />
+  <img src=".github/screenshots/04-patching.jpg" width="24%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/05-patch-complete.jpg" width="24%" />
+  <img src=".github/screenshots/06-map-picker.jpg" width="24%" />
+  <img src=".github/screenshots/07-saved-places.jpg" width="24%" />
+  <img src=".github/screenshots/08-settings.jpg" width="24%" />
+</p>
 
 ## How It Works
 
