@@ -181,7 +181,7 @@ fun MapPickerScreen(
             )
 
             // Crosshair overlay - full screen lines + red center dot
-            CrosshairOverlay(isMapMoving = isMapMoving)
+            CrosshairOverlay(isMapMoving = isMapMoving, isSatelliteMode = isSatelliteMode)
 
             // Top bar - floating search bar
             MapTopBar(

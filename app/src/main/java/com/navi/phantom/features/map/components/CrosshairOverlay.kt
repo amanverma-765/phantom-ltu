@@ -17,12 +17,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun CrosshairOverlay(
     isMapMoving: Boolean,
+    isSatelliteMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = Color.Black.copy(alpha = 0.2f)
+    val lineColor = if (isSatelliteMode) Color.White.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.2f)
+    val circleColor = if (isSatelliteMode) Color.White else Color.Black
     val dotColor = Color.Red
 
-    // Animate dot scale: grows when dragging, settles with bounce
     val dotScale by animateFloatAsState(
         targetValue = if (isMapMoving) 1.5f else 1f,
         animationSpec = spring(
@@ -32,7 +33,6 @@ internal fun CrosshairOverlay(
         label = "dotScale"
     )
 
-    // Animate dashed circle: expands when dragging, shrinks on settle
     val circleScale by animateFloatAsState(
         targetValue = if (isMapMoving) 1.3f else 1f,
         animationSpec = spring(
@@ -42,7 +42,6 @@ internal fun CrosshairOverlay(
         label = "circleScale"
     )
 
-    // Animate circle opacity: more visible when dragging
     val circleAlpha by animateFloatAsState(
         targetValue = if (isMapMoving) 0.8f else 0.45f,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -54,32 +53,29 @@ internal fun CrosshairOverlay(
         val centerY = size.height / 2f
         val center = Offset(centerX, centerY)
 
-        // Horizontal line — full width
         drawLine(
             color = lineColor,
             start = Offset(0f, centerY),
             end = Offset(size.width, centerY),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.5.dp.toPx()
         )
 
-        // Vertical line — full height
         drawLine(
             color = lineColor,
             start = Offset(centerX, 0f),
             end = Offset(centerX, size.height),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.5.dp.toPx()
         )
 
-        // Dashed circle around the dot
         val circleRadius = 18.dp.toPx() * circleScale
         val dashLength = 8.dp.toPx()
         val gapLength = 6.dp.toPx()
         drawCircle(
-            color = Color.Black.copy(alpha = circleAlpha * 0.5f),
+            color = circleColor.copy(alpha = circleAlpha * if (isSatelliteMode) 0.7f else 0.5f),
             radius = circleRadius,
             center = center,
             style = Stroke(
-                width = 1.5.dp.toPx(),
+                width = 2.dp.toPx(),
                 pathEffect = PathEffect.dashPathEffect(
                     floatArrayOf(dashLength, gapLength),
                     0f
@@ -87,7 +83,6 @@ internal fun CrosshairOverlay(
             )
         )
 
-        // Red center dot — animated scale
         val dotRadiusPx = 5.dp.toPx() * dotScale
         drawCircle(
             color = dotColor,
