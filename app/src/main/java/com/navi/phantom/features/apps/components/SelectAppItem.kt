@@ -48,7 +48,7 @@ internal fun SelectAppItem(
                     MaterialTheme.colorScheme.primaryContainer
                 else
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Icon(
                     imageVector = if (app.isPatched) Icons.Filled.CheckCircle else Icons.Outlined.LocationOn,
