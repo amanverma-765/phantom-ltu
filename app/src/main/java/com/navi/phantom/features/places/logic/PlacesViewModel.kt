@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ class PlacesViewModel(
 
     val uiState: StateFlow<PlacesUiState> = placeUseCase.getAllPlaces()
         .onStart { _isLoading.value = true }
+        .onEach { _isLoading.value = false }
         .catch { error ->
             log.e(error) { "Failed to load places" }
             _errorState.value = "Failed to load places"
@@ -37,7 +39,7 @@ class PlacesViewModel(
         .let { placesFlow ->
             combine(placesFlow, _errorState, _isLoading) { places, error, loading ->
                 PlacesUiState(
-                    isLoading = if (places.isNotEmpty() || error != null) false else loading,
+                    isLoading = loading,
                     places = places,
                     errorMessage = error
                 )
