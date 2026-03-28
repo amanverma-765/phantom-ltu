@@ -47,8 +47,10 @@ class MapPickerViewModel(
         }
     }
 
-    fun setAccuracyFromGps(accuracy: Float?) {
-        _uiState.update { it.copy(accuracy = accuracy) }
+    fun setAccuracyFromGps(accuracy: Float?, latitude: Double, longitude: Double) {
+        _uiState.update {
+            it.copy(accuracy = accuracy, currentLatitude = latitude, currentLongitude = longitude)
+        }
     }
 
     private fun loadPlace(placeId: Long) {
@@ -70,8 +72,16 @@ class MapPickerViewModel(
     }
 
     private fun updateCameraPosition(latitude: Double, longitude: Double) {
-        _uiState.update {
-            it.copy(currentLatitude = latitude, currentLongitude = longitude)
+        _uiState.update { state ->
+            // Clear accuracy if the user dragged away from the GPS position
+            val clearAccuracy = state.accuracy != null &&
+                (Math.abs(latitude - state.currentLatitude) > 0.0001 ||
+                 Math.abs(longitude - state.currentLongitude) > 0.0001)
+            state.copy(
+                currentLatitude = latitude,
+                currentLongitude = longitude,
+                accuracy = if (clearAccuracy) null else state.accuracy
+            )
         }
         reverseGeocode(latitude, longitude)
     }
