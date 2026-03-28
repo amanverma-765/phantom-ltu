@@ -6,8 +6,8 @@ data class MapPickerUiState(
     val editingPlaceId: Long? = null,
     val selectedLatitude: Double? = null,
     val selectedLongitude: Double? = null,
-    val currentLatitude: Double = 28.6139,
-    val currentLongitude: Double = 77.2090,
+    val currentLatitude: Double = DEFAULT_LATITUDE,
+    val currentLongitude: Double = DEFAULT_LONGITUDE,
     val placeName: String = "",
     val address: String? = null,
     val accuracy: Float? = null,
@@ -22,4 +22,9 @@ data class MapPickerUiState(
     val isEditing: Boolean get() = editingPlaceId != null
     val hasSelection: Boolean get() = selectedLatitude != null && selectedLongitude != null
     val canSave: Boolean get() = hasSelection && placeName.isNotBlank() && !isSaving
+
+    companion object {
+        const val DEFAULT_LATITUDE = 28.6127
+        const val DEFAULT_LONGITUDE = 77.2373
+    }
 }

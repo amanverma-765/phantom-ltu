@@ -1,7 +1,6 @@
 package com.navi.phantom.features.map.screens
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -30,6 +29,7 @@ import com.navi.phantom.features.map.components.MapControlCluster
 import com.navi.phantom.features.map.components.MapLoadingSkeleton
 import com.navi.phantom.features.map.components.MapTopBar
 import com.navi.phantom.features.map.components.SearchSuggestionList
+import com.navi.phantom.features.map.logic.MapController
 import com.navi.phantom.features.map.logic.MapPickerUiEvent
 import com.navi.phantom.features.map.logic.MapPickerViewModel
 import com.navi.phantom.features.map.logic.requestCurrentLocation
@@ -40,16 +40,9 @@ import com.navi.phantom.features.permissions.components.PreciseLocationDialog
 import com.navi.phantom.features.permissions.logic.checkGpsEnabled
 import com.navi.phantom.features.permissions.logic.openAppSettings
 import com.navi.phantom.features.permissions.logic.openLocationSettings
-import com.navi.phantom.features.permissions.rememberGpsEnabled
 import com.navi.phantom.features.permissions.rememberLocationPermissionState
 import kotlinx.coroutines.launch
-import com.navi.phantom.features.settings.logic.ThemeMode
-import com.navi.phantom.features.settings.logic.ThemePreference
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import org.maplibre.android.camera.CameraUpdateFactory
-import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,18 +57,10 @@ fun MapPickerScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    val themePreference: ThemePreference = koinInject()
-    val themeMode by themePreference.themeMode.collectAsState()
-    val isDarkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
     val context = LocalContext.current
 
     var showBottomSheet by remember { mutableStateOf(false) }
-    var hasLocationPermission by remember { mutableStateOf(false) }
-    var mapRef by remember { mutableStateOf<MapLibreMap?>(null) }
+    var mapController by remember { mutableStateOf<MapController?>(null) }
     var isLoadingLocation by remember { mutableStateOf(false) }
     var showGpsDialog by remember { mutableStateOf(false) }
     var showPreciseLocationDialog by remember { mutableStateOf(false) }
@@ -88,9 +73,9 @@ fun MapPickerScreen(
     val locationPermissionState = rememberLocationPermissionState()
 
     RequestLocationAccess(
-        onReady = { hasLocationPermission = true },
+        onReady = { },
         onPermissionDenied = { },
-        onGpsDisabled = { hasLocationPermission = true }
+        onGpsDisabled = { }
     )
 
     fun goToMyLocation() {
@@ -111,13 +96,9 @@ fun MapPickerScreen(
             context = context,
             onLocationReceived = { location ->
                 isLoadingLocation = false
-                viewModel.setAccuracyFromGps(location.accuracy)
-                val target = LatLng(location.latitude, location.longitude)
+                viewModel.setAccuracyFromGps(location.accuracy, location.latitude, location.longitude)
                 val zoom = accuracyToZoom(location.accuracy, location.latitude)
-                mapRef?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(target, zoom),
-                    1000
-                )
+                mapController?.animateCamera(location.latitude, location.longitude, zoom)
             },
             onError = { isLoadingLocation = false }
         )
@@ -130,26 +111,21 @@ fun MapPickerScreen(
         }
     }
 
-    // Animate camera to loaded place
-    LaunchedEffect(uiState.editingPlaceId) {
-        if (uiState.editingPlaceId != null && mapRef != null) {
-            val target = LatLng(uiState.currentLatitude, uiState.currentLongitude)
-            val zoom = accuracyToZoom(uiState.accuracy, uiState.currentLatitude)
-            mapRef?.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(target, zoom),
-                1000
-            )
+    // Move camera instantly to loaded place — use selectedLat/Lng which aren't
+    // overwritten by the initial cameraMove event from the WebView
+    LaunchedEffect(uiState.editingPlaceId, mapController) {
+        if (uiState.editingPlaceId != null && mapController != null) {
+            val lat = uiState.selectedLatitude ?: return@LaunchedEffect
+            val lng = uiState.selectedLongitude ?: return@LaunchedEffect
+            val zoom = accuracyToZoom(uiState.accuracy, lat)
+            mapController?.animateCamera(lat, lng, zoom)
         }
     }
 
     // Animate camera to search result
-    LaunchedEffect(uiState.navigateToSearchResult) {
-        if (uiState.navigateToSearchResult && mapRef != null) {
-            val target = LatLng(uiState.currentLatitude, uiState.currentLongitude)
-            mapRef?.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(target, 17.0),
-                1000
-            )
+    LaunchedEffect(uiState.navigateToSearchResult, mapController) {
+        if (uiState.navigateToSearchResult && mapController != null) {
+            mapController?.animateCamera(uiState.currentLatitude, uiState.currentLongitude, 17.0)
             viewModel.onEvent(MapPickerUiEvent.ClearSearch)
         }
     }
@@ -191,22 +167,21 @@ fun MapPickerScreen(
             }
 
             MapContent(
-                isDarkTheme = isDarkTheme,
                 isSatelliteMode = isSatelliteMode,
-                onCameraMove = { center ->
+                onCameraMove = { lat, lng ->
                     viewModel.onEvent(
-                        MapPickerUiEvent.UpdateCameraPosition(center.latitude, center.longitude)
+                        MapPickerUiEvent.UpdateCameraPosition(lat, lng)
                     )
                 },
                 onCameraMoving = { moving -> isMapMoving = moving },
-                onMapReady = { map ->
-                    mapRef = map
+                onMapReady = { controller ->
+                    mapController = controller
                     isMapLoaded = true
                 }
             )
 
             // Crosshair overlay - full screen lines + red center dot
-            CrosshairOverlay(isMapMoving = isMapMoving, isDarkTheme = isDarkTheme)
+            CrosshairOverlay(isMapMoving = isMapMoving)
 
             // Top bar - floating search bar
             MapTopBar(
@@ -301,7 +276,6 @@ fun MapPickerScreen(
         RequestLocationPermission(
             onGranted = {
                 requestLocationPermission = false
-                hasLocationPermission = true
                 goToMyLocation()
             },
             onDenied = { requestLocationPermission = false },
@@ -312,7 +286,7 @@ fun MapPickerScreen(
 }
 
 /**
- * Convert GPS accuracy (meters) to a MapLibre zoom level.
+ * Convert GPS accuracy (meters) to a map zoom level.
  * Zooms in tight for high accuracy (small radius) and zooms out for low accuracy.
  * At zoom z, 1 pixel ≈ (earthCircumference * cos(lat)) / (256 * 2^z) meters.
  * We want the accuracy circle to fit comfortably on screen (~200px radius).

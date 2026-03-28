@@ -17,10 +17,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun CrosshairOverlay(
     isMapMoving: Boolean,
-    isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)
+    val lineColor = Color.Black.copy(alpha = 0.2f)
     val dotColor = Color.Red
 
     // Animate dot scale: grows when dragging, settles with bounce
@@ -76,7 +75,7 @@ internal fun CrosshairOverlay(
         val dashLength = 8.dp.toPx()
         val gapLength = 6.dp.toPx()
         drawCircle(
-            color = if (isDarkTheme) Color.White.copy(alpha = circleAlpha) else Color.Black.copy(alpha = circleAlpha * 0.5f),
+            color = Color.Black.copy(alpha = circleAlpha * 0.5f),
             radius = circleRadius,
             center = center,
             style = Stroke(

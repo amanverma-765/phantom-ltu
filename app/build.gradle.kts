@@ -26,7 +26,9 @@ android {
     defaultConfig {
         applicationId = defaultManagerPackageName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "MAPTILER_API_KEY", "\"${localProperties.getProperty("MAPTILER_API_KEY", "")}\"")
+        ndk {
+            abiFilters += (findProperty("abiFilters") as String?)?.split(",") ?: listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        }
     }
 
     androidResources {
@@ -91,7 +93,7 @@ afterEvaluate {
             dependsOn(tasks["assemble$variantCapped"])
             from(variant.outputs.map { it.outputFile })
             into(rootProject.projectDir.resolve("out/$variantLowered"))
-            rename(".*.apk", "phantom-ltu-v$verName-$verCode-$variantLowered.apk")
+            rename(".*.apk", "ltu-v$verName-$verCode-$variantLowered.apk")
         }
     }
 }
@@ -174,10 +176,6 @@ dependencies {
 
     // Logging
     implementation(phantom.kermit)
-
-    // MapLibre
-    implementation(phantom.maplibre.android.sdk)
-    implementation(phantom.maplibre.android.plugin.annotation)
 
     // Google Play Services Location
     implementation(phantom.play.services.location)

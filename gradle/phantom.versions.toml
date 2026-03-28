@@ -25,7 +25,6 @@ kermit = "2.1.0"
 commons-io = "2.21.0"
 beust-jcommander = "1.82"
 ackpine = "0.21.2"
-maplibre = "13.0.1"
 playServicesLocation = "21.3.0"
 materialKolor = "4.1.1"
 
@@ -106,9 +105,6 @@ ackpine-core = { module = "ru.solrudev.ackpine:ackpine-core", version.ref = "ack
 ackpine-ktx = { module = "ru.solrudev.ackpine:ackpine-ktx", version.ref = "ackpine" }
 ackpine-splits = { module = "ru.solrudev.ackpine:ackpine-splits", version.ref = "ackpine" }
 ackpine-splits-ktx = { module = "ru.solrudev.ackpine:ackpine-splits-ktx", version.ref = "ackpine" }
-# MapLibre
-maplibre-android-sdk = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
-maplibre-android-plugin-annotation = { module = "org.maplibre.gl:android-plugin-annotation-v9", version = "3.0.1" }
 # Google Play Services Location
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 # MaterialKolor
