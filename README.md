@@ -21,7 +21,7 @@
 
 **Patch & Spoof** — Select any installed app, patch it with location hooks, and assign custom GPS coordinates. The patched app sees your chosen location across all Android location APIs.
 
-**Map Picker** — Interactive full-screen map (MapLibre) with search bar, satellite/street toggle, and crosshair targeting. Search by address, coordinates, or Google Maps URL. Tap to save locations with custom names.
+**Map Picker** — Interactive full-screen map with Google Maps tiles, search bar, satellite/street toggle, and crosshair targeting. Search by address, coordinates, or Google Maps URL. Tap to save locations with custom names.
 
 **Saved Places** — Build a library of GPS locations. Assign any saved place to any patched app instantly. Each place stores coordinates, accuracy radius, and reverse-geocoded address.
 
@@ -140,7 +140,7 @@ App Launch (patched)
 | DI | Koin | 4.2.0 |
 | Database | Room | 2.8.4 |
 | Networking | Ktor | 3.3.3 |
-| Maps | MapLibre Android | 11.8.3 |
+| Maps | Leaflet.js + Google Maps tiles | 1.9.4 |
 | Image Loading | Coil | 3.3.0 |
 | Logging | Kermit | 2.0.8 |
 | Serialization | kotlinx-serialization | 1.9.0 |
@@ -153,8 +153,6 @@ App Launch (patched)
 - JDK 21+
 - Android SDK 36
 - NDK 29.0.13113456
-- MapTiler API key in `local.properties` as `MAPTILER_API_KEY`
-
 ### Commands
 
 ```bash
