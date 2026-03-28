@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.BuildConfig
 import com.navi.phantom.features.settings.components.SeedColorSelector
+import com.navi.phantom.features.settings.components.ThemeStyleSelector
 import com.navi.phantom.features.settings.components.SettingsGroup
 import com.navi.phantom.features.settings.components.SettingsItem
 import com.navi.phantom.features.settings.components.SettingsItemDivider
@@ -77,6 +78,13 @@ fun SettingsScreen(
             ThemeModeSelector(
                 selectedMode = uiState.themeMode,
                 onModeSelected = { viewModel.onEvent(SettingsUiEvent.SetThemeMode(it)) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ThemeStyleSelector(
+                selectedStyle = uiState.themeStyle,
+                onStyleSelected = { viewModel.onEvent(SettingsUiEvent.SetThemeStyle(it)) }
             )
 
             Spacer(modifier = Modifier.height(12.dp))

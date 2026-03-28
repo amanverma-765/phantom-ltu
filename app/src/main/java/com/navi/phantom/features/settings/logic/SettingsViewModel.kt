@@ -20,9 +20,10 @@ class SettingsViewModel(
     init {
         combine(
             themePreference.themeMode,
-            themePreference.seedColor
-        ) { themeMode, seedColor ->
-            _uiState.update { it.copy(themeMode = themeMode, seedColor = seedColor) }
+            themePreference.seedColor,
+            themePreference.themeStyle
+        ) { themeMode, seedColor, themeStyle ->
+            _uiState.update { it.copy(themeMode = themeMode, seedColor = seedColor, themeStyle = themeStyle) }
         }.launchIn(viewModelScope)
     }
 
@@ -30,6 +31,7 @@ class SettingsViewModel(
         when (event) {
             is SettingsUiEvent.SetThemeMode -> setThemeMode(event.mode)
             is SettingsUiEvent.SetSeedColor -> setSeedColor(event.color)
+            is SettingsUiEvent.SetThemeStyle -> setThemeStyle(event.style)
         }
     }
 
@@ -39,5 +41,9 @@ class SettingsViewModel(
 
     private fun setSeedColor(color: SeedColor) {
         viewModelScope.launch { themePreference.setSeedColor(color) }
+    }
+
+    private fun setThemeStyle(style: ThemeStyle) {
+        viewModelScope.launch { themePreference.setThemeStyle(style) }
     }
 }

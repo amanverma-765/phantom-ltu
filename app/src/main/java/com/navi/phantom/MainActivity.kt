@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by themePreference.themeMode.collectAsState()
             val seedColor by themePreference.seedColor.collectAsState()
+            val themeStyle by themePreference.themeStyle.collectAsState()
 
             val isDark = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -53,7 +54,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            PhantomTheme(themeMode = themeMode, seedColor = seedColor.color) {
+            PhantomTheme(themeMode = themeMode, seedColor = seedColor.color, themeStyle = themeStyle) {
                 RootNavDisplay()
             }
         }

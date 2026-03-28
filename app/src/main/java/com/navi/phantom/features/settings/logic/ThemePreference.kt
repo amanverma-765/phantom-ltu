@@ -19,6 +19,18 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+enum class ThemeStyle(val label: String) {
+    TonalSpot("Tonal Spot"),
+    Neutral("Neutral"),
+    Vibrant("Vibrant"),
+    Expressive("Expressive"),
+    Rainbow("Rainbow"),
+    FruitSalad("Fruit Salad"),
+    Monochrome("Monochrome"),
+    Fidelity("Fidelity"),
+    Content("Content"),
+}
+
 enum class SeedColor(val label: String, val color: Color) {
     Sakura("Sakura", Color(0xFFE91E90)),
     Cobalt("Cobalt", Color(0xFF2962FF)),
@@ -39,6 +51,7 @@ class ThemePreference(private val context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val themeKey = stringPreferencesKey("theme_mode")
     private val seedColorKey = stringPreferencesKey("seed_color")
+    private val themeStyleKey = stringPreferencesKey("theme_style")
 
     val themeMode: StateFlow<ThemeMode> = context.dataStore.data.map { prefs ->
         when (prefs[themeKey]) {
@@ -53,6 +66,11 @@ class ThemePreference(private val context: Context) {
         SeedColor.entries.find { it.name == name } ?: SeedColor.Sakura
     }.stateIn(scope, SharingStarted.Eagerly, SeedColor.Sakura)
 
+    val themeStyle: StateFlow<ThemeStyle> = context.dataStore.data.map { prefs ->
+        val name = prefs[themeStyleKey]
+        ThemeStyle.entries.find { it.name == name } ?: ThemeStyle.TonalSpot
+    }.stateIn(scope, SharingStarted.Eagerly, ThemeStyle.TonalSpot)
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[themeKey] = mode.name
@@ -62,6 +80,12 @@ class ThemePreference(private val context: Context) {
     suspend fun setSeedColor(color: SeedColor) {
         context.dataStore.edit { prefs ->
             prefs[seedColorKey] = color.name
+        }
+    }
+
+    suspend fun setThemeStyle(style: ThemeStyle) {
+        context.dataStore.edit { prefs ->
+            prefs[themeStyleKey] = style.name
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,7 +40,7 @@ fun SeedColorSelector(
     onColorSelected: (SeedColor) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val rows = SeedColor.entries.chunked(4)
+    val colorRows = SeedColor.entries.chunked(4)
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -57,8 +58,10 @@ fun SeedColorSelector(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
             Spacer(modifier = Modifier.height(14.dp))
-            rows.forEachIndexed { index, row ->
+
+            colorRows.forEachIndexed { index, row ->
                 if (index > 0) Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     horizontalArrangement = Arrangement.SpaceEvenly,
