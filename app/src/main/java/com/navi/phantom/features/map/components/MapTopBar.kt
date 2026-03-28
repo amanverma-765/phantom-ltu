@@ -1,5 +1,6 @@
 package com.navi.phantom.features.map.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -90,7 +91,9 @@ fun MapTopBar(
 
             // Center content
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (!isSearchMode) Modifier.clickable { onSearchModeChange(true) } else Modifier),
                 contentAlignment = if (isSearchMode) Alignment.CenterStart else Alignment.Center
             ) {
                 if (isSearchMode) {
