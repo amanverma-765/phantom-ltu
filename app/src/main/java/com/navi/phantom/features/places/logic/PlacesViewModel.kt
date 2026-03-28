@@ -20,12 +20,14 @@ class PlacesViewModel(
     private val log = Logger.withTag("PlacesViewModel")
 
     private val _errorState = MutableStateFlow<String?>(null)
+    private val _isLoading = MutableStateFlow(true)
 
     val uiState: StateFlow<PlacesUiState> = placeUseCase.getAllPlaces()
-        .onStart { }
+        .onStart { _isLoading.value = true }
         .catch { error ->
             log.e(error) { "Failed to load places" }
             _errorState.value = "Failed to load places"
+            _isLoading.value = false
         }
         .stateIn(
             scope = viewModelScope,
@@ -33,9 +35,9 @@ class PlacesViewModel(
             initialValue = emptyList()
         )
         .let { placesFlow ->
-            combine(placesFlow, _errorState) { places, error ->
+            combine(placesFlow, _errorState, _isLoading) { places, error, loading ->
                 PlacesUiState(
-                    isLoading = false,
+                    isLoading = if (places.isNotEmpty() || error != null) false else loading,
                     places = places,
                     errorMessage = error
                 )

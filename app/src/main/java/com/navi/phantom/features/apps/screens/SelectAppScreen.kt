@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.navi.phantom.core.ui.EmptyState
 import com.navi.phantom.core.ui.ErrorState
+import com.navi.phantom.core.ui.LoadingState
 import com.navi.phantom.domain.model.DeviceApp
 import com.navi.phantom.features.apps.components.AppSearchBar
 import com.navi.phantom.features.apps.components.SelectAppList
@@ -81,6 +82,10 @@ fun SelectAppScreen(
             )
 
             when {
+                uiState.isLoadingApps -> LoadingState(
+                    message = "Loading apps...",
+                    modifier = Modifier.fillMaxSize()
+                )
                 uiState.errorMessage != null -> uiState.errorMessage?.let { errorMsg ->
                     ErrorState(
                         message = errorMsg,

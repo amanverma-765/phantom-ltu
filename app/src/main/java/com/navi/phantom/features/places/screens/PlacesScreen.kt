@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.navi.phantom.core.ui.EmptyStateScreen
+import com.navi.phantom.core.ui.LoadingState
 import com.navi.phantom.features.places.components.PlaceCard
 import com.navi.phantom.features.places.logic.PlacesUiEvent
 import com.navi.phantom.features.places.logic.PlacesViewModel
@@ -95,6 +96,10 @@ fun PlacesScreen(
                 .padding(innerPadding)
         ) {
             when {
+                uiState.isLoading -> LoadingState(
+                    message = "Loading places...",
+                    modifier = Modifier.fillMaxSize()
+                )
                 isScreenEmpty -> {
                     EmptyStateScreen(
                         icon = Icons.Rounded.BookmarkBorder,

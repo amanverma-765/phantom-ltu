@@ -4,7 +4,7 @@ import com.navi.phantom.domain.model.ActiveLocation
 import com.navi.phantom.domain.model.DeviceApp
 
 data class AppUiState(
-    val isLoadingApps: Boolean = false,
+    val isLoadingApps: Boolean = true,
     val errorMessage: String? = null,
     val searchQuery: String = "",
     val allDeviceApps: List<DeviceApp> = emptyList(),
