@@ -1,9 +1,10 @@
 package com.navi.phantom.features.patcher.components
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import com.navi.phantom.core.theme.ErrorRedContainerDark
 import com.navi.phantom.core.theme.ErrorRedContainerLight
 import com.navi.phantom.core.theme.ErrorRedDark
@@ -23,7 +24,7 @@ data class PatcherStatusColors(
 
 @Composable
 fun rememberPatcherStatusColors(): PatcherStatusColors {
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     return remember(isDarkTheme) {
         PatcherStatusColors(
             success = if (isDarkTheme) SuccessGreenDark else SuccessGreenLight,
