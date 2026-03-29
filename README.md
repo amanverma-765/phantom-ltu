@@ -111,24 +111,6 @@ Clean Architecture with MVVM. Three layers — presentation depends on domain, d
 | `core` | Android Lib | LSPosed core — Xposed method hooking framework |
 | `apkzlib` | Java Lib | Google's APK manipulation library |
 
-### Runtime Flow
-
-```
-App Launch (patched)
-  │
-  ├─ meta-loader (AppComponentFactory stub)
-  │    └─ Locates PhantomLTU manager APK
-  │    └─ Loads patch-loader DEX + libphantom.so
-  │
-  ├─ patch-loader (hooks + bypasses)
-  │    ├─ Security bypasses (signature, debuggable, Xposed hiding)
-  │    ├─ Location hooks (LocationManager, Fused, GNSS, WiFi, Telephony)
-  │    └─ IPC to manager app for config (coordinates, accuracy, etc.)
-  │
-  └─ Manager app (PhantomLTU)
-       └─ Serves location config via Binder IPC
-```
-
 ## Tech Stack
 
 | Category | Technology | Version |
@@ -171,38 +153,17 @@ App Launch (patched)
 | Target SDK | 36 |
 | ABIs | arm64-v8a, armeabi-v7a, x86, x86_64 |
 
-<details>
-<summary><strong>Project Structure</strong></summary>
+## Support the Project
 
-```
-PhantomLTU/
-├── app/src/main/java/com/navi/phantom/
-│   ├── data/                       # Data layer (Room, DTOs, mappers)
-│   ├── domain/                     # Domain layer (models, repo interfaces, errors)
-│   ├── features/
-│   │   ├── apps/                   # Patched app listing & selection
-│   │   ├── patcher/                # APK patching workflow & timeline
-│   │   ├── places/                 # Saved GPS locations
-│   │   ├── map/                    # Map picker with search
-│   │   ├── settings/               # Theme, about, feedback
-│   │   └── disclaimer/             # Terms of use
-│   ├── navigation/                 # Navigation3 destinations & routing
-│   ├── components/                 # Shared UI components
-│   ├── theme/                      # Material 3 theme
-│   └── di/                         # Koin DI modules
-├── patcher/                        # APK patching engine (pure JVM)
-├── meta-loader/                    # Bootstrap loader injected into APKs
-├── patch-loader/                   # Runtime hooks + native code (libphantom.so)
-│   └── src/main/jni/               # C++ (signature bypass, DEX loading)
-├── shared/
-│   ├── java/                       # Shared constants & config keys
-│   └── android/                    # Android-specific utilities
-├── core/                           # LSPosed core (Xposed framework)
-│   └── external/                   # Dobby, LSPlant, LSPatch, fmt
-└── apkzlib/                        # APK manipulation library
-```
+If PhantomLTU is useful to you, consider supporting its development:
 
-</details>
+<a href="https://github.com/sponsors/amanverma-765">
+  <img src="https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" />
+</a>
+&nbsp;
+<a href="https://rzp.io/rzp/64k9hKb">
+  <img src="https://img.shields.io/badge/Donate-Razorpay-0C68FF?style=for-the-badge&logo=razorpay&logoColor=white" alt="Razorpay" />
+</a>
 
 ## Disclaimer
 
