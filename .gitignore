@@ -27,3 +27,4 @@ libxposed
 /.idea
 /.claude/
 CLAUDE.md
+app/google-services.json

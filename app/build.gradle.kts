@@ -18,6 +18,7 @@ plugins {
     alias(phantom.plugins.serialization)
     alias(phantom.plugins.ksp)
     alias(phantom.plugins.room)
+    alias(phantom.plugins.google.services)
 }
 
 android {
@@ -182,4 +183,8 @@ dependencies {
 
     // MaterialKolor
     implementation(phantom.material.kolor)
+
+    // Firebase
+    implementation(platform(phantom.firebase.bom))
+    implementation(phantom.firebase.analytics)
 }

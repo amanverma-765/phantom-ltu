@@ -15,6 +15,7 @@ plugins {
     alias(phantom.plugins.ksp) apply false
     alias(phantom.plugins.room) apply false
     alias(phantom.plugins.kotlin.jvm) apply false
+    alias(phantom.plugins.google.services) apply false
 }
 
 buildscript {
