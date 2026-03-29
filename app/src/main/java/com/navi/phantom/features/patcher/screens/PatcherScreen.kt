@@ -2,8 +2,11 @@ package com.navi.phantom.features.patcher.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +45,7 @@ import com.navi.phantom.features.patcher.components.AppInfoHeader
 import com.navi.phantom.features.patcher.components.PatcherActionButton
 import com.navi.phantom.features.patcher.components.PatcherTimeline
 import com.navi.phantom.features.patcher.components.StatusBar
+import com.navi.phantom.features.patcher.components.SupportCard
 import com.navi.phantom.features.patcher.components.UninstallRequiredDialog
 import com.navi.phantom.features.patcher.components.rememberPatcherStatusColors
 import com.navi.phantom.features.patcher.logic.PatcherPhase
@@ -188,6 +192,17 @@ fun PatcherScreen(
                         hasFailed = hasFailed,
                         statusColors = statusColors
                     )
+
+                    // Support card — appears once patched, stays visible
+                    AnimatedVisibility(
+                        visible = isPatched,
+                        enter = expandVertically(
+                            expandFrom = Alignment.Top,
+                            animationSpec = tween(400)
+                        ) + fadeIn(animationSpec = tween(400))
+                    ) {
+                        SupportCard()
+                    }
 
                     // Patch options (only in Ready state)
                     if (phase is PatcherPhase.Ready) {
