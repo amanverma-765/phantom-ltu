@@ -214,12 +214,12 @@ fun SettingsScreen(
             SettingsGroup {
                 SettingsItem(
                     icon = Icons.Outlined.FavoriteBorder,
-                    title = "Buy me a coffee",
+                    title = "Sponsor",
                     subtitle = "Support the development",
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
-                            Uri.parse("https://buymeacoffee.com/amanverma765")
+                            Uri.parse("https://github.com/sponsors/amanverma-765")
                         )
                         context.startActivity(intent)
                     },
