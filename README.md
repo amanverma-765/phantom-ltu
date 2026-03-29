@@ -161,7 +161,7 @@ If PhantomLTU is useful to you, consider supporting its development:
   <img src="https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" />
 </a>
 &nbsp;
-<a href="https://rzp.io/rzp/64k9hKb">
+<a href="https://rzp.io/rzp/svtYsmV">
   <img src="https://img.shields.io/badge/Donate-Razorpay-0C68FF?style=for-the-badge&logo=razorpay&logoColor=white" alt="Razorpay" />
 </a>
 

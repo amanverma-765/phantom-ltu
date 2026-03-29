@@ -30,7 +30,7 @@ fun SupportCard(modifier: Modifier = Modifier) {
         onClick = {
             val intent = Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://rzp.io/rzp/64k9hKb")
+                Uri.parse("https://rzp.io/rzp/svtYsmV")
             )
             context.startActivity(intent)
         },
