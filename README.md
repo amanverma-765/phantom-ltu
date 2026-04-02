@@ -165,6 +165,19 @@ If PhantomLTU is useful to you, consider supporting its development:
   <img src="https://img.shields.io/badge/Donate-Razorpay-0C68FF?style=for-the-badge&logo=razorpay&logoColor=white" alt="Razorpay" />
 </a>
 
+## Credits
+
+PhantomLTU is built on the shoulders of several amazing open-source projects:
+
+| Project | Description |
+|---------|-------------|
+| [LSPosed](https://github.com/JingMatrix/LSPosed) | Xposed framework — the core method hooking engine powering runtime hooks |
+| [LSPatch](https://github.com/JingMatrix/LSPatch) | Rootless Xposed framework — APK-level module injection without root |
+| [libxposed](https://github.com/libxposed/api) | Modern Xposed API interfaces |
+| [Rikka](https://github.com/RikkaApps) | Suite of Android developer libraries (rikkax, hidden API bypass, autoresconfig) |
+| [apkzlib](https://android.googlesource.com/platform/tools/apkzlib/) | Google's APK manipulation library |
+| [Leaflet](https://leafletjs.com/) | Interactive map rendering |
+
 ## Disclaimer
 
 This application is provided strictly for **educational, software testing, and application development purposes only**.
