@@ -32,6 +32,7 @@ import com.navi.phantom.features.map.components.SearchSuggestionList
 import com.navi.phantom.features.map.logic.MapController
 import com.navi.phantom.features.map.logic.MapPickerUiEvent
 import com.navi.phantom.features.map.logic.MapPickerViewModel
+import com.navi.phantom.features.map.logic.RouteField
 import com.navi.phantom.features.map.logic.requestCurrentLocation
 import com.navi.phantom.features.permissions.RequestLocationAccess
 import com.navi.phantom.features.permissions.RequestLocationPermission
@@ -177,6 +178,7 @@ fun MapPickerScreen(
                 onMapReady = { controller ->
                     mapController = controller
                     isMapLoaded = true
+                    viewModel.setMapController(controller)
                 }
             )
 
@@ -186,13 +188,19 @@ fun MapPickerScreen(
             // Top bar - floating search bar
             MapTopBar(
                 onBackClick = onNavigateBack,
-                onQueryChange = { query ->
-                    viewModel.onEvent(MapPickerUiEvent.SearchLocation(query))
+                onQueryChange = { field, query ->
+                    viewModel.onEvent(MapPickerUiEvent.SearchLocation(query, field))
+                },
+                onFieldFocused = { field ->
+                    val query = if (field == RouteField.ORIGIN) uiState.originQuery else uiState.destQuery
+                    viewModel.onEvent(MapPickerUiEvent.SearchLocation(query, field))
                 },
                 onClearSearch = { viewModel.onEvent(MapPickerUiEvent.ClearSearch) },
                 isSearchMode = isSearchMode,
                 isSearching = uiState.isSearching,
                 onSearchModeChange = { isSearchMode = it },
+                routeDistanceText = uiState.routeDistanceText,
+                routeDurationText = uiState.routeDurationText,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
@@ -204,13 +212,12 @@ fun MapPickerScreen(
                 SearchSuggestionList(
                     suggestions = uiState.searchSuggestions,
                     onSuggestionClick = { placeId ->
-                        viewModel.onEvent(MapPickerUiEvent.SelectSearchResult(placeId))
-                        isSearchMode = false
+                        viewModel.onEvent(MapPickerUiEvent.SelectSearchResult(placeId, uiState.activeField))
                     },
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .statusBarsPadding()
-                        .padding(top = 72.dp)
+                        .padding(top = 128.dp)
                 )
             }
 

@@ -2,6 +2,8 @@ package com.navi.phantom.features.map.logic
 
 import com.navi.phantom.data.geocoding.SearchSuggestion
 
+enum class RouteField { ORIGIN, DEST }
+
 data class MapPickerUiState(
     val editingPlaceId: Long? = null,
     val selectedLatitude: Double? = null,
@@ -17,7 +19,14 @@ data class MapPickerUiState(
     val navigateToSearchResult: Boolean = false,
     val isSaving: Boolean = false,
     val saveError: String? = null,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val originQuery: String = "",
+    val destQuery: String = "",
+    val originLatLng: Pair<Double, Double>? = null,
+    val destLatLng: Pair<Double, Double>? = null,
+    val activeField: RouteField = RouteField.ORIGIN,
+    val routeDistanceText: String? = null,
+    val routeDurationText: String? = null
 ) {
     val isEditing: Boolean get() = editingPlaceId != null
     val hasSelection: Boolean get() = selectedLatitude != null && selectedLongitude != null

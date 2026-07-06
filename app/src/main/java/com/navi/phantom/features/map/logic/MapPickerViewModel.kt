@@ -8,6 +8,7 @@ import co.touchlab.kermit.Logger
 import com.navi.phantom.data.geocoding.CoordinateParser
 import com.navi.phantom.data.geocoding.GeocodingService
 import com.navi.phantom.data.geocoding.SearchSuggestion
+import com.navi.phantom.data.routing.RoutingService
 import com.navi.phantom.domain.model.Place
 import com.navi.phantom.domain.usecase.PlaceUseCase
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,8 @@ class MapPickerViewModel(
 
     private var geocodeJob: Job? = null
     private var searchJob: Job? = null
+    private var routeJob: Job? = null
+    private var mapController: MapController? = null
 
     fun onEvent(event: MapPickerUiEvent) {
         when (event) {
@@ -39,9 +42,10 @@ class MapPickerViewModel(
             is MapPickerUiEvent.UpdateCameraPosition -> updateCameraPosition(event.latitude, event.longitude)
             is MapPickerUiEvent.SelectLocation -> selectLocation(event.latitude, event.longitude)
             is MapPickerUiEvent.UpdatePlaceName -> updatePlaceName(event.name)
-            is MapPickerUiEvent.SearchLocation -> searchLocation(event.query)
-            is MapPickerUiEvent.SelectSearchResult -> selectSearchResult(event.placeId)
+            is MapPickerUiEvent.SearchLocation -> searchLocation(event.query, event.field)
+            is MapPickerUiEvent.SelectSearchResult -> selectSearchResult(event.placeId, event.field)
             is MapPickerUiEvent.ClearSearch -> clearSearch()
+            is MapPickerUiEvent.ClearRoute -> clearRoute()
             is MapPickerUiEvent.SavePlace -> savePlace()
             is MapPickerUiEvent.ResetSaveSuccess -> resetSaveSuccess()
         }
@@ -51,6 +55,10 @@ class MapPickerViewModel(
         _uiState.update {
             it.copy(accuracy = accuracy, currentLatitude = latitude, currentLongitude = longitude)
         }
+    }
+
+    fun setMapController(controller: MapController) {
+        mapController = controller
     }
 
     private fun loadPlace(placeId: Long) {
@@ -158,8 +166,15 @@ class MapPickerViewModel(
         }
     }
 
-    private fun searchLocation(query: String) {
+    private fun searchLocation(query: String, field: RouteField) {
         searchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                activeField = field,
+                originQuery = if (field == RouteField.ORIGIN) query else it.originQuery,
+                destQuery = if (field == RouteField.DEST) query else it.destQuery
+            )
+        }
         if (query.isBlank()) {
             _uiState.update { it.copy(searchSuggestions = emptyList(), isSearching = false) }
             return
@@ -219,7 +234,7 @@ class MapPickerViewModel(
         }
     }
 
-    private fun selectSearchResult(placeId: String) {
+    private fun selectSearchResult(placeId: String, field: RouteField) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, searchSuggestions = emptyList()) }
 
@@ -228,13 +243,20 @@ class MapPickerViewModel(
                     val parts = placeId.removePrefix("coord:").split(",")
                     val lat = parts[0].toDouble()
                     val lng = parts[1].toDouble()
-                    _uiState.update {
-                        it.copy(
-                            currentLatitude = lat,
-                            currentLongitude = lng,
-                            isSearching = false,
-                            navigateToSearchResult = true
-                        )
+                    if (field == RouteField.ORIGIN) {
+                        _uiState.update {
+                            it.copy(
+                                currentLatitude = lat,
+                                currentLongitude = lng,
+                                originLatLng = lat to lng,
+                                isSearching = false,
+                                navigateToSearchResult = true
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(destLatLng = lat to lng, isSearching = false)
+                        }
                     }
                 }
 
@@ -245,19 +267,54 @@ class MapPickerViewModel(
                 else -> {
                     val details = GeocodingService.getPlaceDetails(placeId)
                     if (details != null) {
-                        _uiState.update {
-                            it.copy(
-                                currentLatitude = details.latitude,
-                                currentLongitude = details.longitude,
-                                address = details.address,
-                                isSearching = false,
-                                navigateToSearchResult = true
-                            )
+                        if (field == RouteField.ORIGIN) {
+                            _uiState.update {
+                                it.copy(
+                                    currentLatitude = details.latitude,
+                                    currentLongitude = details.longitude,
+                                    address = details.address,
+                                    originLatLng = details.latitude to details.longitude,
+                                    isSearching = false,
+                                    navigateToSearchResult = true
+                                )
+                            }
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    destLatLng = details.latitude to details.longitude,
+                                    isSearching = false
+                                )
+                            }
                         }
                     } else {
                         _uiState.update { it.copy(isSearching = false) }
                     }
                 }
+            }
+
+            maybeComputeRoute()
+        }
+    }
+
+    private fun maybeComputeRoute() {
+        val state = _uiState.value
+        val origin = state.originLatLng
+        val dest = state.destLatLng
+        if (origin == null || dest == null) return
+
+        routeJob?.cancel()
+        routeJob = viewModelScope.launch {
+            val result = RoutingService.getRoute(origin.first, origin.second, dest.first, dest.second)
+            if (result != null) {
+                mapController?.drawRoute(result.points)
+                _uiState.update {
+                    it.copy(
+                        routeDistanceText = result.distanceText,
+                        routeDurationText = result.durationText
+                    )
+                }
+            } else {
+                log.d { "Route fetch failed for $origin -> $dest" }
             }
         }
     }
@@ -265,6 +322,21 @@ class MapPickerViewModel(
     private fun clearSearch() {
         searchJob?.cancel()
         _uiState.update { it.copy(searchSuggestions = emptyList(), isSearching = false, navigateToSearchResult = false) }
+    }
+
+    private fun clearRoute() {
+        routeJob?.cancel()
+        mapController?.clearRoute()
+        _uiState.update {
+            it.copy(
+                originQuery = "",
+                destQuery = "",
+                originLatLng = null,
+                destLatLng = null,
+                routeDistanceText = null,
+                routeDurationText = null
+            )
+        }
     }
 
     private fun resetSaveSuccess() {
