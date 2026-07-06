@@ -47,6 +47,8 @@
         streetsLayer.addTo(map);
         var isSatellite = false;
 
+        var routeLayer = L.layerGroup().addTo(map);
+
         // Bridge via prompt() — intercepted by WebChromeClient.onJsPrompt
         function bridge(msg) {
             window.prompt(msg);
@@ -89,6 +91,22 @@
                 }
                 isSatellite = enabled;
             }
+        }
+
+        function drawRoute(coordsJson) {
+            var coords = JSON.parse(coordsJson);
+            routeLayer.clearLayers();
+            if (!coords.length) return;
+
+            L.polyline(coords, { color: '#1a73e8', weight: 5, opacity: 0.85 }).addTo(routeLayer);
+            L.circleMarker(coords[0], { radius: 6, color: '#0f9d58', fillColor: '#0f9d58', fillOpacity: 1 }).addTo(routeLayer);
+            L.circleMarker(coords[coords.length - 1], { radius: 6, color: '#ea4335', fillColor: '#ea4335', fillOpacity: 1 }).addTo(routeLayer);
+
+            map.fitBounds(L.polyline(coords).getBounds(), { padding: [60, 60] });
+        }
+
+        function clearRoute() {
+            routeLayer.clearLayers();
         }
     </script>
 </body>

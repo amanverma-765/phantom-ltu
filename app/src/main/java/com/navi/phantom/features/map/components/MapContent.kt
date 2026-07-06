@@ -146,4 +146,13 @@ private class WebViewMapController : MapController {
     override fun animateCamera(latitude: Double, longitude: Double, zoom: Double) {
         runJs("animateCamera($latitude, $longitude, $zoom)")
     }
+
+    override fun drawRoute(points: List<Pair<Double, Double>>) {
+        val json = points.joinToString(prefix = "[", postfix = "]") { (lat, lng) -> "[$lat,$lng]" }
+        runJs("drawRoute('$json')")
+    }
+
+    override fun clearRoute() {
+        runJs("clearRoute()")
+    }
 }
