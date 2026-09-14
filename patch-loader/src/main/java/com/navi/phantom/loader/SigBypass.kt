@@ -9,56 +9,108 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.Base64
 import co.touchlab.kermit.Logger
+import com.navi.phantom.shared.Constants
+import com.navi.phantom.shared.Constants.ORIGINAL_APK_ASSET_PATH
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
+import org.json.JSONException
 import org.json.JSONObject
-import com.navi.phantom.shared.Constants
-import com.navi.phantom.shared.Constants.ORIGINAL_APK_ASSET_PATH
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.Collections
+import java.util.HashMap
 import java.util.zip.ZipFile
 
 object SigBypass {
 
     private val log = Logger.withTag("Phantom-SigBypass")
 
-    private val signatures = java.util.concurrent.ConcurrentHashMap<String, String>()
-    private const val NO_SIGNATURE = ""
+    // Synchronized: afterHookedMethod runs on arbitrary caller threads
+    private val signatures: MutableMap<String, String?> =
+        Collections.synchronizedMap(HashMap())
+
+    private fun getReplacement(context: Context, packageName: String): String? {
+        if (signatures.containsKey(packageName)) return signatures[packageName]
+        var replacement: String? = null
+        try {
+            val metaData = context.packageManager
+                .getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+                .metaData
+            val encoded = metaData?.getString("phantom") ?: metaData?.getString("lspatch")
+            if (encoded != null) {
+                val json = String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8)
+                try {
+                    val patchConfig = JSONObject(json)
+                    replacement = patchConfig.optString("originalSignature").takeIf { it.isNotEmpty() }
+                } catch (e: JSONException) {
+                    log.w(e) { "fail to get originalSignature" }
+                }
+            }
+        } catch (_: PackageManager.NameNotFoundException) {
+        } catch (_: RuntimeException) {
+        }
+        signatures[packageName] = replacement
+        return replacement
+    }
 
     private fun replaceSignature(context: Context, packageInfo: PackageInfo) {
-        val signingInfo = packageInfo.signingInfo ?: return
+        val hasSignature = (!packageInfo.signatures.isNullOrEmpty()) || packageInfo.signingInfo != null
+        if (!hasSignature) return
 
         val packageName = packageInfo.packageName
-        var replacement: String? = signatures[packageName]?.takeIf { it.isNotEmpty() }
+        val replacement = getReplacement(context, packageName) ?: return
+        val original = Signature(replacement)
 
-        if (replacement == null && !signatures.containsKey(packageName)) {
-            try {
-                val metaData = context.packageManager
-                    .getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-                    .metaData
-                val encoded = metaData?.getString("phantom")
-                if (encoded != null) {
-                    val json = String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8)
-                    try {
-                        val patchConfig = JSONObject(json)
-                        replacement = patchConfig.getString("originalSignature")
-                    } catch (e: Exception) {
-                        log.w(e) { "fail to get originalSignature" }
-                    }
-                }
-            } catch (e: PackageManager.NameNotFoundException) {
-                log.d { "Package not found: $packageName" }
+        // Every signer, not only the first.
+        val sigs = packageInfo.signatures
+        if (sigs != null && sigs.isNotEmpty()) {
+            log.d { "Replace signatures[] for `$packageName`" }
+            for (i in sigs.indices) {
+                sigs[i] = original
             }
-            signatures[packageName] = replacement ?: NO_SIGNATURE
         }
 
-        if (replacement != null) {
-            val signaturesArray = signingInfo.apkContentsSigners
-            if (signaturesArray != null && signaturesArray.isNotEmpty()) {
-                log.d { "Replace signature info for `$packageName`" }
-                signaturesArray[0] = Signature(replacement)
+        val signingInfo = packageInfo.signingInfo
+        if (signingInfo != null) {
+            log.d { "Replace signingInfo for `$packageName`" }
+            val signers = signingInfo.apkContentsSigners
+            if (signers != null) {
+                for (i in signers.indices) {
+                    signers[i] = original
+                }
             }
+            replaceSigningDetails(signingInfo, original)
+        }
+    }
+
+    /**
+     * Overwrites the signature array inside a SigningInfo's backing SigningDetails.
+     * Android 13+ uses android.content.pm.SigningDetails (field mSignatures),
+     * while Android 9-12 uses PackageParser$SigningDetails (field signatures).
+     */
+    private fun replaceSigningDetails(signingInfo: Any, original: Signature) {
+        try {
+            val details = XposedHelpers.getObjectField(signingInfo, "mSigningDetails") ?: return
+            for (fieldName in arrayOf("mSignatures", "signatures")) {
+                try {
+                    val current = XposedHelpers.getObjectField(details, fieldName)
+                    if (current is Array<*>) {
+                        val len = maxOf(current.size, 1)
+                        @Suppress("UNCHECKED_CAST")
+                        val replaced = java.lang.reflect.Array.newInstance(Signature::class.java, len) as Array<Signature>
+                        for (i in 0 until len) {
+                            replaced[i] = original
+                        }
+                        XposedHelpers.setObjectField(details, fieldName, replaced)
+                        return
+                    }
+                } catch (_: Throwable) {
+                }
+            }
+        } catch (t: Throwable) {
+            log.d { "replaceSigningDetails skipped: ${t.message}" }
         }
     }
 
@@ -112,50 +164,75 @@ object SigBypass {
         }
     }
 
-    @JvmStatic
-    @Throws(IOException::class)
-    fun doSigBypass(context: Context, sigBypassLevel: Int) {
-        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM) {
-            hookPackageParser(context)
-            proxyPackageInfoCreator(context)
-            hookHasSigningCertificate(context)
-            hookCheckSignatures(context)
-        }
-        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT) {
-            val cacheApkPath = ZipFile(context.packageResourcePath).use { sourceFile ->
-                val entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH)
-                    ?: throw IOException("Original APK asset not found in patched APK")
-                "${context.cacheDir}/phantom/origin/${entry.crc}.apk"
-            }
-            org.lsposed.lspd.nativebridge.SigBypass.enableOpenatHook(context.packageResourcePath, cacheApkPath)
+    /**
+     * Spoofs the app-local getPackageInfo path on ApplicationPackageManager.
+     */
+    private fun hookApplicationPackageManager(context: Context) {
+        try {
+            val apm = Class.forName("android.app.ApplicationPackageManager")
+            XposedBridge.hookAllMethods(apm, "getPackageInfo", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam<*>) {
+                    val info = param.result as? PackageInfo ?: return
+                    replaceSignature(context, info)
+                }
+            })
+        } catch (t: Throwable) {
+            log.d { "hookApplicationPackageManager skipped: ${t.message}" }
         }
     }
 
     /**
-     * Hook PackageManager.hasSigningCertificate(String, byte[], int) (API 28+).
-     * Compares against the original signature so the app's own cert check passes.
+     * Spoofs in-process archive parsing via PackageManager.getPackageArchiveInfo.
      */
-    private fun hookHasSigningCertificate(context: Context) {
+    private fun hookPackageArchiveInfo(context: Context) {
         try {
-            XposedHelpers.findAndHookMethod(
-                "android.app.ApplicationPackageManager", null,
-                "hasSigningCertificate",
-                String::class.java, ByteArray::class.java, Int::class.javaPrimitiveType,
-                object : XC_MethodHook() {
-                    override fun beforeHookedMethod(param: MethodHookParam<*>) {
-                        val queriedPackage = param.args[0] as? String ?: return
-                        val certBytes = param.args[1] as? ByteArray ?: return
-                        val originalSig = getOriginalSignature(context, queriedPackage) ?: return
+            XposedBridge.hookAllMethods(PackageManager::class.java, "getPackageArchiveInfo", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam<*>) {
+                    val info = param.result as? PackageInfo ?: return
+                    replaceSignature(context, info)
+                }
+            })
+        } catch (t: Throwable) {
+            log.d { "hookPackageArchiveInfo skipped: ${t.message}" }
+        }
+    }
 
-                        // Convert stored hex signature to byte array for comparison
-                        val originalBytes = Signature(originalSig).toByteArray()
-                        param.result = originalBytes.contentEquals(certBytes)
+    /**
+     * Hook PackageManager.hasSigningCertificate (API 28+).
+     * Supports both (String, byte[], int) and (int, byte[], int) overloads,
+     * comparing against raw X509 and SHA-256 certificate hashes.
+     */
+    private fun hookSigningCertificateCheck(context: Context) {
+        try {
+            val apm = Class.forName("android.app.ApplicationPackageManager")
+            XposedBridge.hookAllMethods(apm, "hasSigningCertificate", object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam<*>) {
+                    if (param.result == true) return
+                    val args = param.args ?: return
+                    var presented: ByteArray? = null
+                    var type = 0 // CERT_INPUT_RAW_X509
+                    var pkg: String? = null
+                    for (a in args) {
+                        when (a) {
+                            is ByteArray -> presented = a
+                            is String -> pkg = a
+                            is Int -> type = a
+                        }
+                    }
+                    if (presented == null) return
+                    val self = context.packageName
+                    if (pkg != null && pkg != self) return
+                    val replacement = signatures[self] ?: return
+                    val original = Signature(replacement).toByteArray()
+                    val expected = if (type == 1 /* CERT_INPUT_SHA256 */) sha256(original) else original
+                    if (expected != null && MessageDigest.isEqual(expected, presented)) {
+                        log.d { "hasSigningCertificate spoofed true for `$self`" }
+                        param.result = true
                     }
                 }
-            )
-            log.d { "Hooked hasSigningCertificate" }
+            })
         } catch (t: Throwable) {
-            log.w(t) { "Failed to hook hasSigningCertificate" }
+            log.d { "hookSigningCertificateCheck skipped: ${t.message}" }
         }
     }
 
@@ -182,9 +259,8 @@ object SigBypass {
                     }
                 }
             )
-            log.d { "Hooked checkSignatures(String, String)" }
         } catch (t: Throwable) {
-            log.w(t) { "Failed to hook checkSignatures(String, String)" }
+            log.d { "Failed to hook checkSignatures(String, String): ${t.message}" }
         }
 
         // checkSignatures(int, int)
@@ -204,38 +280,43 @@ object SigBypass {
                     }
                 }
             )
-            log.d { "Hooked checkSignatures(int, int)" }
         } catch (t: Throwable) {
-            log.w(t) { "Failed to hook checkSignatures(int, int)" }
+            log.d { "Failed to hook checkSignatures(int, int): ${t.message}" }
         }
     }
 
-    /**
-     * Retrieves the original signature hex string for the given package.
-     * Uses the cached signatures map.
-     */
-    private fun getOriginalSignature(context: Context, packageName: String): String? {
-        signatures[packageName]?.takeIf { it.isNotEmpty() }?.let { return it }
-        if (signatures.containsKey(packageName)) return null
-
+    private fun sha256(input: ByteArray): ByteArray? {
         return try {
-            val metaData = context.packageManager
-                .getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-                .metaData
-            val encoded = metaData?.getString("phantom")
-            if (encoded != null) {
-                val json = String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8)
-                val patchConfig = JSONObject(json)
-                val sig: String? = patchConfig.optString("originalSignature").takeIf { it.isNotEmpty() }
-                signatures[packageName] = sig ?: NO_SIGNATURE
-                sig
-            } else {
-                signatures[packageName] = NO_SIGNATURE
-                null
-            }
-        } catch (e: Exception) {
-            signatures[packageName] = NO_SIGNATURE
+            MessageDigest.getInstance("SHA-256").digest(input)
+        } catch (_: Throwable) {
             null
+        }
+    }
+
+    @JvmStatic
+    @Throws(IOException::class)
+    fun doSigBypass(context: Context, sigBypassLevel: Int) {
+        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM) {
+            // Prime cache so hasSigningCertificate has the original on hand from the first call
+            getReplacement(context, context.packageName)
+            hookPackageParser(context)
+            proxyPackageInfoCreator(context)
+            hookApplicationPackageManager(context)
+            hookPackageArchiveInfo(context)
+            hookSigningCertificateCheck(context)
+            hookCheckSignatures(context)
+        }
+        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT) {
+            val cacheApkPath = ZipFile(context.packageResourcePath).use { sourceFile ->
+                val entry = sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH)
+                    ?: throw IOException("Original APK asset not found in patched APK")
+                "${context.cacheDir}/phantom/origin/${entry.crc}.apk"
+            }
+            org.lsposed.lspd.nativebridge.SigBypass.enableOpenatHook(context.packageResourcePath, cacheApkPath)
+        }
+        if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM_OPENAT_SVC) {
+            // Reuses the apk paths enableOpenatHook just recorded; must run after it
+            org.lsposed.lspd.nativebridge.SigBypass.enableSvcRedirect()
         }
     }
 }

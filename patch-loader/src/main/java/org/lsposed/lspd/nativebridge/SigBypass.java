@@ -12,4 +12,9 @@ public class SigBypass {
      * @param cacheApkPath Path to the cached original APK to redirect to
      */
     public static native void enableOpenatHook(String origApkPath, String cacheApkPath);
+
+    /**
+     * Enables raw-syscall `svc` instruction redirection for arm64 APK file reads.
+     */
+    public static native void enableSvcRedirect();
 }
