@@ -28,7 +28,9 @@ object Constants {
     const val SIGBYPASS_LV_DISABLE = 0
     const val SIGBYPASS_LV_PM = 1
     const val SIGBYPASS_LV_PM_OPENAT = 2
-    const val SIGBYPASS_LV_MAX = 3
+    // Level 3 adds raw-syscall coverage: instruments inline `svc` in arm64 native libraries
+    const val SIGBYPASS_LV_PM_OPENAT_SVC = 3
+    const val SIGBYPASS_LV_MAX = 4
 
     // Installation Timeouts (milliseconds)
     const val INSTALL_TIMEOUT_MS = 120_000L

@@ -155,7 +155,7 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
 
         val bundleFile = File(
             outputDir,
-            String.format(Locale.getDefault(), "%s-%d%s", packageName, versionCode, Constants.PATCH_BUNDLE_SUFFIX)
+            String.format(Locale.ROOT, "%s-%d%s", packageName, versionCode, Constants.PATCH_BUNDLE_SUFFIX)
         )
 
         log.d { "Creating bundle: ${bundleFile.name}" }
@@ -172,8 +172,21 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
             args.add("-l")
             args.add(options.sigbypassLevel.toString())
         }
-        if (options.overrideVersionCode) args.add("-r")
+        if (options.versionCodeOverride != null) {
+            args.add("--version-code")
+            args.add(options.versionCodeOverride.toString())
+        } else if (options.overrideVersionCode) {
+            args.add("-r")
+        }
         if (options.injectDex) args.add("--injectdex")
+        for (perm in options.addedPermissions) {
+            args.add("--add-permission")
+            args.add(perm)
+        }
+        if (options.managerPackageName != null) {
+            args.add("--manager-package")
+            args.add(options.managerPackageName)
+        }
         args.addAll(listOf("--manager-apk", managerApkPath))
         args.add("-f")
         args.add("placeholder")

@@ -27,4 +27,5 @@ dependencies {
     implementation(phantom.beust.jcommander)
     implementation(phantom.kermit)
     implementation(phantom.kotlinx.serialization.json)
+    testImplementation(phantom.junit)
 }

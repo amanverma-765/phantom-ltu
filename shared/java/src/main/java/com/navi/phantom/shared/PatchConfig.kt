@@ -11,6 +11,9 @@ data class PatchConfig(
     val originalSignature: String?,
     val appComponentFactory: String?,
     val managerApkPath: String? = null,
+    val addedPermissions: List<String>? = null,
+    val versionCodeOverride: Int? = null,
+    val managerPackageName: String? = null,
     @Transient
     val lspConfig: LSPConfig = LSPConfig.instance
 )

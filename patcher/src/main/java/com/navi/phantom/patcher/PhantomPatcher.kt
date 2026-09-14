@@ -74,7 +74,7 @@ class PhantomPatcher(args: Array<String>) {
     @Parameter(names = ["-d", "--debuggable"], description = "Set app to be debuggable")
     private var debuggableFlag = false
 
-    @Parameter(names = ["-l", "--sigbypasslv"], description = "Signature bypass level. 0 (disable), 1 (pm), 2 (pm+openat). default 0")
+    @Parameter(names = ["-l", "--sigbypasslv"], description = "Signature bypass level. 0 (disable), 1 (pm), 2 (pm+openat), 3 (pm+openat+svc). default 0")
     private var sigbypassLevel = 0
 
     @Parameter(names = ["--injectdex"], description = "Inject directly the loader dex file into the original application package")
@@ -85,6 +85,15 @@ class PhantomPatcher(args: Array<String>) {
 
     @Parameter(names = ["-r", "--allowdown"], description = "Allow downgrade installation by overriding versionCode to 1 (In most cases, the app can still get the correct versionCode)")
     private var overrideVersionCode = false
+
+    @Parameter(names = ["--version-code"], description = "Set the patched app's versionCode to this value (e.g. 1, so a later build can be installed over it)")
+    private var versionCodeOverride: Int? = null
+
+    @Parameter(names = ["--add-permission"], description = "Add a <uses-permission> to the manifest (repeatable). A bare name is prefixed with android.permission.")
+    private var addedPermissions: MutableList<String> = mutableListOf()
+
+    @Parameter(names = ["--manager-package"], description = "The manager package a manager-mode app binds to at runtime")
+    private var managerPackageName: String? = null
 
     @Parameter(names = ["--manager-apk"], description = "Manager APK path to embed in config")
     private var managerApkPath: String? = null
@@ -149,7 +158,7 @@ class PhantomPatcher(args: Array<String>) {
             val outputFile = File(
                 outputDir,
                 String.format(
-                    Locale.getDefault(),
+                    Locale.ROOT,
                     "%s-%d%s",
                     FilenameUtils.getBaseName(apkFileName),
                     LSPConfig.instance.VERSION_CODE,
@@ -190,7 +199,7 @@ class PhantomPatcher(args: Array<String>) {
             val bundleFile = File(
                 outputDir,
                 String.format(
-                    Locale.getDefault(),
+                    Locale.ROOT,
                     "%s-%d%s",
                     bundleName,
                     LSPConfig.instance.VERSION_CODE,
@@ -285,14 +294,15 @@ class PhantomPatcher(args: Array<String>) {
                 log.d { "original minSdkVersion: $minSdkVersion" }
             }
 
+            val effectiveVersionCode = versionCodeOverride ?: if (overrideVersionCode) 1 else null
             val skipSplit = apkPaths.size > 1 && srcApkFile.name.startsWith("split_") && appComponentFactory == null
             if (skipSplit) {
                 log.i { "Packing split apk..." }
 
-                if (overrideVersionCode) {
-                    log.d { "Updating split apk versionCode to 1" }
+                if (effectiveVersionCode != null) {
+                    log.d { "Updating split apk versionCode to $effectiveVersionCode" }
                     val property = ModificationProperty()
-                    property.addManifestAttribute(AttributeItem(NodeValue.Manifest.VERSION_CODE, 1))
+                    property.addManifestAttribute(AttributeItem(NodeValue.Manifest.VERSION_CODE, effectiveVersionCode))
                     val os = ByteArrayOutputStream()
                     ManifestEditor(manifestEntry.open(), os, property).processManifest()
                     os.flush()
@@ -314,19 +324,27 @@ class PhantomPatcher(args: Array<String>) {
             log.i { "Patching apk..." }
             onProgress?.onProgress("MODIFY_MANIFEST", "Injecting component factory")
 
+            val normalizedPermissions = addedPermissions.mapNotNull {
+                val n = normalizePermission(it)
+                if (n.isNotEmpty()) n else null
+            }.distinct()
+
             val config = PatchConfig(
-                debuggableFlag,
-                overrideVersionCode,
-                sigbypassLevel,
-                originalSignature,
-                appComponentFactory,
-                managerApkPath
+                debuggable = debuggableFlag,
+                overrideVersionCode = overrideVersionCode || versionCodeOverride != null,
+                sigBypassLevel = sigbypassLevel,
+                originalSignature = originalSignature,
+                appComponentFactory = appComponentFactory,
+                managerApkPath = managerApkPath,
+                addedPermissions = if (normalizedPermissions.isNotEmpty()) normalizedPermissions else null,
+                versionCodeOverride = effectiveVersionCode,
+                managerPackageName = managerPackageName
             )
             val configBytes = Json.encodeToString(config).toByteArray(StandardCharsets.UTF_8)
             val metadata = Base64.getEncoder().encodeToString(configBytes)
 
             try {
-                ByteArrayInputStream(modifyManifestFile(manifestEntry.open(), metadata, minSdkVersion)).use { inputStream ->
+                ByteArrayInputStream(modifyManifestFile(manifestEntry.open(), metadata, minSdkVersion, effectiveVersionCode, normalizedPermissions)).use { inputStream ->
                     dstZFile.add(ANDROID_MANIFEST_XML, inputStream)
                 }
             } catch (e: Throwable) {
@@ -385,11 +403,17 @@ class PhantomPatcher(args: Array<String>) {
     }
 
     @Throws(IOException::class)
-    private fun modifyManifestFile(inputStream: InputStream, metadata: String, minSdkVersion: Int): ByteArray {
+    private fun modifyManifestFile(
+        inputStream: InputStream,
+        metadata: String,
+        minSdkVersion: Int,
+        targetVersionCode: Int?,
+        permissionsToAdd: List<String>
+    ): ByteArray {
         val property = ModificationProperty()
 
-        if (overrideVersionCode) {
-            property.addManifestAttribute(AttributeItem(NodeValue.Manifest.VERSION_CODE, 1))
+        if (targetVersionCode != null) {
+            property.addManifestAttribute(AttributeItem(NodeValue.Manifest.VERSION_CODE, targetVersionCode))
         }
         if (minSdkVersion < 28) {
             property.addUsesSdkAttribute(AttributeItem(NodeValue.UsesSDK.MIN_SDK_VERSION, 28))
@@ -398,6 +422,10 @@ class PhantomPatcher(args: Array<String>) {
         property.addApplicationAttribute(AttributeItem("appComponentFactory", PROXY_APP_COMPONENT_FACTORY))
         property.addMetaData(ModificationProperty.MetaData("phantom", metadata))
         property.addUsesPermission("android.permission.QUERY_ALL_PACKAGES")
+        for (perm in permissionsToAdd) {
+            log.i { "Add permission: $perm" }
+            property.addUsesPermission(perm)
+        }
 
         return inputStream.use { input ->
             ByteArrayOutputStream().use { os ->
@@ -410,12 +438,27 @@ class PhantomPatcher(args: Array<String>) {
     companion object {
         private const val ANDROID_MANIFEST_XML = "AndroidManifest.xml"
 
+        /**
+         * Page-aligned entries.
+         *
+         * The native library and the nested original both have to be mappable straight out of the apk.
+         * Using 16 KiB (16384) boundary ensures compatibility with Android 15+ 16KB page size devices
+         * as well as standard 4KB page devices.
+         */
         private val Z_FILE_OPTIONS = ZFileOptions().setAlignmentRule(
             AlignmentRules.compose(
-                AlignmentRules.constantForSuffix(".so", 4096),
-                AlignmentRules.constantForSuffix(ORIGINAL_APK_ASSET_PATH, 4096)
+                AlignmentRules.constantForSuffix(".so", 16384),
+                AlignmentRules.constantForSuffix(ORIGINAL_APK_ASSET_PATH, 16384)
             )
         )
+
+        fun normalizePermission(raw: String?): String {
+            if (raw.isNullOrBlank()) return ""
+            val trimmed = raw.trim()
+            if (trimmed.isEmpty()) return ""
+            if (trimmed.indexOf('.') >= 0) return trimmed
+            return "android.permission." + trimmed.uppercase(Locale.ROOT)
+        }
 
         @JvmStatic
         @Throws(IOException::class)
