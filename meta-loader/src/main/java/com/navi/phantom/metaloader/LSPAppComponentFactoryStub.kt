@@ -42,9 +42,21 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
             }
         }
 
+        @Volatile
+        private var loaded = false
+
         private fun bootstrap() {
+            if (loaded) return
             try {
                 bootstrapInternal()
+                loaded = true
+            } catch (e: UnsatisfiedLinkError) {
+                if (e.message?.contains("already opened by ClassLoader") == true) {
+                    log.i { "Native library libphantom.so already opened by ClassLoader, continuing: ${e.message}" }
+                    loaded = true
+                } else {
+                    throw ExceptionInInitializerError(e)
+                }
             } catch (e: Throwable) {
                 throw ExceptionInInitializerError(e)
             }
@@ -63,7 +75,7 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
 
             ZipFile(File(managerApkPath)).use { zip ->
                 val entry = requireNotNull(zip.getEntry(Constants.LOADER_DEX_ASSET_PATH)) {
-                    "Loader DEX not found in manager APK"
+                    "Loader DEX not found in manager APK ($managerApkPath)"
                 }
                 zip.getInputStream(entry).use { input ->
                     ByteArrayOutputStream().use { output ->
@@ -73,62 +85,101 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
                 }
             }
             val soPath = "$managerApkPath!/assets/phantom/so/$libName/libphantom.so"
-            System.load(soPath)
+            try {
+                System.load(soPath)
+            } catch (e: UnsatisfiedLinkError) {
+                if (e.message?.contains("already opened by ClassLoader") == true) {
+                    log.i { "libphantom.so already resident in process namespace: ${e.message}" }
+                } else {
+                    throw e
+                }
+            }
         }
 
         /**
          * Find the manager APK path using a 3-tier fallback:
          * 1. Embedded path from patch config (fastest, works on all OEMs)
          * 2. Filesystem scan of /data/app/ (bypasses AppsFilter)
-         * 3. IPackageManager query (may fail on first launch)
+         * 3. IPackageManager query
          */
         private fun findManagerApk(): String {
+            val (embeddedPath, recordedPkg) = readConfigDetails()
+
             // 1. Try embedded path from config
-            readManagerApkPathFromConfig()?.let { path ->
-                if (File(path).exists()) {
-                    log.d { "Found manager APK via config" }
-                    return path
-                }
-                log.d { "Config path exists but file not found: $path" }
+            if (embeddedPath != null && File(embeddedPath).exists() && carriesLoader(embeddedPath)) {
+                log.d { "Found manager APK via config" }
+                return embeddedPath
+            }
+
+            val candidates = if (recordedPkg != null && recordedPkg != Constants.MANAGER_PACKAGE_NAME) {
+                listOf(recordedPkg, Constants.MANAGER_PACKAGE_NAME)
+            } else {
+                listOf(Constants.MANAGER_PACKAGE_NAME)
             }
 
             // 2. Try filesystem scan
-            findManagerApkFromFilesystem()?.let { path ->
-                log.d { "Found manager APK via filesystem" }
-                return path
+            for (pkg in candidates) {
+                findManagerApkFromFilesystem(pkg)?.let { path ->
+                    if (carriesLoader(path)) {
+                        log.d { "Found manager APK via filesystem: $path" }
+                        return path
+                    }
+                }
             }
 
             // 3. Fallback to IPackageManager
-            log.d { "Trying IPackageManager fallback" }
-            return getManagerApkFromPackageManager()
+            for (pkg in candidates) {
+                getManagerApkFromPackageManager(pkg)?.let { path ->
+                    if (carriesLoader(path)) {
+                        log.d { "Found manager APK via IPackageManager: $path" }
+                        return path
+                    }
+                }
+            }
+
+            throw IllegalStateException(
+                "No installed Phantom manager carries the loader (tried ${candidates.joinToString()}); re-patch this app or reinstall the manager"
+            )
+        }
+
+        private fun carriesLoader(sourceDir: String): Boolean {
+            return try {
+                ZipFile(File(sourceDir)).use { zip ->
+                    zip.getEntry(Constants.LOADER_DEX_ASSET_PATH) != null
+                }
+            } catch (_: Throwable) {
+                false
+            }
         }
 
         /**
-         * Read managerApkPath from the embedded config.json in the patched APK.
+         * Read managerApkPath and managerPackageName from embedded config.json.
          */
-        private fun readManagerApkPathFromConfig(): String? {
+        private fun readConfigDetails(): Pair<String?, String?> {
             return try {
-                val cl = LSPAppComponentFactoryStub::class.java.classLoader ?: return null
+                val cl = LSPAppComponentFactoryStub::class.java.classLoader ?: return null to null
                 cl.getResourceAsStream(Constants.CONFIG_ASSET_PATH)?.use { stream ->
                     val json = JSONObject(stream.bufferedReader(StandardCharsets.UTF_8).readText())
-                    json.optString("managerApkPath").takeIf { it.isNotEmpty() }
-                }
+                    val path = json.optString("managerApkPath").takeIf { it.isNotEmpty() }
+                    val pkg = json.optString("managerPackageName").takeIf { it.isNotEmpty() }
+                    path to pkg
+                } ?: (null to null)
             } catch (_: Exception) {
-                null
+                null to null
             }
         }
 
         /**
          * Scan /data/app/ for the manager package directory.
          */
-        private fun findManagerApkFromFilesystem(): String? {
+        private fun findManagerApkFromFilesystem(packageName: String): String? {
             return try {
                 val dataApp = File("/data/app")
                 if (!dataApp.exists()) return null
 
                 dataApp.listFiles()?.forEach { randomDir ->
                     randomDir.listFiles()?.forEach { pkgDir ->
-                        if (pkgDir.name.startsWith(Constants.MANAGER_PACKAGE_NAME)) {
+                        if (pkgDir.name.startsWith(packageName)) {
                             val baseApk = File(pkgDir, "base.apk")
                             if (baseApk.exists()) return baseApk.absolutePath
                         }
@@ -143,17 +194,21 @@ class LSPAppComponentFactoryStub : AppComponentFactory() {
         /**
          * Query IPackageManager for the manager's ApplicationInfo.
          */
-        private fun getManagerApkFromPackageManager(): String {
-            val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"))
-            val manager: ApplicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                HiddenApiBypass.invoke(
-                    IPackageManager::class.java, ipm, "getApplicationInfo",
-                    Constants.MANAGER_PACKAGE_NAME, 0L, Process.myUid() / 100000
-                ) as ApplicationInfo
-            } else {
-                ipm.getApplicationInfo(Constants.MANAGER_PACKAGE_NAME, 0, Process.myUid() / 100000)
+        private fun getManagerApkFromPackageManager(packageName: String): String? {
+            return try {
+                val ipm = IPackageManager.Stub.asInterface(ServiceManager.getService("package")) ?: return null
+                val manager: ApplicationInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    HiddenApiBypass.invoke(
+                        IPackageManager::class.java, ipm, "getApplicationInfo",
+                        packageName, 0L, Process.myUid() / 100000
+                    ) as? ApplicationInfo
+                } else {
+                    ipm.getApplicationInfo(packageName, 0, Process.myUid() / 100000)
+                }
+                manager?.sourceDir
+            } catch (_: Throwable) {
+                null
             }
-            return manager.sourceDir
         }
     }
 }

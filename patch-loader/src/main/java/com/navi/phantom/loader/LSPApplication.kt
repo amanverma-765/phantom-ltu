@@ -26,6 +26,7 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 import java.util.function.BiConsumer
 import java.util.zip.ZipFile
@@ -80,9 +81,7 @@ object LSPApplication {
         LSPLoader.initModules(appLoadedApk)
         log.i { "Modules initialized" }
 
-        switchAllClassLoader()
-
-        // Apply bypasses in dependency order:
+        // Apply bypasses in dependency order BEFORE the target's class loader and AppComponentFactory <clinit> run:
         // 1. Exit protection first — prevents System.exit() during subsequent hook setup
         ExitBypass.apply()
 
@@ -90,29 +89,40 @@ object LSPApplication {
         DeveloperOptionsBypass.apply()
         DebuggableBypass.apply(context)
 
-        // 3. Signature bypass — must be correct before any integrity check
+        // 3. Signature bypass — must be active before any integrity/tamper check runs in <clinit>
         SigBypass.doSigBypass(context, config.optInt("sigBypassLevel"))
 
-        // 3. Installer source spoofing — needed before PairIP's local installer check
+        // 4. Installer source spoofing — needed before PairIP's local installer check
         if (config.optInt("sigBypassLevel") > 0) {
             InstallerBypass.apply(context)
         }
 
-        // 4. PairIP bypass — probing com.pairip.* may trigger class init
-        PairIpBypass.apply(appLoadedApk.classLoader)
-
-        // 5. Hide Xposed framework classes from app detection
-        XposedHidingBypass.apply(appLoadedApk.classLoader)
+        // 5. Hide Xposed framework classes and bypass PairIP
+        PairIpBypass.apply(stubLoadedApk.classLoader)
+        XposedHidingBypass.apply(stubLoadedApk.classLoader)
 
         // 6. Location spoofing hooks
         LocationManagerHook.apply()
-        FusedLocationHook.apply(appLoadedApk.classLoader)
         LocationHook.apply()
 
         // 7. Network location blocking
         GnssStatusHook.apply()
         WifiHook.apply()
         TelephonyHook.apply()
+
+        // Now that hooks, bypasses, and signature spoofing are armed, realize the target's class loader
+        // (which triggers onPackageLoaded, AppComponentFactory <clinit>, and class loader creation under the spoof)
+        realizeLoadedApk()
+
+        switchAllClassLoader()
+
+        // Re-apply loader-specific hooks on appLoadedApk's classloader
+        val appClassLoader = appLoadedApk.classLoader
+        if (appClassLoader != null) {
+            PairIpBypass.apply(appClassLoader)
+            XposedHidingBypass.apply(appClassLoader)
+            FusedLocationHook.apply(appClassLoader)
+        }
 
         log.i { "Phantom bootstrap completed" }
     }
@@ -141,16 +151,27 @@ object LSPApplication {
 
             appInfo.sourceDir = cacheApkPath.toString()
             appInfo.publicSourceDir = cacheApkPath.toString()
-            if (config.has("appComponentFactory")) {
+            if (config.has("appComponentFactory") && config.optString("appComponentFactory").isNotEmpty()) {
                 appInfo.appComponentFactory = config.optString("appComponentFactory")
+            } else {
+                // If original app declared no AppComponentFactory, clear it so the classloader
+                // is not built against the metaloader stub which original APK does not contain
+                appInfo.appComponentFactory = null
             }
 
             if (!Files.exists(cacheApkPath)) {
                 log.i { "Extract original apk" }
                 FileUtils.deleteFolderIfExists(originPath)
                 Files.createDirectories(originPath)
-                baseClassLoader.getResourceAsStream(ORIGINAL_APK_ASSET_PATH).use { inputStream ->
-                    Files.copy(inputStream, cacheApkPath)
+                val tempApkPath = originPath.resolve("${cacheApkPath.fileName}.tmp")
+                try {
+                    baseClassLoader.getResourceAsStream(ORIGINAL_APK_ASSET_PATH).use { inputStream ->
+                        Files.copy(inputStream, tempApkPath, StandardCopyOption.REPLACE_EXISTING)
+                    }
+                    Files.move(tempApkPath, cacheApkPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                } catch (e: Exception) {
+                    Files.deleteIfExists(tempApkPath)
+                    throw e
                 }
             }
             cacheApkPath.toFile().setWritable(false)
@@ -161,32 +182,6 @@ object LSPApplication {
             appLoadedApk = activityThread.getPackageInfoNoCheck(appInfo, compatInfo)
             XposedHelpers.setObjectField(mBoundApplication, "info", appLoadedApk)
 
-            val activityClientRecordClass = XposedHelpers.findClass(
-                $$"android.app.ActivityThread$ActivityClientRecord",
-                ActivityThread::class.java.classLoader
-            )
-            val fixActivityClientRecord = BiConsumer<Any?, Any?> { _, v ->
-                if (activityClientRecordClass.isInstance(v)) {
-                    val pkgInfo = XposedHelpers.getObjectField(v, "packageInfo")
-                    if (pkgInfo === stubLoadedApk) {
-                        log.d { "fix loadedapk from ActivityClientRecord" }
-                        XposedHelpers.setObjectField(v, "packageInfo", appLoadedApk)
-                    }
-                }
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            val mActivities = XposedHelpers.getObjectField(activityThread, "mActivities") as Map<Any?, Any?>
-            mActivities.forEach(fixActivityClientRecord)
-
-            runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    @Suppress("UNCHECKED_CAST")
-                    val mLaunchingActivities = XposedHelpers.getObjectField(activityThread, "mLaunchingActivities") as Map<Any?, Any?>
-                    mLaunchingActivities.forEach(fixActivityClientRecord)
-                }
-            }
-
             log.i { "hooked app initialized: $appLoadedApk" }
 
             val context = XposedHelpers.callStaticMethod(
@@ -196,20 +191,44 @@ object LSPApplication {
                 stubLoadedApk
             ) as Context
 
-            if (config.has("appComponentFactory")) {
-                runCatching {
-                    context.classLoader.loadClass(appInfo.appComponentFactory)
-                }.onFailure {
-                    // This will happen on some strange shells like 360
-                    log.w { "Original AppComponentFactory not found: ${appInfo.appComponentFactory}" }
-                    appInfo.appComponentFactory = null
-                }
-            }
-
             context
         } catch (e: Exception) {
             log.e(e) { "createLoadedApk failed" }
             null
+        }
+    }
+
+    /**
+     * Builds the target app's class loader now that all bypasses and hooks are armed,
+     * and repoints ActivityClientRecord references.
+     */
+    private fun realizeLoadedApk() {
+        appLoadedApk.classLoader
+
+        val activityClientRecordClass = XposedHelpers.findClass(
+            "android.app.ActivityThread\$ActivityClientRecord",
+            ActivityThread::class.java.classLoader
+        )
+        val fixActivityClientRecord = BiConsumer<Any?, Any?> { _, v ->
+            if (activityClientRecordClass.isInstance(v)) {
+                val pkgInfo = XposedHelpers.getObjectField(v, "packageInfo")
+                if (pkgInfo === stubLoadedApk) {
+                    log.d { "fix loadedapk from ActivityClientRecord" }
+                    XposedHelpers.setObjectField(v, "packageInfo", appLoadedApk)
+                }
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val mActivities = XposedHelpers.getObjectField(activityThread, "mActivities") as Map<Any?, Any?>
+        mActivities.forEach(fixActivityClientRecord)
+
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                @Suppress("UNCHECKED_CAST")
+                val mLaunchingActivities = XposedHelpers.getObjectField(activityThread, "mLaunchingActivities") as Map<Any?, Any?>
+                mLaunchingActivities.forEach(fixActivityClientRecord)
+            }
         }
     }
 
@@ -225,15 +244,17 @@ object LSPApplication {
         appInfo.splitSourceDirs?.let { codePaths.addAll(it) }
 
         if (codePaths.isEmpty()) {
-            // If there are no code paths there's no need to setup a profile file and register with
-            // the runtime,
             return
         }
 
-        val profileDir = HiddenApiBridge.Environment_getDataProfilesDePackageDirectory(
-            appInfo.uid / PER_USER_RANGE,
-            pkgName
-        )
+        val profileDir = runCatching {
+            HiddenApiBridge.Environment_getDataProfilesDePackageDirectory(
+                appInfo.uid / PER_USER_RANGE,
+                pkgName
+            )
+        }.getOrElse {
+            File("/data/misc/profiles/cur/" + (appInfo.uid / PER_USER_RANGE) + "/" + pkgName)
+        }
 
         val attrs = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("r--------"))
 

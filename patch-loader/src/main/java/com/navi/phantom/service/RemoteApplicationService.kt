@@ -82,11 +82,12 @@ class RemoteApplicationService @SuppressLint("DiscouragedPrivateApi") constructo
                 }
             }
 
-            val success = latch.await(1, TimeUnit.SECONDS)
-            if (!success) throw TimeoutException("Bind service timeout")
+            val success = latch.await(3500, TimeUnit.MILLISECONDS)
+            if (!success) {
+                log.w { "Bind manager service timed out (manager may still be cold-starting). Will connect asynchronously." }
+            }
         } catch (e: Exception) {
-            Toast.makeText(context, "Unable to connect to Manager", Toast.LENGTH_SHORT).show()
-            throw RemoteException("Failed to get manager binder").apply { initCause(e) }
+            log.w(e) { "Failed to bind manager service synchronously: ${e.message}" }
         }
     }
 
