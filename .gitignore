@@ -28,3 +28,4 @@ libxposed
 /.claude/
 CLAUDE.md
 app/google-services.json
+.omc/
