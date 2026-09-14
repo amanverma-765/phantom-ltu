@@ -64,7 +64,7 @@ fun MapPickerScreen(
     var isLoadingLocation by remember { mutableStateOf(false) }
     var showGpsDialog by remember { mutableStateOf(false) }
     var showPreciseLocationDialog by remember { mutableStateOf(false) }
-    var isSatelliteMode by remember { mutableStateOf(false) }
+    var isSatelliteMode by remember { mutableStateOf(true) }
     var requestLocationPermission by remember { mutableStateOf(false) }
     var isSearchMode by remember { mutableStateOf(false) }
     var isMapMoving by remember { mutableStateOf(false) }

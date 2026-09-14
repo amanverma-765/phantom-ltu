@@ -10,5 +10,6 @@ data class AppUiState(
     val allDeviceApps: List<DeviceApp> = emptyList(),
     val filteredPatchedApps: List<DeviceApp> = emptyList(),
     val filteredUnpatchedApps: List<DeviceApp> = emptyList(),
-    val activeLocations: Map<String, ActiveLocation> = emptyMap()
+    val activeLocations: Map<String, ActiveLocation> = emptyMap(),
+    val userMessage: String? = null
 )

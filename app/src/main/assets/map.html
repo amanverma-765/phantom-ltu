@@ -44,8 +44,8 @@
             maxNativeZoom: 20
         });
 
-        streetsLayer.addTo(map);
-        var isSatellite = false;
+        satelliteLayer.addTo(map);
+        var isSatellite = true;
 
         // Bridge via prompt() — intercepted by WebChromeClient.onJsPrompt
         function bridge(msg) {

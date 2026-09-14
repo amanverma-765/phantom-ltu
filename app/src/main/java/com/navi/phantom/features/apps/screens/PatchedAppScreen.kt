@@ -18,6 +18,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -50,6 +52,7 @@ fun PatchedAppScreen(
     val patchedApps = uiState.filteredPatchedApps
     val isScreenEmpty = patchedApps.isEmpty() && !uiState.isLoadingApps
 
+    val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val isFabExpanded by remember {
         derivedStateOf { listState.firstVisibleItemIndex == 0 }
@@ -59,8 +62,16 @@ fun PatchedAppScreen(
         viewModel.onEvent(AppUiEvent.GetAllDeviceApps)
     }
 
+    LaunchedEffect(uiState.userMessage) {
+        uiState.userMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.onEvent(AppUiEvent.ClearUserMessage)
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Phantom LTU") }
@@ -120,6 +131,9 @@ fun PatchedAppScreen(
                             PatchedAppCard(
                                 app = patchedApp,
                                 onClick = { onPatchedAppClick(patchedApp) },
+                                onToggleLocation = { enabled ->
+                                    viewModel.onEvent(AppUiEvent.ToggleAppLocation(patchedApp.packageName, enabled))
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 activeLocation = uiState.activeLocations[patchedApp.packageName]
                             )

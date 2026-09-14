@@ -15,7 +15,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +29,7 @@ import com.navi.phantom.domain.model.DeviceApp
 fun PatchedAppCard(
     app: DeviceApp,
     onClick: () -> Unit,
+    onToggleLocation: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     activeLocation: ActiveLocation? = null
 ) {
@@ -97,7 +98,7 @@ fun PatchedAppCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = activeLocation?.placeName ?: "No location set",
+                        text = activeLocation?.placeName ?: "Real GPS (No spoofing)",
                         style = MaterialTheme.typography.labelSmall,
                         color = if (activeLocation != null) {
                             MaterialTheme.colorScheme.tertiary
@@ -112,17 +113,10 @@ fun PatchedAppCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = "Patched",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+            Switch(
+                checked = activeLocation != null,
+                onCheckedChange = onToggleLocation
+            )
         }
     }
 }
