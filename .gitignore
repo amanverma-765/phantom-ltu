@@ -29,3 +29,4 @@ libxposed
 CLAUDE.md
 app/google-services.json
 .omc/
+*.apk
