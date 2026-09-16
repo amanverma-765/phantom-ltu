@@ -96,7 +96,7 @@ fun MapPickerScreen(
             context = context,
             onLocationReceived = { location ->
                 isLoadingLocation = false
-                viewModel.setAccuracyFromGps(location.accuracy, location.latitude, location.longitude)
+                viewModel.setAccuracyFromGps(location.accuracy, location.latitude, location.longitude, location.altitude)
                 val zoom = accuracyToZoom(location.accuracy, location.latitude)
                 mapController?.animateCamera(location.latitude, location.longitude, zoom)
             },
@@ -111,14 +111,12 @@ fun MapPickerScreen(
         }
     }
 
-    // Move camera instantly to loaded place — use selectedLat/Lng which aren't
-    // overwritten by the initial cameraMove event from the WebView
+    // Move camera to loaded place with close-up zoom (19.5) so the exact location is shown
     LaunchedEffect(uiState.editingPlaceId, mapController) {
         if (uiState.editingPlaceId != null && mapController != null) {
             val lat = uiState.selectedLatitude ?: return@LaunchedEffect
             val lng = uiState.selectedLongitude ?: return@LaunchedEffect
-            val zoom = accuracyToZoom(uiState.accuracy, lat)
-            mapController?.animateCamera(lat, lng, zoom)
+            mapController?.animateCamera(lat, lng, 19.5)
         }
     }
 
@@ -146,6 +144,7 @@ fun MapPickerScreen(
                 latitude = uiState.currentLatitude,
                 longitude = uiState.currentLongitude,
                 accuracy = uiState.accuracy,
+                altitude = uiState.altitude,
                 address = uiState.address,
                 isLoadingAddress = uiState.isLoadingAddress,
                 onSelectLocation = {
@@ -292,7 +291,7 @@ fun MapPickerScreen(
  * We want the accuracy circle to fit comfortably on screen (~200px radius).
  */
 private fun accuracyToZoom(accuracyMeters: Float?, latitudeDeg: Double): Double {
-    if (accuracyMeters == null || accuracyMeters <= 0f) return 17.0
+    if (accuracyMeters == null || accuracyMeters <= 0f) return 19.0
 
     val latRad = Math.toRadians(latitudeDeg)
     val earthCircumference = 40_075_016.686

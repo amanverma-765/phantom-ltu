@@ -16,21 +16,24 @@
     <div id="map"></div>
     <script src="leaflet.min.js"></script>
     <script>
-        var DEFAULT_ZOOM = 10;
+        var DEFAULT_ZOOM = 19;
 
-        // Initial center is passed via URL hash: #lat,lng
+        // Initial center is passed via URL hash: #lat,lng,zoom
         // Falls back to 0,0 (overridden by Android immediately after mapReady)
-        var initLat = 0, initLng = 0;
+        var initLat = 0, initLng = 0, initZoom = DEFAULT_ZOOM;
         if (window.location.hash) {
             var parts = window.location.hash.substring(1).split(',');
             initLat = parseFloat(parts[0]) || 0;
             initLng = parseFloat(parts[1]) || 0;
+            if (parts.length > 2) {
+                initZoom = parseFloat(parts[2]) || DEFAULT_ZOOM;
+            }
         }
 
         var map = L.map('map', {
             zoomControl: false,
             attributionControl: false
-        }).setView([initLat, initLng], DEFAULT_ZOOM);
+        }).setView([initLat, initLng], initZoom);
 
         var streetsLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             subdomains: '0123',
