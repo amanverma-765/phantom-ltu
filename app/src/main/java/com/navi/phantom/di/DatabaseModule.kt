@@ -12,7 +12,12 @@ val databaseModule = module {
             PhantomDatabase::class.java,
             PhantomDatabase.DATABASE_NAME
         )
-            .addMigrations(PhantomDatabase.MIGRATION_1_2, PhantomDatabase.MIGRATION_2_3, PhantomDatabase.MIGRATION_3_4)
+            .addMigrations(
+                PhantomDatabase.MIGRATION_1_2,
+                PhantomDatabase.MIGRATION_2_3,
+                PhantomDatabase.MIGRATION_3_4,
+                PhantomDatabase.MIGRATION_4_5
+            )
             .build()
     }
 

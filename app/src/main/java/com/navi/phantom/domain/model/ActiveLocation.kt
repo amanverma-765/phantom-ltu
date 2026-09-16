@@ -7,5 +7,6 @@ data class ActiveLocation(
     val latitude: Double,
     val longitude: Double,
     val accuracy: Float? = null,
+    val altitude: Double? = null,
     val assignedAt: Long = System.currentTimeMillis()
 )

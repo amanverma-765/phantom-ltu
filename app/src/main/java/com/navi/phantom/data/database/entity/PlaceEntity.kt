@@ -12,5 +12,6 @@ data class PlaceEntity(
     val longitude: Double,
     val address: String?,
     val accuracy: Float?,
+    val altitude: Double? = null,
     val createdAt: Long
 )

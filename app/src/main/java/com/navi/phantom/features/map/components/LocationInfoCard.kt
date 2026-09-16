@@ -38,6 +38,7 @@ fun LocationInfoCard(
     latitude: Double,
     longitude: Double,
     accuracy: Float?,
+    altitude: Double? = null,
     address: String?,
     isLoadingAddress: Boolean,
     onSelectLocation: () -> Unit,
@@ -110,6 +111,9 @@ fun LocationInfoCard(
             ) {
                 CoordinateChip(text = "LAT ${formatCoord(latitude)}")
                 CoordinateChip(text = "LNG ${formatCoord(longitude)}")
+                if (altitude != null) {
+                    CoordinateChip(text = "ALT ${altitude.toInt()}m")
+                }
                 if (accuracy != null) {
                     CoordinateChip(text = "ACC ±${accuracy.toInt()}m")
                 }

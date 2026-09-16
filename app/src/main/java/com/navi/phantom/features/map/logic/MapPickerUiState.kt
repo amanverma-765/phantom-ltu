@@ -11,6 +11,7 @@ data class MapPickerUiState(
     val placeName: String = "",
     val address: String? = null,
     val accuracy: Float? = null,
+    val altitude: Double? = null,
     val isLoadingAddress: Boolean = false,
     val searchSuggestions: List<SearchSuggestion> = emptyList(),
     val isSearching: Boolean = false,

@@ -5,6 +5,7 @@ import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.navi.phantom.data.elevation.ElevationService
 import com.navi.phantom.data.geocoding.CoordinateParser
 import com.navi.phantom.data.geocoding.GeocodingService
 import com.navi.phantom.data.geocoding.SearchSuggestion
@@ -47,9 +48,14 @@ class MapPickerViewModel(
         }
     }
 
-    fun setAccuracyFromGps(accuracy: Float?, latitude: Double, longitude: Double) {
+    fun setAccuracyFromGps(accuracy: Float?, latitude: Double, longitude: Double, altitude: Double? = null) {
         _uiState.update {
-            it.copy(accuracy = accuracy, currentLatitude = latitude, currentLongitude = longitude)
+            it.copy(
+                accuracy = accuracy,
+                currentLatitude = latitude,
+                currentLongitude = longitude,
+                altitude = altitude ?: it.altitude
+            )
         }
     }
 
@@ -65,7 +71,8 @@ class MapPickerViewModel(
                     selectedLongitude = place.longitude,
                     placeName = place.name,
                     address = place.address,
-                    accuracy = place.accuracy
+                    accuracy = place.accuracy,
+                    altitude = place.altitude
                 )
             }
         }
@@ -93,12 +100,23 @@ class MapPickerViewModel(
             delay(300) // debounce
             try {
                 val address = withContext(Dispatchers.IO) {
-                    @Suppress("DEPRECATION")
-                    val results = Geocoder(application, Locale.getDefault())
-                        .getFromLocation(latitude, longitude, 1)
-                    results?.firstOrNull()?.getAddressLine(0)
+                    try {
+                        @Suppress("DEPRECATION")
+                        val results = Geocoder(application, Locale.getDefault())
+                            .getFromLocation(latitude, longitude, 1)
+                        results?.firstOrNull()?.getAddressLine(0)
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
-                _uiState.update { it.copy(address = address, isLoadingAddress = false) }
+                val elevation = ElevationService.getElevation(latitude, longitude)
+                _uiState.update {
+                    it.copy(
+                        address = address,
+                        altitude = elevation ?: it.altitude,
+                        isLoadingAddress = false
+                    )
+                }
             } catch (e: Exception) {
                 log.d(e) { "Geocoding failed" }
                 _uiState.update { it.copy(address = null, isLoadingAddress = false) }
@@ -134,7 +152,8 @@ class MapPickerViewModel(
                         latitude = latitude,
                         longitude = longitude,
                         address = state.address,
-                        accuracy = state.accuracy
+                        accuracy = state.accuracy,
+                        altitude = state.altitude
                     )
                 ).map { state.editingPlaceId }
             } else {
@@ -143,7 +162,8 @@ class MapPickerViewModel(
                     latitude = latitude,
                     longitude = longitude,
                     address = state.address,
-                    accuracy = state.accuracy
+                    accuracy = state.accuracy,
+                    altitude = state.altitude
                 )
             }
 

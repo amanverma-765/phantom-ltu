@@ -13,10 +13,10 @@ class PlaceUseCase(
 
     suspend fun getPlaceById(id: Long): Place? = placeRepository.getPlaceById(id)
 
-    suspend fun savePlace(name: String, latitude: Double, longitude: Double, address: String? = null, accuracy: Float? = null): Result<Long> =
+    suspend fun savePlace(name: String, latitude: Double, longitude: Double, address: String? = null, accuracy: Float? = null, altitude: Double? = null): Result<Long> =
         runCatching {
             placeRepository.insertPlace(
-                Place(name = name, latitude = latitude, longitude = longitude, address = address, accuracy = accuracy)
+                Place(name = name, latitude = latitude, longitude = longitude, address = address, accuracy = accuracy, altitude = altitude)
             )
         }
 

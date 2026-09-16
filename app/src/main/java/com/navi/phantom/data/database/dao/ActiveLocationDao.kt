@@ -26,8 +26,8 @@ interface ActiveLocationDao {
 
     @Query(
         """UPDATE active_locations
-           SET placeName = :placeName, latitude = :latitude, longitude = :longitude, accuracy = :accuracy
+           SET placeName = :placeName, latitude = :latitude, longitude = :longitude, accuracy = :accuracy, altitude = :altitude
            WHERE placeId = :placeId"""
     )
-    suspend fun updateByPlaceId(placeId: Long, placeName: String, latitude: Double, longitude: Double, accuracy: Float?)
+    suspend fun updateByPlaceId(placeId: Long, placeName: String, latitude: Double, longitude: Double, accuracy: Float?, altitude: Double?)
 }

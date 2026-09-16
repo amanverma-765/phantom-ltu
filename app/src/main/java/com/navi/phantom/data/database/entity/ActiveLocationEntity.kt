@@ -25,5 +25,6 @@ data class ActiveLocationEntity(
     val latitude: Double,
     val longitude: Double,
     val accuracy: Float?,
+    val altitude: Double? = null,
     val assignedAt: Long
 )

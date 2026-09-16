@@ -11,7 +11,7 @@ import com.navi.phantom.data.database.entity.PlaceEntity
 
 @Database(
     entities = [PlaceEntity::class, ActiveLocationEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class PhantomDatabase : RoomDatabase() {
@@ -73,6 +73,13 @@ abstract class PhantomDatabase : RoomDatabase() {
                 db.execSQL("DROP TABLE `active_locations`")
                 db.execSQL("ALTER TABLE `active_locations_new` RENAME TO `active_locations`")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_active_locations_placeId` ON `active_locations` (`placeId`)")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `places` ADD COLUMN `altitude` REAL")
+                db.execSQL("ALTER TABLE `active_locations` ADD COLUMN `altitude` REAL")
             }
         }
     }

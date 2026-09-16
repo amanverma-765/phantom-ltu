@@ -76,6 +76,7 @@ object ManagerService : ILSPApplicationService.Stub(), KoinComponent {
             bundle.putBoolean(ConfigKeys.HAS_LOCATION, true)
             bundle.putDouble(ConfigKeys.LATITUDE, activeLocation.latitude)
             bundle.putDouble(ConfigKeys.LONGITUDE, activeLocation.longitude)
+            activeLocation.altitude?.let { bundle.putDouble(ConfigKeys.ALTITUDE, it) }
             activeLocation.accuracy?.let { bundle.putFloat(ConfigKeys.ACCURACY, it) }
             activeLocation.placeName?.let { bundle.putString(ConfigKeys.PLACE_NAME, it) }
         } else {

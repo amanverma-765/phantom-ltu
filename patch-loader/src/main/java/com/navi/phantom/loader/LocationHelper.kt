@@ -76,6 +76,7 @@ object LocationHelper {
     fun createFakeLocation(provider: String, config: Bundle): Location {
         val baseLat = config.getDouble(ConfigKeys.LATITUDE)
         val baseLng = config.getDouble(ConfigKeys.LONGITUDE)
+        val baseAlt = if (config.containsKey(ConfigKeys.ALTITUDE)) config.getDouble(ConfigKeys.ALTITUDE) else 0.0
         val baseAccuracy = config.getFloat(ConfigKeys.ACCURACY, 5f)
         val baseSpeed = config.getFloat(ConfigKeys.SPEED, 0f)
         val baseBearing = config.getFloat(ConfigKeys.BEARING, 0f)
@@ -110,8 +111,8 @@ object LocationHelper {
             // Accuracy with ±2m jitter, minimum 1m
             accuracy = (baseAccuracy + random.nextFloat() * 4f - 2f).coerceAtLeast(1f)
 
-            // Altitude: ~100m above sea level with ±3m jitter
-            altitude = 100.0 + random.nextGaussian() * 3.0
+            // Altitude: base altitude with ±2.5m jitter
+            altitude = baseAlt + random.nextGaussian() * 2.5
 
             speed = jitteredSpeed
             bearing = jitteredBearing

@@ -7,5 +7,6 @@ data class Place(
     val longitude: Double,
     val address: String? = null,
     val accuracy: Float? = null,
+    val altitude: Double? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
