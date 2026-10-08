@@ -78,7 +78,7 @@ if not exist "%LIBXPOSED_DIR%" (
 
 if not exist "%LIBXPOSED_DIR%\api\.git" (
     echo Cloning libxposed/api...
-    git clone https://github.com/libxposed/api.git "%LIBXPOSED_DIR%\api"
+    git clone https://github.com/JingMatrix/libxposed-api.git "%LIBXPOSED_DIR%\api"
     if errorlevel 1 goto :error
 ) else (
     echo [OK] libxposed/api already exists
@@ -98,11 +98,23 @@ echo [OK] libxposed/api checked out at %LIBXPOSED_API_COMMIT%
 
 if not exist "%LIBXPOSED_DIR%\service\.git" (
     echo Cloning libxposed/service...
-    git clone https://github.com/libxposed/service.git "%LIBXPOSED_DIR%\service"
+    git clone https://github.com/JingMatrix/libxposed-service.git "%LIBXPOSED_DIR%\service"
     if errorlevel 1 goto :error
 ) else (
     echo [OK] libxposed/service already exists
 )
+
+REM Checkout tag 100 for service (matches libxposed version 100 required by project)
+echo Checking out libxposed/service at tag 100...
+pushd "%LIBXPOSED_DIR%\service"
+git fetch origin --tags
+git checkout 100
+if errorlevel 1 (
+    popd
+    goto :error
+)
+popd
+echo [OK] libxposed/service checked out at tag 100
 
 REM ------------------------------------------
 REM Publish libxposed to local Maven

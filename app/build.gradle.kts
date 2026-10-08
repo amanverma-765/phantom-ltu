@@ -18,7 +18,11 @@ plugins {
     alias(phantom.plugins.serialization)
     alias(phantom.plugins.ksp)
     alias(phantom.plugins.room)
-    alias(phantom.plugins.google.services)
+    alias(phantom.plugins.google.services) apply false
+}
+
+if (file("google-services.json").exists() || file("src/debug/google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {

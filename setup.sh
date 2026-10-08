@@ -61,6 +61,30 @@ git submodule status --recursive || true
 echo -e "${GREEN}✓ Submodules initialized${NC}"
 
 # -------------------------------
+# Patch core for getConfigBundle IPC
+# -------------------------------
+if ! grep -q "getConfigBundle" core/services/daemon-service/src/main/aidl/org/lsposed/lspd/service/ILSPApplicationService.aidl; then
+  echo -e "${YELLOW}Patching core ILSPApplicationService AIDL for getConfigBundle...${NC}"
+  sed -i 's/ParcelFileDescriptor requestInjectedManagerBinder(out List<IBinder> binder);/ParcelFileDescriptor requestInjectedManagerBinder(out List<IBinder> binder);\n\n    Bundle getConfigBundle();/' core/services/daemon-service/src/main/aidl/org/lsposed/lspd/service/ILSPApplicationService.aidl
+fi
+
+if ! grep -q "getConfigBundle" core/core/src/main/java/org/lsposed/lspd/core/ApplicationServiceClient.java; then
+  echo -e "${YELLOW}Patching core ApplicationServiceClient for getConfigBundle...${NC}"
+  sed -i '/public ParcelFileDescriptor requestInjectedManagerBinder(List<IBinder> binder) {/,/return null;/ {
+    /return null;/ a\
+    }\
+\
+    @Override\
+    public Bundle getConfigBundle() {\
+        try {\
+            return service.getConfigBundle();\
+        } catch (RemoteException | NullPointerException ignored) {\
+        }\
+        return Bundle.EMPTY;
+  }' core/core/src/main/java/org/lsposed/lspd/core/ApplicationServiceClient.java
+fi
+
+# -------------------------------
 # libxposed setup
 # -------------------------------
 LIBXPOSED_DIR="libxposed"
@@ -71,7 +95,7 @@ mkdir -p "$LIBXPOSED_DIR"
 
 if [ ! -d "$LIBXPOSED_DIR/api/.git" ]; then
   echo -e "${YELLOW}Cloning libxposed/api...${NC}"
-  git clone https://github.com/libxposed/api.git "$LIBXPOSED_DIR/api"
+  git clone https://github.com/JingMatrix/libxposed-api.git "$LIBXPOSED_DIR/api"
 else
   echo -e "${GREEN}✓ libxposed/api already exists${NC}"
 fi
@@ -87,10 +111,21 @@ echo -e "${GREEN}✓ libxposed/api checked out at $LIBXPOSED_API_COMMIT${NC}"
 
 if [ ! -d "$LIBXPOSED_DIR/service/.git" ]; then
   echo -e "${YELLOW}Cloning libxposed/service...${NC}"
-  git clone https://github.com/libxposed/service.git "$LIBXPOSED_DIR/service"
+  git clone https://github.com/JingMatrix/libxposed-service.git "$LIBXPOSED_DIR/service"
 else
   echo -e "${GREEN}✓ libxposed/service already exists${NC}"
 fi
+
+# Checkout tag 100 for service (matches libxposed version 100 required by project)
+echo -e "${YELLOW}Checking out libxposed/service at tag 100...${NC}"
+(
+  cd "$LIBXPOSED_DIR/service"
+  git fetch origin --tags
+  git checkout 100
+  sed -i 's/JavaVersion.VERSION_1_7/JavaVersion.VERSION_1_8/g' interface/build.gradle.kts
+  sed -i '/withJavadocJar()/d' interface/build.gradle.kts
+)
+echo -e "${GREEN}✓ libxposed/service checked out at tag 100${NC}"
 
 # -------------------------------
 # Gradle wrapper permissions
