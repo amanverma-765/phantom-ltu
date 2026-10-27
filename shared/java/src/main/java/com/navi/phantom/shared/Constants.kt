@@ -6,6 +6,8 @@ object Constants {
     const val LOADER_DEX_ASSET_PATH = "assets/phantom/loader.dex"
     const val META_LOADER_DEX_ASSET_PATH = "assets/phantom/metaloader.dex"
     const val ORIGINAL_APK_ASSET_PATH = "assets/phantom/origin.apk"
+    const val LSP_ORIGINAL_APK_ASSET_PATH = "assets/lsp/origin.apk"
+    const val LSP_CONFIG_ASSET_PATH = "assets/lsp/config.json"
 
     // Directory Names
     const val PATCHED_DIR = "patched"

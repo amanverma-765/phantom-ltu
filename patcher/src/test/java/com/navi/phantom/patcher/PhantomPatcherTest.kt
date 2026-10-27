@@ -87,4 +87,76 @@ class PhantomPatcherTest {
         val split = com.navi.phantom.patcher.util.ManifestInfo("com.example", null, 28, true)
         assertTrue(split.isSplit)
     }
+
+    @Test
+    fun testExtractOriginIfPatchedPhantom() {
+        val tempZip = java.io.File.createTempFile("test-patched-", ".apk")
+        try {
+            java.util.zip.ZipOutputStream(tempZip.outputStream()).use { zos ->
+                zos.putNextEntry(java.util.zip.ZipEntry(Constants.ORIGINAL_APK_ASSET_PATH))
+                zos.write("genuine_inner_apk_bytes".toByteArray())
+                zos.closeEntry()
+
+                zos.putNextEntry(java.util.zip.ZipEntry(Constants.CONFIG_ASSET_PATH))
+                val config = PatchConfig(
+                    debuggable = false,
+                    overrideVersionCode = false,
+                    sigBypassLevel = 1,
+                    originalSignature = "test_genuine_sig",
+                    appComponentFactory = "com.test.GenuineFactory"
+                )
+                zos.write(Json.encodeToString(config).toByteArray())
+                zos.closeEntry()
+            }
+
+            val patcher = PhantomPatcher(arrayOf("-f", "placeholder"))
+            val originInfo = patcher.extractOriginIfPatched(tempZip)
+            assertNotNull(originInfo)
+            assertEquals("genuine_inner_apk_bytes", originInfo!!.tempFile.readText())
+            assertEquals("test_genuine_sig", originInfo.previousConfig?.originalSignature)
+            assertEquals("com.test.GenuineFactory", originInfo.previousConfig?.appComponentFactory)
+            originInfo.tempFile.delete()
+        } finally {
+            tempZip.delete()
+        }
+    }
+
+    @Test
+    fun testExtractOriginIfPatchedLegacyLspatch() {
+        val tempZip = java.io.File.createTempFile("test-lsp-patched-", ".apk")
+        try {
+            java.util.zip.ZipOutputStream(tempZip.outputStream()).use { zos ->
+                zos.putNextEntry(java.util.zip.ZipEntry(Constants.LSP_ORIGINAL_APK_ASSET_PATH))
+                zos.write("legacy_inner_apk_bytes".toByteArray())
+                zos.closeEntry()
+            }
+
+            val patcher = PhantomPatcher(arrayOf("-f", "placeholder"))
+            val originInfo = patcher.extractOriginIfPatched(tempZip)
+            assertNotNull(originInfo)
+            assertEquals("legacy_inner_apk_bytes", originInfo!!.tempFile.readText())
+            assertNull(originInfo.previousConfig)
+            originInfo.tempFile.delete()
+        } finally {
+            tempZip.delete()
+        }
+    }
+
+    @Test
+    fun testExtractOriginIfUnpatched() {
+        val tempZip = java.io.File.createTempFile("test-unpatched-", ".apk")
+        try {
+            java.util.zip.ZipOutputStream(tempZip.outputStream()).use { zos ->
+                zos.putNextEntry(java.util.zip.ZipEntry("AndroidManifest.xml"))
+                zos.write("manifest_content".toByteArray())
+                zos.closeEntry()
+            }
+
+            val patcher = PhantomPatcher(arrayOf("-f", "placeholder"))
+            val originInfo = patcher.extractOriginIfPatched(tempZip)
+            assertNull(originInfo)
+        } finally {
+            tempZip.delete()
+        }
+    }
 }

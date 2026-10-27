@@ -56,7 +56,10 @@ val navModule = module {
         AppLocationScreen(
             packageName = destination.packageName,
             viewModel = viewModel,
-            onNavigateBack = { navigator.goBack() }
+            onNavigateBack = { navigator.goBack() },
+            onRePatchClick = {
+                navigator.navigateTo(Destination.Patcher(destination.packageName))
+            }
         )
     }
     navigation<Destination.SelectApp> {

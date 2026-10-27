@@ -1,6 +1,5 @@
 package com.navi.phantom.features.apps.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,15 +9,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,9 +48,34 @@ fun SelectAppScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    var appToRepatch by remember { mutableStateOf<DeviceApp?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(AppUiEvent.GetAllDeviceApps)
+    }
+
+    appToRepatch?.let { app ->
+        AlertDialog(
+            onDismissRequest = { appToRepatch = null },
+            title = { Text("Re-patch App") },
+            text = { Text("${app.appName} is already patched. Do you want to update its patch with the latest Phantom engine?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val target = app
+                        appToRepatch = null
+                        onAppSelected(target)
+                    }
+                ) {
+                    Text("Re-patch")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { appToRepatch = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -110,7 +139,7 @@ fun SelectAppScreen(
                         patchedApps = uiState.filteredPatchedApps,
                         unpatchedApps = uiState.filteredUnpatchedApps,
                         onPatchedAppClick = { app ->
-                            Toast.makeText(context, "${app.appName} is already patched", Toast.LENGTH_SHORT).show()
+                            appToRepatch = app
                         },
                         onUnpatchedAppClick = { onAppSelected(it) },
                         listState = listState,

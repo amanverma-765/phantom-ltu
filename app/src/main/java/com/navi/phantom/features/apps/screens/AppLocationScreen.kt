@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -56,6 +57,7 @@ fun AppLocationScreen(
     packageName: String,
     viewModel: AppDetailViewModel,
     onNavigateBack: () -> Unit,
+    onRePatchClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -91,6 +93,14 @@ fun AppLocationScreen(
                     }
                 },
                 actions = {
+                    if (onRePatchClick != null) {
+                        IconButton(onClick = onRePatchClick) {
+                            Icon(
+                                imageVector = Icons.Outlined.Update,
+                                contentDescription = "Re-patch app"
+                            )
+                        }
+                    }
                     IconButton(onClick = {
                         val intent = Intent(
                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

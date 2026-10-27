@@ -144,6 +144,7 @@ fun PatcherScreen(
                         onLaunch = { viewModel.onEvent(PatcherUiEvent.LaunchApp) },
                         onNavigateBack = onNavigateBack,
                         statusColors = statusColors,
+                        isPatchedApp = app.isPatched,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .navigationBarsPadding()

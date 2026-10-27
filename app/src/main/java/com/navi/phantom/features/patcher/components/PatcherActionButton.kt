@@ -46,7 +46,8 @@ fun PatcherActionButton(
     onLaunch: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    statusColors: PatcherStatusColors = rememberPatcherStatusColors()
+    statusColors: PatcherStatusColors = rememberPatcherStatusColors(),
+    isPatchedApp: Boolean = false
 ) {
     AnimatedContent(
         targetState = phase,
@@ -62,7 +63,7 @@ fun PatcherActionButton(
                 ActionButton(
                     onClick = onStartPatching,
                     icon = Icons.Outlined.PlayArrow,
-                    text = "Patch",
+                    text = if (isPatchedApp) "Re-patch" else "Patch",
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary

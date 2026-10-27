@@ -49,6 +49,47 @@ class PhantomPatcher(args: Array<String>) {
         fun onProgress(step: String, details: String)
     }
 
+    internal data class PatchedOriginInfo(
+        val tempFile: File,
+        val previousConfig: PatchConfig?
+    )
+
+    internal fun extractOriginIfPatched(apkFile: File): PatchedOriginInfo? {
+        try {
+            java.util.zip.ZipFile(apkFile).use { zip ->
+                val originEntry = zip.getEntry(Constants.ORIGINAL_APK_ASSET_PATH)
+                    ?: zip.getEntry(Constants.LSP_ORIGINAL_APK_ASSET_PATH)
+                    ?: return null
+
+                log.i { "Detected already patched APK: ${apkFile.name}, extracting embedded origin..." }
+                val tempFile = File.createTempFile("phantom-origin-", ".apk")
+                tempFile.outputStream().use { out ->
+                    zip.getInputStream(originEntry).use { input ->
+                        input.copyTo(out)
+                    }
+                }
+
+                val configEntry = zip.getEntry(Constants.CONFIG_ASSET_PATH)
+                    ?: zip.getEntry(Constants.LSP_CONFIG_ASSET_PATH)
+
+                val previousConfig = configEntry?.let { entry ->
+                    runCatching {
+                        zip.getInputStream(entry).use { input ->
+                            val jsonStr = input.reader(StandardCharsets.UTF_8).readText()
+                            val jsonParser = Json { ignoreUnknownKeys = true; isLenient = true }
+                            jsonParser.decodeFromString<PatchConfig>(jsonStr)
+                        }
+                    }.getOrNull()
+                }
+
+                return PatchedOriginInfo(tempFile, previousConfig)
+            }
+        } catch (e: Exception) {
+            log.w(e) { "Failed to extract origin from ${apkFile.name}" }
+            throw PatchError("Failed to extract original APK from already-patched file: ${e.message}", e)
+        }
+    }
+
     /**
      * Represents a recoverable patching error.
      * Extends Exception (not Error) because these are application-level errors
@@ -238,70 +279,91 @@ class PhantomPatcher(args: Array<String>) {
         log.i { "Parsing original apk..." }
         onProgress?.onProgress("PARSE_APK", srcApkFile.name)
 
-        ZFile.openReadWrite(outputFile, Z_FILE_OPTIONS).use { dstZFile ->
-            val srcZFile = dstZFile.addNestedZip({ ORIGINAL_APK_ASSET_PATH }, srcApkFile, false)
+        val patchedInfo = extractOriginIfPatched(srcApkFile)
+        val effectiveSrcFile = patchedInfo?.tempFile ?: srcApkFile
+        val previousConfig = patchedInfo?.previousConfig
 
-            try {
-                onProgress?.onProgress("SETUP_SIGNING", "Configuring APK signature")
-                // Use BKS (BouncyCastle KeyStore) format for Android
-                // The keystore file was created with: keytool -storetype BKS -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider
-                val keyStore = KeyStore.getInstance("BKS")
-                if (keystoreArgs[0] == null) {
-                    log.i { "Register apk signer with default keystore..." }
-                    val keystoreStream = javaClass.classLoader?.getResourceAsStream("assets/keystore")
-                        ?: throw PatchError("Default keystore resource not found")
-                    keystoreStream.use { inputStream ->
-                        keyStore.load(inputStream, keystoreArgs[1]!!.toCharArray())
+        try {
+            ZFile.openReadWrite(outputFile, Z_FILE_OPTIONS).use { dstZFile ->
+                val srcZFile = dstZFile.addNestedZip({ ORIGINAL_APK_ASSET_PATH }, effectiveSrcFile, false)
+
+                try {
+                    onProgress?.onProgress("SETUP_SIGNING", "Configuring APK signature")
+                    // Use BKS (BouncyCastle KeyStore) format for Android
+                    // The keystore file was created with: keytool -storetype BKS -providerclass org.bouncycastle.jce.provider.BouncyCastleProvider
+                    val keyStore = KeyStore.getInstance("BKS")
+                    if (keystoreArgs[0] == null) {
+                        log.i { "Register apk signer with default keystore..." }
+                        val keystoreStream = javaClass.classLoader?.getResourceAsStream("assets/keystore")
+                            ?: throw PatchError("Default keystore resource not found")
+                        keystoreStream.use { inputStream ->
+                            keyStore.load(inputStream, keystoreArgs[1]!!.toCharArray())
+                        }
+                    } else {
+                        log.i { "Register apk signer with custom keystore..." }
+                        FileInputStream(keystoreArgs[0]!!).use { inputStream ->
+                            keyStore.load(inputStream, keystoreArgs[1]!!.toCharArray())
+                        }
                     }
-                } else {
-                    log.i { "Register apk signer with custom keystore..." }
-                    FileInputStream(keystoreArgs[0]!!).use { inputStream ->
-                        keyStore.load(inputStream, keystoreArgs[1]!!.toCharArray())
+                    val entry = keyStore.getEntry(
+                        keystoreArgs[2],
+                        KeyStore.PasswordProtection(keystoreArgs[3]!!.toCharArray())
+                    ) as KeyStore.PrivateKeyEntry
+
+                    SigningExtension(
+                        SigningOptions.builder()
+                            .setMinSdkVersion(28)
+                            .setV2SigningEnabled(true)
+                            .setCertificates(*entry.certificateChain.filterIsInstance<X509Certificate>().toTypedArray())
+                            .setKey(entry.privateKey)
+                            .build()
+                    ).register(dstZFile)
+                } catch (e: Exception) {
+                    throw PatchError("Failed to register signer", e)
+                }
+
+                var originalSignature: String? = null
+                if (sigbypassLevel > 0) {
+                    onProgress?.onProgress("EXTRACT_SIGNATURE", "For signature bypass")
+                    originalSignature = ApkSignatureHelper.getApkSignInfo(effectiveSrcFile.absolutePath)
+                        ?: previousConfig?.originalSignature
+                    if (originalSignature.isNullOrEmpty()) {
+                        throw PatchError("get original signature failed")
+                    }
+                    log.d { "Original signature\n$originalSignature" }
+                }
+
+                val manifestEntry = srcZFile.get(ANDROID_MANIFEST_XML)
+                    ?: throw PatchError("Provided file is not a valid apk")
+
+                var appComponentFactory: String?
+                val minSdkVersion: Int
+                val isSplitManifest: Boolean
+                manifestEntry.open().use { inputStream ->
+                    val pair = ManifestParser.parseManifestFile(inputStream)
+                        .getOrElse { throw PatchError("Failed to parse AndroidManifest.xml", it) }
+                    appComponentFactory = pair.appComponentFactory
+                    minSdkVersion = pair.minSdkVersion
+                    isSplitManifest = pair.isSplit
+                    log.d { "original appComponentFactory class: $appComponentFactory" }
+                    log.d { "original minSdkVersion: $minSdkVersion" }
+                    log.d { "isSplitManifest: $isSplitManifest" }
+                }
+
+                if (appComponentFactory == null ||
+                    appComponentFactory == PROXY_APP_COMPONENT_FACTORY ||
+                    appComponentFactory.endsWith(".LSPAppComponentFactoryStub")
+                ) {
+                    val fallback = previousConfig?.appComponentFactory
+                    if (fallback != null &&
+                        fallback != PROXY_APP_COMPONENT_FACTORY &&
+                        !fallback.endsWith(".LSPAppComponentFactoryStub")
+                    ) {
+                        appComponentFactory = fallback
+                    } else {
+                        appComponentFactory = null
                     }
                 }
-                val entry = keyStore.getEntry(
-                    keystoreArgs[2],
-                    KeyStore.PasswordProtection(keystoreArgs[3]!!.toCharArray())
-                ) as KeyStore.PrivateKeyEntry
-
-                SigningExtension(
-                    SigningOptions.builder()
-                        .setMinSdkVersion(28)
-                        .setV2SigningEnabled(true)
-                        .setCertificates(*entry.certificateChain.filterIsInstance<X509Certificate>().toTypedArray())
-                        .setKey(entry.privateKey)
-                        .build()
-                ).register(dstZFile)
-            } catch (e: Exception) {
-                throw PatchError("Failed to register signer", e)
-            }
-
-            var originalSignature: String? = null
-            if (sigbypassLevel > 0) {
-                onProgress?.onProgress("EXTRACT_SIGNATURE", "For signature bypass")
-                originalSignature = ApkSignatureHelper.getApkSignInfo(srcApkFile.absolutePath)
-                if (originalSignature.isNullOrEmpty()) {
-                    throw PatchError("get original signature failed")
-                }
-                log.d { "Original signature\n$originalSignature" }
-            }
-
-            val manifestEntry = srcZFile.get(ANDROID_MANIFEST_XML)
-                ?: throw PatchError("Provided file is not a valid apk")
-
-            val appComponentFactory: String?
-            val minSdkVersion: Int
-            val isSplitManifest: Boolean
-            manifestEntry.open().use { inputStream ->
-                val pair = ManifestParser.parseManifestFile(inputStream)
-                    .getOrElse { throw PatchError("Failed to parse AndroidManifest.xml", it) }
-                appComponentFactory = pair.appComponentFactory
-                minSdkVersion = pair.minSdkVersion
-                isSplitManifest = pair.isSplit
-                log.d { "original appComponentFactory class: $appComponentFactory" }
-                log.d { "original minSdkVersion: $minSdkVersion" }
-                log.d { "isSplitManifest: $isSplitManifest" }
-            }
 
             val effectiveVersionCode = versionCodeOverride ?: if (overrideVersionCode) 1 else null
             val isSplitApk = isSplit ||
@@ -408,11 +470,14 @@ class PhantomPatcher(args: Array<String>) {
 
             dstZFile.realign()
 
-            log.i { "Writing apk..." }
-            onProgress?.onProgress("WRITE_APK", "Finalizing bootstrapped APK")
+                log.i { "Writing apk..." }
+                onProgress?.onProgress("WRITE_APK", "Finalizing bootstrapped APK")
+            }
+            onProgress?.onProgress("COMPLETE", outputFile.name)
+            log.i { "Done. Output APK: ${outputFile.absolutePath}" }
+        } finally {
+            patchedInfo?.tempFile?.delete()
         }
-        onProgress?.onProgress("COMPLETE", outputFile.name)
-        log.i { "Done. Output APK: ${outputFile.absolutePath}" }
     }
 
     @Throws(IOException::class)

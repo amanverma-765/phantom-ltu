@@ -18,7 +18,7 @@ data class PatcherUiState(
 
     val statusMessage: String
         get() = when (val p = phase) {
-            is PatcherPhase.Ready -> "Ready to patch"
+            is PatcherPhase.Ready -> if (app?.isPatched == true) "Ready to re-patch" else "Ready to patch"
             is PatcherPhase.Patching -> "${p.step.title}..."
             is PatcherPhase.Patched -> "Patched!"
             is PatcherPhase.Installing -> {
