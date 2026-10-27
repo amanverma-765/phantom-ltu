@@ -90,15 +90,17 @@ object LSPApplication {
         DebuggableBypass.apply(context)
 
         // 3. Signature bypass — must be active before any integrity/tamper check runs in <clinit>
-        SigBypass.doSigBypass(context, config.optInt("sigBypassLevel"))
+        val originalSig = config.optString("originalSignature").takeIf { it.isNotEmpty() }
+        SigBypass.doSigBypass(context, config.optInt("sigBypassLevel"), originalSig)
 
         // 4. Installer source spoofing — needed before PairIP's local installer check
         if (config.optInt("sigBypassLevel") > 0) {
             InstallerBypass.apply(context)
         }
 
-        // 5. Hide Xposed framework classes and bypass PairIP
+        // 5. Hide Xposed framework classes and bypass PairIP / Poshan integrity checks
         PairIpBypass.apply(stubLoadedApk.classLoader)
+        PoshanBypass.apply(stubLoadedApk.classLoader)
         XposedHidingBypass.apply(stubLoadedApk.classLoader)
 
         // 6. Location spoofing hooks
@@ -120,6 +122,7 @@ object LSPApplication {
         val appClassLoader = appLoadedApk.classLoader
         if (appClassLoader != null) {
             PairIpBypass.apply(appClassLoader)
+            PoshanBypass.apply(appClassLoader)
             XposedHidingBypass.apply(appClassLoader)
             FusedLocationHook.apply(appClassLoader)
         }

@@ -175,7 +175,7 @@ class PhantomPatcher(args: Array<String>) {
             patchedFiles.add(outputFile)
             originalNames[outputFile] = apkFileName
 
-            if (basePackageName == null && !apkFileName.startsWith("split_")) {
+            if (basePackageName == null && !apkFileName.startsWith("split_") && !apkFileName.startsWith("config.")) {
                 try {
                     ZFile.openReadOnly(srcApkFile).use { zf ->
                         val manifestEntry = zf.get(ANDROID_MANIFEST_XML)
@@ -221,7 +221,13 @@ class PhantomPatcher(args: Array<String>) {
     }
 
     @Throws(PatchError::class, IOException::class)
-    fun patch(srcApkFile: File, outputFile: File, onProgress: ProgressCallback? = null) {
+    @JvmOverloads
+    fun patch(
+        srcApkFile: File,
+        outputFile: File,
+        isSplit: Boolean = false,
+        onProgress: ProgressCallback? = null
+    ) {
         if (!srcApkFile.exists()) {
             throw PatchError("The source apk file does not exist. Please provide a correct path.")
         }
@@ -285,17 +291,24 @@ class PhantomPatcher(args: Array<String>) {
 
             val appComponentFactory: String?
             val minSdkVersion: Int
+            val isSplitManifest: Boolean
             manifestEntry.open().use { inputStream ->
                 val pair = ManifestParser.parseManifestFile(inputStream)
                     .getOrElse { throw PatchError("Failed to parse AndroidManifest.xml", it) }
                 appComponentFactory = pair.appComponentFactory
                 minSdkVersion = pair.minSdkVersion
+                isSplitManifest = pair.isSplit
                 log.d { "original appComponentFactory class: $appComponentFactory" }
                 log.d { "original minSdkVersion: $minSdkVersion" }
+                log.d { "isSplitManifest: $isSplitManifest" }
             }
 
             val effectiveVersionCode = versionCodeOverride ?: if (overrideVersionCode) 1 else null
-            val skipSplit = apkPaths.size > 1 && srcApkFile.name.startsWith("split_") && appComponentFactory == null
+            val isSplitApk = isSplit ||
+                isSplitManifest ||
+                srcApkFile.name.startsWith("split_") ||
+                srcApkFile.name.startsWith("config.")
+            val skipSplit = isSplitApk && appComponentFactory == null
             if (skipSplit) {
                 log.i { "Packing split apk..." }
 

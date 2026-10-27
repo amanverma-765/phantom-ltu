@@ -11,7 +11,8 @@ import java.io.InputStream
 data class ManifestInfo(
     val packageName: String?,
     val appComponentFactory: String?,
-    val minSdkVersion: Int
+    val minSdkVersion: Int,
+    val isSplit: Boolean = false
 )
 
 object ManifestParser {
@@ -26,6 +27,7 @@ object ManifestParser {
             var packageName: String? = null
             var appComponentFactory: String? = null
             var minSdkVersion = 0
+            var isSplit = false
 
             while (true) {
                 when (parser.next()) {
@@ -37,8 +39,12 @@ object ManifestParser {
                             val attrNameRes = parser.getAttrResId(i)
                             val name = parser.name
 
-                            if (name == "manifest" && attrName == "package") {
-                                packageName = parser.getAttrValue(i).toString()
+                            if (name == "manifest") {
+                                if (attrName == "package") {
+                                    packageName = parser.getAttrValue(i).toString()
+                                } else if (attrName == "split" || attrName == "configFor" || attrName == "featureSplit") {
+                                    isSplit = true
+                                }
                             }
 
                             if (name == "uses-sdk" && attrName == "minSdkVersion") {
@@ -48,19 +54,12 @@ object ManifestParser {
                             if (attrName == "appComponentFactory" || attrNameRes == 0x0101057a) {
                                 appComponentFactory = parser.getAttrValue(i).toString()
                             }
-
-                            if (!packageName.isNullOrEmpty() &&
-                                !appComponentFactory.isNullOrEmpty() &&
-                                minSdkVersion > 0
-                            ) {
-                                return@runCatching ManifestInfo(packageName, appComponentFactory, minSdkVersion)
-                            }
                         }
                     }
                 }
             }
 
-            ManifestInfo(packageName, appComponentFactory, minSdkVersion)
+            ManifestInfo(packageName, appComponentFactory, minSdkVersion, isSplit)
         }.onFailure { e ->
             log.e(e) { "Failed to parse manifest" }
         }

@@ -133,15 +133,16 @@ class PatcherProviderImpl(context: Context) : PatcherProvider {
             val srcApkFile = File(apkPath)
             val apkFileName = srcApkFile.name
             val baseName = getBaseName(apkFileName)
-            val outputName = if (apkFileName.startsWith("split_")) baseName else packageName
+            val isSplit = index > 0
+            val outputName = if (isSplit) baseName else packageName
             val outputFile = File(
                 outputDir,
                 String.format(Locale.getDefault(), "%s-%d-phantom.apk", outputName, versionCode)
             )
 
-            log.d { "Patching APK ${index + 1}/${allApkPaths.size}: $srcApkFile" }
+            log.d { "Patching APK ${index + 1}/${allApkPaths.size}: $srcApkFile (isSplit=$isSplit)" }
 
-            patcher.patch(srcApkFile, outputFile) { step, details ->
+            patcher.patch(srcApkFile, outputFile, isSplit) { step, details ->
                 checkCancelled()
                 mapPatcherStepToPatchingStep(step)?.let { patchingStep ->
                     val detailsWithProgress = if (allApkPaths.size > 1) "$details (${index + 1}/${allApkPaths.size})" else details

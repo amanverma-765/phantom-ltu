@@ -78,4 +78,13 @@ class PhantomPatcherTest {
         assertNull(decoded.versionCodeOverride)
         assertNull(decoded.managerPackageName)
     }
+
+    @Test
+    fun testManifestInfoSplitFlag() {
+        val nonSplit = com.navi.phantom.patcher.util.ManifestInfo("com.example", null, 28, false)
+        assertFalse(nonSplit.isSplit)
+
+        val split = com.navi.phantom.patcher.util.ManifestInfo("com.example", null, 28, true)
+        assertTrue(split.isSplit)
+    }
 }

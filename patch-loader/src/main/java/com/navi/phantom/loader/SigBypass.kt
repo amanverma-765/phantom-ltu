@@ -32,7 +32,8 @@ object SigBypass {
         Collections.synchronizedMap(HashMap())
 
     private fun getReplacement(context: Context, packageName: String): String? {
-        if (signatures.containsKey(packageName)) return signatures[packageName]
+        val cached = signatures[packageName]
+        if (!cached.isNullOrEmpty()) return cached
         var replacement: String? = null
         try {
             val metaData = context.packageManager
@@ -51,7 +52,9 @@ object SigBypass {
         } catch (_: PackageManager.NameNotFoundException) {
         } catch (_: RuntimeException) {
         }
-        signatures[packageName] = replacement
+        if (replacement != null) {
+            signatures[packageName] = replacement
+        }
         return replacement
     }
 
@@ -87,13 +90,13 @@ object SigBypass {
 
     /**
      * Overwrites the signature array inside a SigningInfo's backing SigningDetails.
-     * Android 13+ uses android.content.pm.SigningDetails (field mSignatures),
-     * while Android 9-12 uses PackageParser$SigningDetails (field signatures).
+     * Android 13+ uses android.content.pm.SigningDetails (field mSignatures / mPastSigningCertificates),
+     * while Android 9-12 uses PackageParser$SigningDetails (field signatures / pastSigningCertificates).
      */
     private fun replaceSigningDetails(signingInfo: Any, original: Signature) {
         try {
             val details = XposedHelpers.getObjectField(signingInfo, "mSigningDetails") ?: return
-            for (fieldName in arrayOf("mSignatures", "signatures")) {
+            for (fieldName in arrayOf("mSignatures", "signatures", "mPastSigningCertificates", "pastSigningCertificates")) {
                 try {
                     val current = XposedHelpers.getObjectField(details, fieldName)
                     if (current is Array<*>) {
@@ -104,13 +107,67 @@ object SigBypass {
                             replaced[i] = original
                         }
                         XposedHelpers.setObjectField(details, fieldName, replaced)
-                        return
                     }
                 } catch (_: Throwable) {
                 }
             }
         } catch (t: Throwable) {
             log.d { "replaceSigningDetails skipped: ${t.message}" }
+        }
+    }
+
+    /**
+     * Hook SigningInfo methods directly (API 28+) so any call to getSigningCertificateHistory()
+     * or getApkContentsSigners() returns the spoofed certificate.
+     */
+    private fun hookSigningInfo(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT < 28) return
+        try {
+            val signingInfoClass = android.content.pm.SigningInfo::class.java
+
+            XposedHelpers.findAndHookMethod(
+                signingInfoClass,
+                "getSigningCertificateHistory",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        val replacement = getReplacement(context, context.packageName) ?: return
+                        param.result = arrayOf(Signature(replacement))
+                    }
+                }
+            )
+
+            XposedHelpers.findAndHookMethod(
+                signingInfoClass,
+                "getApkContentsSigners",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        val replacement = getReplacement(context, context.packageName) ?: return
+                        param.result = arrayOf(Signature(replacement))
+                    }
+                }
+            )
+
+            XposedHelpers.findAndHookMethod(
+                signingInfoClass,
+                "hasMultipleSigners",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        param.result = false
+                    }
+                }
+            )
+
+            XposedHelpers.findAndHookMethod(
+                signingInfoClass,
+                "hasPastSigningCertificates",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam<*>) {
+                        param.result = false
+                    }
+                }
+            )
+        } catch (t: Throwable) {
+            log.d { "hookSigningInfo skipped: ${t.message}" }
         }
     }
 
@@ -295,10 +352,15 @@ object SigBypass {
 
     @JvmStatic
     @Throws(IOException::class)
-    fun doSigBypass(context: Context, sigBypassLevel: Int) {
+    @JvmOverloads
+    fun doSigBypass(context: Context, sigBypassLevel: Int, originalSignature: String? = null) {
+        if (!originalSignature.isNullOrEmpty()) {
+            signatures[context.packageName] = originalSignature
+        }
         if (sigBypassLevel >= Constants.SIGBYPASS_LV_PM) {
             // Prime cache so hasSigningCertificate has the original on hand from the first call
             getReplacement(context, context.packageName)
+            hookSigningInfo(context)
             hookPackageParser(context)
             proxyPackageInfoCreator(context)
             hookApplicationPackageManager(context)
